@@ -90,6 +90,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
   const lastTimeRef = useRef<number>(0);
   const elapsedMsRef = useRef<number>(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // 1. Load Data
   useEffect(() => {
@@ -126,55 +127,81 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     if (!isPlaying || ended || flatLines.length === 0) {
       if (timerRef.current) clearInterval(timerRef.current);
       if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+      if (audioRef.current) audioRef.current.pause();
       return;
     }
 
     const currentLine = flatLines[cursor];
     const totalLineMs = BASE_LINE_MS / playbackSpeed;
-    const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100); // min 100ms per word
+    const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100);
 
-    // Start TTS for the line if just started
-    if (elapsedMsRef.current === 0 && typeof window !== 'undefined') {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
-      utterance.rate = playbackSpeed * 1.1; // Slightly faster to match visuals
-      // Try to find a good voice
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('Google'));
-      if (preferred) utterance.voice = preferred;
-      synthRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
-    }
-
-    lastTimeRef.current = performance.now();
-    
-    timerRef.current = setInterval(() => {
-      const now = performance.now();
-      const delta = now - lastTimeRef.current;
-      lastTimeRef.current = now;
-      elapsedMsRef.current += delta;
-
-      if (elapsedMsRef.current >= totalLineMs) {
-        // Line finished
-        elapsedMsRef.current = 0;
-        setWordIdx(0);
-        if (cursor + 1 >= flatLines.length) {
-          setIsPlaying(false);
-          setEnded(true);
-        } else {
-          setCursor(c => c + 1);
-        }
-      } else {
-        // Update word index for karaoke
-        const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
-        setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
+    if (chapter?.audio_url) {
+      // Use real audio file instead of TTS
+      if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().catch(console.error);
       }
-    }, 50); // High frequency tick for smooth word revealing
+      
+      // Auto-advance cursor loosely based on time since we don't have exact VTT sync
+      lastTimeRef.current = performance.now();
+      timerRef.current = setInterval(() => {
+        const now = performance.now();
+        const delta = now - lastTimeRef.current;
+        lastTimeRef.current = now;
+        elapsedMsRef.current += delta;
+
+        if (elapsedMsRef.current >= totalLineMs) {
+          elapsedMsRef.current = 0;
+          setWordIdx(0);
+          if (cursor + 1 >= flatLines.length) {
+            setIsPlaying(false);
+            setEnded(true);
+          } else {
+            setCursor(c => c + 1);
+          }
+        }
+      }, 50);
+
+    } else {
+      // Use Browser TTS
+      if (elapsedMsRef.current === 0 && typeof window !== 'undefined') {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
+        utterance.rate = playbackSpeed * 1.1; 
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('Google'));
+        if (preferred) utterance.voice = preferred;
+        synthRef.current = utterance;
+        window.speechSynthesis.speak(utterance);
+      }
+
+      lastTimeRef.current = performance.now();
+      
+      timerRef.current = setInterval(() => {
+        const now = performance.now();
+        const delta = now - lastTimeRef.current;
+        lastTimeRef.current = now;
+        elapsedMsRef.current += delta;
+
+        if (elapsedMsRef.current >= totalLineMs) {
+          elapsedMsRef.current = 0;
+          setWordIdx(0);
+          if (cursor + 1 >= flatLines.length) {
+            setIsPlaying(false);
+            setEnded(true);
+          } else {
+            setCursor(c => c + 1);
+          }
+        } else {
+          const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
+          setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
+        }
+      }, 50);
+    }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, cursor, playbackSpeed, ended, flatLines]);
+  }, [isPlaying, cursor, playbackSpeed, ended, flatLines, chapter]);
 
   // 3. Save Progress
   useEffect(() => {
@@ -262,6 +289,18 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   return (
     <div className="min-h-screen bg-[#060d1a] text-[#FAF6EC] font-sans flex flex-col pb-safe">
       
+      {/* Hidden Audio Element for Custom MP3s */}
+      {chapter?.audio_url && (
+        <audio 
+          ref={audioRef} 
+          src={chapter.audio_url} 
+          onEnded={() => {
+            setEnded(true);
+            setIsPlaying(false);
+          }}
+        />
+      )}
+
       {/* --- Top Bar & Mode Toggle --- */}
       <header className="flex items-center justify-between p-4 glass-nav sticky top-0 z-50">
         <button onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
