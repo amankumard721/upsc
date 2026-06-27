@@ -176,7 +176,38 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     };
   }, [isPlaying, cursor, playbackSpeed, ended, flatLines]);
 
-  // 3. Controls
+  // 3. Save Progress
+  useEffect(() => {
+    if (typeof window !== 'undefined' && chapter) {
+      try {
+        const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
+        const existingIdx = list.findIndex((p: any) => p.chapter_id === chapterId);
+        
+        const isCompleted = ended || (existingIdx !== -1 && list[existingIdx].is_completed);
+        
+        const newProg = {
+          id: existingIdx !== -1 ? list[existingIdx].id : Math.random().toString(36).substr(2, 9),
+          user_id: 'default-user', // Mock user for local tracking
+          chapter_id: chapterId,
+          is_completed: isCompleted,
+          last_position_seconds: (cursor * BASE_LINE_MS) / 1000,
+          score: existingIdx !== -1 ? list[existingIdx].score : 0,
+          completed_at: isCompleted ? new Date().toISOString() : (existingIdx !== -1 ? list[existingIdx].completed_at : undefined)
+        };
+
+        if (existingIdx !== -1) {
+          list[existingIdx] = { ...list[existingIdx], ...newProg };
+        } else {
+          list.push(newProg);
+        }
+        localStorage.setItem('prepai_user_progress', JSON.stringify(list));
+      } catch (err) {
+        console.error("Failed to save progress", err);
+      }
+    }
+  }, [cursor, ended, chapter, chapterId]);
+
+  // 4. Controls
   const togglePlay = () => {
     if (ended) {
       setCursor(0);
