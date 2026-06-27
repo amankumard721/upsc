@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { sfx } from '@/lib/sounds';
+import { notifications } from '@/lib/notifications';
 import { Chapter, MCQ, QuizAttempt, UserProfile } from '@/types';
 import { 
   ArrowLeft, 
@@ -156,6 +157,12 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
     setFinalAttempt(savedAttempt);
     setQuizFinished(true);
     sfx.playSuccess();
+
+    // Trigger PWA notification
+    notifications.sendLocal(
+      'UPSC Quiz Complete! 🎯',
+      `You scored ${attemptData.score} points on the OMR Mock paper.`
+    );
 
     // Trigger premium confetti
     confetti({

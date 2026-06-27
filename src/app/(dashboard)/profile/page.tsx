@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/supabase';
 import { sfx } from '@/lib/sounds';
+import { notifications } from '@/lib/notifications';
 import { UserProfile, QuizAttempt } from '@/types';
 import { generateReferralCode } from '@/lib/utils';
 import { 
@@ -86,6 +87,18 @@ export default function ProfilePage() {
     setShowRazorpayModal(true);
   };
 
+  const handleTestNotification = async () => {
+    const granted = await notifications.requestPermission();
+    if (granted) {
+      notifications.sendLocal(
+        'Streak Alert! 🔥',
+        "Don't lose your progress! Complete today's Indian Polity daily MCQ challenge to maintain your streak."
+      );
+    } else {
+      alert('Please enable notifications permission in your browser/device settings to test push alerts!');
+    }
+  };
+
   const submitMockRazorpayPayment = async () => {
     setPaymentLoading(true);
     // Simulate Razorpay checkout frame loading
@@ -102,6 +115,10 @@ export default function ProfilePage() {
 
       // Trigger Confetti
       sfx.playSuccess();
+      notifications.sendLocal(
+        'Gold Activated! 🌟',
+        'Welcome to LBSNAA Gold tier! +300 XP welcome bonus added.'
+      );
       confetti({
         particleCount: 150,
         spread: 80,
@@ -343,6 +360,21 @@ export default function ProfilePage() {
                 Save Settings
               </button>
             </form>
+
+            <div className="border-t border-white/5 pt-4 mt-4 space-y-3">
+              <h4 className="text-xs font-bold text-accent font-mono uppercase tracking-wider">System Alerts</h4>
+              <p className="text-xs text-white/50 font-light">
+                Enable local push notifications to get daily streak reminders and quiz results directly on your screen.
+              </p>
+              <button
+                type="button"
+                onClick={handleTestNotification}
+                className="w-full bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4 text-accent animate-pulse" />
+                <span>Send Test Push Reminder</span>
+              </button>
+            </div>
           </div>
 
         </div>
