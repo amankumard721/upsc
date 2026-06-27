@@ -101,47 +101,37 @@ export default function BookDetailsPage({ params }: BookPageProps) {
 
   return (
     <div className="space-y-8 font-sans">
-      {/* Back button */}
-      <div>
-        <Link href="/dashboard" className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Dashboard</span>
-        </Link>
-      </div>
-
-      {/* Book details card */}
-      <div className="premium-card p-6 md:p-8 bg-slate-900/40 flex flex-col md:flex-row gap-8 items-center md:items-start relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-accent/5 rounded-full blur-[50px] pointer-events-none" />
+      {/* Compact Book Card */}
+      <div className="premium-card p-4 md:p-5 bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex flex-row gap-5 items-center relative overflow-hidden border border-white/5 shadow-xl">
+        <div className="absolute -top-10 -right-10 w-[150px] h-[150px] bg-accent/10 rounded-full blur-[40px] pointer-events-none" />
         
         <img 
           src={book.cover_image} 
           alt={book.title} 
-          className="w-36 h-48 md:w-44 md:h-56 rounded-xl object-cover bg-slate-800 shadow-xl border border-white/10 flex-shrink-0"
+          className="w-20 h-28 md:w-24 md:h-32 rounded-lg object-cover bg-slate-800 shadow-md border border-white/10 flex-shrink-0"
         />
 
-        <div className="flex-1 text-center md:text-left space-y-4">
+        <div className="flex-1 space-y-1.5">
           <div>
-            <span className="text-xs bg-accent/15 text-accent border border-accent/25 px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wider font-mono">
+            <span className="text-[9px] bg-accent/15 text-accent border border-accent/25 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider font-mono">
               {book.subject}
             </span>
-            <h1 className="font-display text-2xl md:text-4xl font-extrabold text-white mt-3 leading-tight">{book.title}</h1>
-            <p className="text-white/60 text-sm mt-1 font-light">Author: <span className="text-white font-medium">{book.author}</span></p>
           </div>
+          <h1 className="font-display text-lg md:text-xl font-extrabold text-white leading-tight mt-1">{book.title}</h1>
+          <p className="text-white/50 text-xs font-light">By {book.author}</p>
 
-          <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-mono">
-            <div className="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-              <span className="text-white/50 mr-1.5">Chapters:</span>
-              <span className="text-white font-bold">{chapters.length}</span>
+          <div className="flex flex-wrap gap-4 text-[10px] font-mono pt-1">
+            <div className="flex items-center text-white/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent/80 mr-1.5 shadow-[0_0_5px_rgba(216,155,60,0.5)]" /> 
+              {chapters.length} Chapters
             </div>
-            <div className="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-              <span className="text-white/50 mr-1.5">Free Access:</span>
-              <span className="text-white font-bold">{chapters.filter(c => c.is_free).length}</span>
+            <div className="flex items-center text-white/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 mr-1.5 shadow-[0_0_5px_rgba(16,185,129,0.5)]" /> 
+              {chapters.filter(c => c.is_free).length} Free
             </div>
-            <div className="bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
-              <span className="text-white/50 mr-1.5">Progress:</span>
-              <span className="text-white font-bold">
-                {progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length} / {chapters.length}
-              </span>
+            <div className="flex items-center text-white/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/80 mr-1.5 shadow-[0_0_5px_rgba(99,102,241,0.5)]" /> 
+              {progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length} Done
             </div>
           </div>
         </div>
