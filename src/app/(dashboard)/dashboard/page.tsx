@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/supabase';
 import { sfx } from '@/lib/sounds';
-import { Book, MCQ, UserProfile, LeaderboardEntry } from '@/types';
+import { Book, MCQ, UserProfile, LeaderboardEntry, Chapter } from '@/types';
 import {
   CheckCircle2, AlertCircle,
   ChevronRight, Award, BookOpen,
@@ -23,89 +23,47 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [dailyMCQ, setDailyMCQ] = useState<MCQ | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [mcqAnswered, setMcqAnswered] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
-  const [continueChapter, setContinueChapter] = useState<{ id: string, title: string } | null>(null);
+  const [continueChapter, setContinueChapter] = useState<Chapter | null>(null);
 
   useEffect(() => {
-    db.getUserProfile().then(setProfile);
+    const loadData = async () => {
+      try {
+        const [profileData, booksData, leaderboardData] = await Promise.all([
+          db.getUserProfile(),
+          db.getBooks(),
+          db.getLeaderboard(),
+        ]);
+        
+        setProfile(profileData);
+        setBooks(booksData);
+        setLeaderboard(leaderboardData.slice(0, 3));
 
-    db.getBooks().then(booksData => {
-      setBooks(booksData);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-
-    // Diagnostics
-    const diag = async () => {
-      const { supabase } = await import('@/lib/supabase');
-      if (supabase) {
-        const { error } = await supabase.from('books').select('count', { count: 'exact', head: true });
-        if (error) setDbError(`Supabase Query Error: ${JSON.stringify(error)}`);
-      } else {
-        setDbError('Supabase connection is not active.');
+        if (typeof window !== 'undefined') {
+          const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
+          const targetProgress = list.find((p: any) => !p.is_completed) || (list.length > 0 ? list[list.length - 1] : null);
+          
+          if (targetProgress) {
+            try {
+              const ch = await db.getChapter(targetProgress.chapter_id);
+              if (ch) setContinueChapter(ch);
+            } catch (err) {
+              // ignore chapter load error
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setDbError('Failed to connect to database. Check your Supabase configuration.');
+      } finally {
+        setLoading(false);
       }
     };
-    diag();
-
-    db.getLeaderboard().then(d => setLeaderboard(d.slice(0, 3)));
-    db.getMCQs('00000000-0000-0000-0000-000000000002').then(mcqs => {
-      if (mcqs?.length) setDailyMCQ(mcqs[0]);
-    });
-
-    // Check for continue learning in localStorage
-    if (typeof window !== 'undefined') {
-      const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
-      const targetProgress = list.find((p: any) => !p.is_completed) || (list.length > 0 ? list[list.length - 1] : null);
-      
-      if (targetProgress) {
-        db.getChapter(targetProgress.chapter_id).then(ch => {
-           if (ch) setContinueChapter({ id: ch.id, title: ch.title });
-        });
-      } else {
-        // Fallback: Get the very first chapter from the first book so the UI always shows
-        db.getBooks().then(booksData => {
-          if (booksData && booksData.length > 0) {
-            db.getChapters(booksData[0].id).then(chs => {
-              if (chs && chs.length > 0) {
-                setContinueChapter({ id: chs[0].id, title: chs[0].title });
-              }
-            });
-          }
-        });
-      }
-    }
+    loadData();
   }, []);
 
-  const handleMCQ = async (option: string) => {
-    if (mcqAnswered || !dailyMCQ) return;
-    setSelectedOption(option);
-    setMcqAnswered(true);
-    const isCorrect = option === dailyMCQ.correct_option;
-    if (isCorrect) {
-      sfx.playCorrect();
-      if (profile) {
-        const updated = await db.updateUserProfile({ total_points: profile.total_points + 25 });
-        setProfile(updated);
-      }
-    } else {
-      sfx.playIncorrect();
-    }
-  };
-
-  const loadNextChallenge = async () => {
-    setMcqAnswered(false);
-    setSelectedOption(null);
-    const chIds = ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'];
-    const randomCh = chIds[Math.floor(Math.random() * chIds.length)];
-    const mcqs = await db.getMCQs(randomCh);
-    if (mcqs && mcqs.length > 0) {
-      setDailyMCQ(mcqs[Math.floor(Math.random() * mcqs.length)]);
-    }
-  };
 
   const filteredBooks = books.filter(b =>
     selectedSubject === 'All' || b.subject === selectedSubject
@@ -135,22 +93,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Minimal Header / Continue Learning ────────────────────────────── */}
+      {/* ── Minimal Header / Daily Challenge Entry ────────────────────────────── */}
       <div className="flex items-center justify-between pt-2 pb-4">
         {continueChapter ? (
           <div className="flex-1 mr-4 premium-card p-4 bg-gradient-to-r from-accent/10 to-transparent border-accent/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
             <p className="text-[10px] font-bold text-accent uppercase tracking-widest font-mono mb-1">
-              Jump back in
+              Your Daily Challenge
             </p>
-            <h1 className="text-sm md:text-base font-bold text-foreground font-display line-clamp-1 pr-6">
-              {continueChapter.title}
+            <h1 className="text-sm md:text-base font-bold text-foreground font-display line-clamp-1 pr-6 mb-2">
+              Test your knowledge on {continueChapter.title}
             </h1>
             <Link 
-              href={`/lesson/${continueChapter.id}`} 
-              className="mt-3 inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-3 py-1.5 rounded-lg shadow-sm transition-all"
+              href="/challenge" 
+              className="mt-2 inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-3 py-1.5 rounded-lg shadow-sm transition-all"
             >
-              <PlayCircle className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20" /> Continue Lesson
+              <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20" /> Play Now 🎲
             </Link>
           </div>
         ) : (
@@ -254,85 +212,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 5. Daily MCQ Challenge ─────────────────────── */}
-      {dailyMCQ && (
-        <div className="premium-card p-5 border-accent/25 border-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl" />
-          {/* Badge */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-accent/15 rounded-xl flex items-center justify-center">
-                <Target className="w-4 h-4 text-accent" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-foreground">Daily MCQ Challenge</p>
-                <p className="text-[10px] text-foreground/45 font-mono">Answer correctly for +25 XP</p>
-              </div>
-            </div>
-            <span className="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/25 px-2 py-1 rounded-full font-bold font-mono">
-              +25 XP
-            </span>
-          </div>
 
-          {/* Question */}
-          <p className="text-sm text-foreground/90 leading-relaxed mb-4 font-medium">
-            {dailyMCQ.question}
-          </p>
-
-          {/* Options */}
-          <div className="space-y-2.5">
-            {(['A','B','C','D'] as const).map(key => {
-              const text = dailyMCQ[`option_${key.toLowerCase()}` as keyof MCQ] as string;
-              const isSelected = selectedOption === key;
-              const isCorrect = key === dailyMCQ.correct_option;
-
-              let cls = 'border-white/10 bg-white/4 hover:border-accent/40 hover:bg-accent/5';
-              if (mcqAnswered) {
-                if (isCorrect) cls = 'border-success-green bg-success-green/10';
-                else if (isSelected) cls = 'border-error-red bg-error-red/10';
-                else cls = 'border-white/5 opacity-40';
-              }
-
-              return (
-                <button
-                  key={key}
-                  disabled={mcqAnswered}
-                  onClick={() => handleMCQ(key)}
-                  className={`w-full text-left flex items-start gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${cls}`}
-                >
-                  <span className="shrink-0 w-6 h-6 rounded-full border border-white/20 flex items-center justify-center text-[11px] font-bold font-mono text-accent bg-white/5 mt-0.5">
-                    {key}
-                  </span>
-                  <span className="text-xs text-foreground/85 leading-relaxed">{text}</span>
-                </button>
-              );
-            })}
-          </div>
-
-
-
-          {/* Explanation */}
-          {mcqAnswered && (
-            <div className="mt-4 p-3.5 bg-white/5 rounded-2xl border border-white/8">
-              <div className="flex items-center gap-2 mb-2">
-                {selectedOption === dailyMCQ.correct_option ? (
-                  <><CheckCircle2 className="w-4 h-4 text-success-green shrink-0" /><span className="text-xs font-bold text-success-green">Correct! Well done!</span></>
-                ) : (
-                  <><AlertCircle className="w-4 h-4 text-error-red shrink-0" /><span className="text-xs font-bold text-error-red">Incorrect. Answer: {dailyMCQ.correct_option}</span></>
-                )}
-              </div>
-              <p className="text-xs text-foreground/60 leading-relaxed mb-4">{dailyMCQ.explanation}</p>
-              
-              <button 
-                onClick={loadNextChallenge}
-                className="w-full bg-accent/10 hover:bg-accent/20 text-accent font-bold py-3 rounded-xl transition-all border border-accent/20 flex items-center justify-center gap-2"
-              >
-                <span>Next Challenge 🎲</span>
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ── 6. Leaderboard Preview ─────────────────────── */}
       <div className="premium-card p-5">
