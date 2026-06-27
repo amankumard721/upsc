@@ -192,20 +192,10 @@ html:not(.dark-theme) .from-primary.to-slate-900 span {
 html, body {
   /* Disable pull-to-refresh reload */
   overscroll-behavior-y: contain;
-  /* Disable text selection globally except read nodes */
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
   /* Smooth scrolling */
   scroll-behavior: smooth;
   /* Disable double-tap zoom behavior on mobile */
   touch-action: manipulation;
-}
-
-/* Allow selection in textareas, inputs, and prose lessons */
-input, textarea, select, [contenteditable="true"], .prose, .prose * {
-  user-select: text !important;
-  -webkit-user-select: text !important;
 }
 
 /* Tactile Active Tap Feedbacks */
