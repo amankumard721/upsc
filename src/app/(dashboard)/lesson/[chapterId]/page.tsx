@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { Chapter, MCQ, UserProgress, UserProfile } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { sfx } from '@/lib/sounds';
 import { formatTime } from '@/lib/utils';
 import { 
   ArrowLeft, 
@@ -282,8 +283,11 @@ export default function LessonPlayerPage({ params }: LessonPageProps) {
 
     const isCorrect = opt === quizPopupMcq.correct_option;
     if (isCorrect) {
+      sfx.playCorrect();
       const prof = await db.getUserProfile();
       await db.updateUserProfile({ total_points: prof.total_points + 20 }); // reward +20 XP
+    } else {
+      sfx.playIncorrect();
     }
   };
 

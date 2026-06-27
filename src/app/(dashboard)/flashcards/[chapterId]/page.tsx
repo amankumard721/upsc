@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
+import { sfx } from '@/lib/sounds';
 import { Chapter, Flashcard, UserProfile } from '@/types';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { 
@@ -125,6 +126,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
         await db.updateUserProfile({ total_points: profile.total_points + (knowCount + (know ? 1 : 0)) * 10 });
       }
       setSessionFinished(true);
+      sfx.playSuccess();
       confetti({
         particleCount: 50,
         spread: 60,
@@ -221,7 +223,10 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
               dragElastic={0.7}
               onDragEnd={handleDragEnd}
               style={{ x: xValue, rotate: rotateValue, opacity: opacityValue }}
-              onClick={() => setIsFlipped(!isFlipped)}
+              onClick={() => {
+                setIsFlipped(!isFlipped);
+                sfx.playFlip();
+              }}
               className={`w-full h-full preserve-3d transition-transform duration-500 relative ${
                 isFlipped ? 'rotate-y-180' : ''
               }`}
@@ -273,7 +278,10 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
             </button>
             
             <button
-              onClick={() => setIsFlipped(!isFlipped)}
+              onClick={() => {
+                setIsFlipped(!isFlipped);
+                sfx.playFlip();
+              }}
               className="text-xs border border-white/10 hover:border-accent hover:text-accent bg-white/5 px-6 py-3.5 rounded-full transition-all flex items-center gap-1.5"
             >
               <RotateCw className="w-4 h-4" />

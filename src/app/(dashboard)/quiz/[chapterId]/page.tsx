@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
+import { sfx } from '@/lib/sounds';
 import { Chapter, MCQ, QuizAttempt, UserProfile } from '@/types';
 import { 
   ArrowLeft, 
@@ -99,6 +100,12 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
     const isCorrect = option === currentMcq.correct_option;
     const scoreVal = isCorrect ? 2.0 : -0.5;
 
+    if (isCorrect) {
+      sfx.playCorrect();
+    } else {
+      sfx.playIncorrect();
+    }
+
     // Save answer state
     setAnswersState(prev => ({
       ...prev,
@@ -148,6 +155,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
     const savedAttempt = await db.saveQuizAttempt(attemptData);
     setFinalAttempt(savedAttempt);
     setQuizFinished(true);
+    sfx.playSuccess();
 
     // Trigger premium confetti
     confetti({

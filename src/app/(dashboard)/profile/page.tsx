@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/supabase';
+import { sfx } from '@/lib/sounds';
 import { UserProfile, QuizAttempt } from '@/types';
 import { generateReferralCode } from '@/lib/utils';
 import { 
@@ -100,6 +101,7 @@ export default function ProfilePage() {
       setShowRazorpayModal(false);
 
       // Trigger Confetti
+      sfx.playSuccess();
       confetti({
         particleCount: 150,
         spread: 80,

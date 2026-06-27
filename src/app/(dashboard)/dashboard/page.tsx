@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
+import { sfx } from '@/lib/sounds';
 import { Book, Chapter, MCQ, UserProfile, LeaderboardEntry } from '@/types';
 import { 
   BookOpen, 
@@ -68,12 +69,17 @@ export default function DashboardPage() {
     setMcqAnswered(true);
 
     const isCorrect = option === dailyMCQ.correct_option;
-    if (isCorrect && profile) {
-      const updatedProfile = await db.updateUserProfile({
-        total_points: profile.total_points + 25, // +25 XP
-        streak: profile.streak === 0 ? 1 : profile.streak // ensure streak is active
-      });
-      setProfile(updatedProfile);
+    if (isCorrect) {
+      sfx.playCorrect();
+      if (profile) {
+        const updatedProfile = await db.updateUserProfile({
+          total_points: profile.total_points + 25, // +25 XP
+          streak: profile.streak === 0 ? 1 : profile.streak // ensure streak is active
+        });
+        setProfile(updatedProfile);
+      }
+    } else {
+      sfx.playIncorrect();
     }
   };
 
