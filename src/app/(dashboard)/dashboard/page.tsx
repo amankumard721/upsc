@@ -93,37 +93,37 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Minimal Header / Daily Challenge Entry ────────────────────────────── */}
-      <div className="flex items-center justify-between pt-2 pb-4">
-        {continueChapter ? (
-          <div className="flex-1 mr-4 premium-card p-4 bg-gradient-to-r from-accent/10 to-transparent border-accent/20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
-            <p className="text-[10px] font-bold text-accent uppercase tracking-widest font-mono mb-1">
-              Your Daily Challenge
-            </p>
-            <h1 className="text-sm md:text-base font-bold text-foreground font-display line-clamp-1 pr-6 mb-2">
-              Test your knowledge on {continueChapter.title}
-            </h1>
-            <Link 
-              href="/challenge" 
-              className="mt-2 inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-3 py-1.5 rounded-lg shadow-sm transition-all"
-            >
-              <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20" /> Play Now 🎲
-            </Link>
-          </div>
-        ) : (
-          <div>
-            <p className="text-[10px] font-medium text-foreground/50 uppercase tracking-widest font-mono">
-              {profile?.name?.split(' ')[0] || 'Aspirant'}'s Dashboard
-            </p>
-            <h1 className="text-xl font-bold text-foreground font-display mt-0.5">
-              Ready to learn? 🚀
-            </h1>
-          </div>
-        )}
-        
+      {/* ── Minimal Header ────────────────────────────── */}
+      <div className="flex items-center justify-between pt-2 pb-2">
+        <div>
+          <p className="text-[10px] font-medium text-foreground/50 uppercase tracking-widest font-mono">
+            {profile?.name?.split(' ')[0] || 'Aspirant'}'s Dashboard
+          </p>
+          <h1 className="text-xl font-bold text-foreground font-display mt-0.5">
+            Welcome Back! 🚀
+          </h1>
+        </div>
         <Link href="/profile" className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-base font-bold border border-accent/20 shadow-sm transition-transform hover:scale-105 shrink-0">
           {profile?.name ? profile.name[0].toUpperCase() : 'A'}
+        </Link>
+      </div>
+
+      {/* ── Daily Challenge Banner (Always Visible) ────────────────────────────── */}
+      <div className="premium-card p-4 bg-gradient-to-r from-accent/15 via-accent/5 to-transparent border-accent/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+        <p className="text-[10px] font-bold text-accent uppercase tracking-widest font-mono mb-1">
+          Daily MCQ Challenge 🔥
+        </p>
+        <h3 className="text-sm md:text-base font-bold text-foreground font-display mb-2">
+          {continueChapter 
+            ? `Test your knowledge on ${continueChapter.title}`
+            : "Review random questions from your syllabus!"}
+        </h3>
+        <Link 
+          href="/challenge" 
+          className="inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-4 py-2 rounded-xl shadow-md transition-all duration-200"
+        >
+          <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20 animate-pulse" /> Play Daily Challenge 🎲
         </Link>
       </div>
 
