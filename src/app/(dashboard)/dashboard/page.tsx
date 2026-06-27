@@ -93,20 +93,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Minimal Header ────────────────────────────── */}
-      <div className="flex items-center justify-between pt-2 pb-2">
-        <div>
-          <p className="text-[10px] font-medium text-foreground/50 uppercase tracking-widest font-mono">
-            {profile?.name?.split(' ')[0] || 'Aspirant'}'s Dashboard
-          </p>
-          <h1 className="text-xl font-bold text-foreground font-display mt-0.5">
-            Welcome Back! 🚀
-          </h1>
-        </div>
-        <Link href="/profile" className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-base font-bold border border-accent/20 shadow-sm transition-transform hover:scale-105 shrink-0">
-          {profile?.name ? profile.name[0].toUpperCase() : 'A'}
-        </Link>
-      </div>
 
       {/* ── Daily Challenge Banner (Always Visible) ────────────────────────────── */}
       <div className="premium-card p-4 bg-gradient-to-r from-accent/15 via-accent/5 to-transparent border-accent/20 relative overflow-hidden">
