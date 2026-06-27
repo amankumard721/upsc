@@ -216,52 +216,58 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
           </div>
 
           {/* 3D Flip Card Container */}
-          <div className="perspective-1000 w-full aspect-[4/3] max-h-[350px] relative cursor-pointer select-none">
+          <div className="w-full aspect-[4/3] max-h-[350px] relative cursor-pointer select-none" style={{ perspective: '1200px' }}>
             <motion.div
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.7}
               onDragEnd={handleDragEnd}
-              style={{ x: xValue, rotate: rotateValue, opacity: opacityValue }}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+              style={{ x: xValue, rotate: rotateValue, opacity: opacityValue, transformStyle: 'preserve-3d' }}
               onClick={() => {
                 setIsFlipped(!isFlipped);
                 sfx.playFlip();
               }}
-              className={`w-full h-full preserve-3d transition-transform duration-500 relative ${
-                isFlipped ? 'rotate-y-180' : ''
-              }`}
+              className="w-full h-full relative"
             >
               {/* CARD FRONT */}
-              <div className="absolute inset-0 backface-hidden premium-card p-8 bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col justify-between shadow-xl">
+              <div 
+                className="absolute inset-0 premium-card p-8 bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 rounded-3xl flex flex-col justify-between shadow-[0_20px_40px_rgba(0,0,0,0.5)] z-10"
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+              >
                 <div className="flex justify-between items-center text-[10px] text-white/40 uppercase font-mono tracking-wider">
-                  <span>Question Card</span>
-                  <div className="flex items-center gap-1">
-                    <RotateCw className="w-3 h-3 animate-spin-slow" /> Click to Flip
+                  <span>Question</span>
+                  <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-md border border-white/10">
+                    <RotateCw className="w-3 h-3 animate-spin-slow" /> Tap to Flip
                   </div>
                 </div>
                 
-                <p className="text-center text-base md:text-xl font-medium text-white leading-relaxed max-w-md mx-auto">
+                <p className="text-center text-xl md:text-2xl font-bold font-display text-white leading-relaxed max-w-md mx-auto drop-shadow-md">
                   {activeCard.front_text}
                 </p>
 
-                <div className="text-center text-xs text-white/30 italic">
+                <div className="text-center text-[10px] text-white/30 uppercase tracking-widest font-mono">
                   Swipe left (Don't Know) / Swipe right (Know)
                 </div>
               </div>
 
               {/* CARD BACK */}
-              <div className="absolute inset-0 backface-hidden rotate-y-180 premium-card p-8 bg-slate-950 border border-accent/20 rounded-2xl flex flex-col justify-between shadow-2xl">
-                <div className="flex justify-between items-center text-[10px] text-accent/80 uppercase font-mono tracking-wider">
-                  <span>Answer Card</span>
-                  <span className="flex items-center gap-1"><Sparkles className="w-3 h-3" /> Core Summary</span>
+              <div 
+                className="absolute inset-0 premium-card p-8 bg-gradient-to-br from-amber-900/40 to-slate-950 border-2 border-accent/30 rounded-3xl flex flex-col justify-between shadow-[0_20px_50px_rgba(216,155,60,0.15)] z-0"
+                style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              >
+                <div className="flex justify-between items-center text-[10px] text-accent uppercase font-mono tracking-wider font-bold">
+                  <span>Answer</span>
+                  <span className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md border border-accent/20"><Sparkles className="w-3 h-3" /> Core Summary</span>
                 </div>
 
-                <p className="text-center text-base md:text-xl font-medium text-accent leading-relaxed max-w-md mx-auto">
+                <p className="text-center text-xl md:text-2xl font-bold font-display text-accent leading-relaxed max-w-md mx-auto drop-shadow-[0_2px_10px_rgba(216,155,60,0.3)]">
                   {activeCard.back_text}
                 </p>
 
-                <div className="text-center text-xs text-white/30 italic">
-                  Assess your recall before logging response.
+                <div className="text-center text-[10px] text-accent/50 uppercase tracking-widest font-mono">
+                  Assess your recall before swiping.
                 </div>
               </div>
             </motion.div>

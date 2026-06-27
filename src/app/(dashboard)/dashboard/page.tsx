@@ -96,6 +96,17 @@ export default function DashboardPage() {
     }
   };
 
+  const loadNextChallenge = async () => {
+    setMcqAnswered(false);
+    setSelectedOption(null);
+    const chIds = ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'];
+    const randomCh = chIds[Math.floor(Math.random() * chIds.length)];
+    const mcqs = await db.getMCQs(randomCh);
+    if (mcqs && mcqs.length > 0) {
+      setDailyMCQ(mcqs[Math.floor(Math.random() * mcqs.length)]);
+    }
+  };
+
   const filteredBooks = books.filter(b =>
     selectedSubject === 'All' || b.subject === selectedSubject
   );
@@ -298,6 +309,8 @@ export default function DashboardPage() {
             })}
           </div>
 
+
+
           {/* Explanation */}
           {mcqAnswered && (
             <div className="mt-4 p-3.5 bg-foreground/5 rounded-2xl border border-foreground/8">
@@ -308,7 +321,14 @@ export default function DashboardPage() {
                   <><AlertCircle className="w-4 h-4 text-error-red shrink-0" /><span className="text-xs font-bold text-error-red">Incorrect. Answer: {dailyMCQ.correct_option}</span></>
                 )}
               </div>
-              <p className="text-xs text-foreground/60 leading-relaxed">{dailyMCQ.explanation}</p>
+              <p className="text-xs text-foreground/60 leading-relaxed mb-4">{dailyMCQ.explanation}</p>
+              
+              <button 
+                onClick={loadNextChallenge}
+                className="w-full bg-accent/10 hover:bg-accent/20 text-accent font-bold py-3 rounded-xl transition-all border border-accent/20 flex items-center justify-center gap-2"
+              >
+                <span>Next Challenge 🎲</span>
+              </button>
             </div>
           )}
         </div>
