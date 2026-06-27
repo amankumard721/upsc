@@ -101,3 +101,20 @@ body {
 .animate-bar-2 { animation: bounce-bar 0.5s ease-in-out infinite alternate 0.1s; }
 .animate-bar-3 { animation: bounce-bar 0.7s ease-in-out infinite alternate 0.2s; }
 .animate-bar-4 { animation: bounce-bar 0.6s ease-in-out infinite alternate 0.3s; }
+
+/* Override text-white classes in light mode (without .dark-theme) for global readability */
+html:not(.dark-theme) .text-white {
+  color: #1B2A4A !important;
+}
+html:not(.dark-theme) .text-white\/90 { color: rgba(27, 42, 74, 0.9) !important; }
+html:not(.dark-theme) .text-white\/80 { color: rgba(27, 42, 74, 0.8) !important; }
+html:not(.dark-theme) .text-white\/75 { color: rgba(27, 42, 74, 0.75) !important; }
+html:not(.dark-theme) .text-white\/70 { color: rgba(27, 42, 74, 0.7) !important; }
+html:not(.dark-theme) .text-white\/60 { color: rgba(27, 42, 74, 0.6) !important; }
+html:not(.dark-theme) .text-white\/50 { color: rgba(27, 42, 74, 0.5) !important; }
+html:not(.dark-theme) .text-white\/45 { color: rgba(27, 42, 74, 0.45) !important; }
+html:not(.dark-theme) .text-white\/40 { color: rgba(27, 42, 74, 0.4) !important; }
+html:not(.dark-theme) .text-white\/30 { color: rgba(27, 42, 74, 0.3) !important; }
+html:not(.dark-theme) .text-white\/20 { color: rgba(27, 42, 74, 0.2) !important; }
+html:not(.dark-theme) .text-white\/10 { color: rgba(27, 42, 74, 0.1) !important; }
+
