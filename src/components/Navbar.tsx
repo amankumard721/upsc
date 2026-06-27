@@ -2,21 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { db, supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types';
 import { 
-  BookOpen, 
   Trophy, 
   Flame, 
   User, 
   Award, 
-  LayoutDashboard, 
   Sparkles,
   Sun,
   Moon,
   Zap,
-  Home
+  Home,
+  ArrowLeft
 } from 'lucide-react';
 
 const navLinks = [
@@ -28,6 +27,7 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isDark, setIsDark] = useState(true);
   const [tappedHref, setTappedHref] = useState<string | null>(null);
@@ -60,45 +60,77 @@ export default function Navbar() {
     return '/dashboard';
   };
 
+  const getPageTitle = () => {
+    if (pathname.startsWith('/leaderboard')) return 'Leaderboard';
+    if (pathname.startsWith('/flashcards')) return 'Flashcards';
+    if (pathname.startsWith('/profile')) return 'Profile';
+    return '';
+  };
+
   const activeHref = getActiveLink();
+  const isHome = pathname === '/dashboard';
+  
+  // Immersive screens manage their own headers entirely (Lesson, Quiz)
+  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz');
+
+  if (isImmersive) {
+    return null; // Hide global top and bottom navbars entirely
+  }
 
   return (
     <>
       {/* ── Desktop Top Bar ─────────────────────────────────── */}
       <header className="glass-nav sticky top-0 z-40 w-full transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Brand */}
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <span className="font-display font-bold text-2xl tracking-tight text-accent flex items-center">
-              Prep<span className="text-foreground font-sans font-light">AI</span>
-            </span>
-          </Link>
+          
+          {/* Left Section */}
+          {isHome ? (
+            <Link href="/dashboard" className="flex items-center space-x-2">
+              <span className="font-display font-bold text-2xl tracking-tight text-accent flex items-center">
+                Prep<span className="text-foreground font-sans font-light">AI</span>
+              </span>
+            </Link>
+          ) : (
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={() => router.back()} 
+                className="p-2 -ml-2 text-foreground/70 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="font-display font-bold text-lg tracking-tight text-foreground">
+                {getPageTitle()}
+              </h1>
+            </div>
+          )}
 
-          {/* Desktop nav links */}
-          <nav className="hidden md:flex space-x-1">
-            {navLinks.map((link) => {
-              const isActive = activeHref === link.href;
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center space-x-2 text-sm font-medium px-4 py-2 rounded-full transition-all duration-200 ${
-                    isActive
-                      ? 'bg-accent/15 text-accent'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'fill-accent stroke-none' : ''}`} />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Center Section: Desktop Nav Links (Only on Home) */}
+          {isHome && (
+            <nav className="hidden md:flex space-x-1 absolute left-1/2 -translate-x-1/2">
+              {navLinks.map((link) => {
+                const isActive = activeHref === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center space-x-2 text-sm font-medium px-4 py-2 rounded-full transition-all duration-200 ${
+                      isActive
+                        ? 'bg-accent/15 text-accent'
+                        : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'fill-accent stroke-none' : ''}`} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right Section */}
           <div className="flex items-center space-x-3">
-            {profile && (
+            {isHome && profile && (
               <div className="flex items-center space-x-2 text-sm">
                 <div className="flex items-center space-x-1 bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-full border border-amber-500/20 font-mono font-medium text-xs">
                   <Flame className="w-3.5 h-3.5 fill-amber-500" />
@@ -125,16 +157,10 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Live DB dot */}
-            <div className="flex items-center space-x-1 text-[10px] font-mono px-2 py-1 rounded-full border border-white/10 bg-white/5">
-              <span className={`w-1.5 h-1.5 rounded-full ${isLiveDb ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-              <span className="text-foreground/60 hidden sm:inline">{isLiveDb ? 'Live' : 'Mock'}</span>
-            </div>
-
-            {/* Theme toggle */}
+            {/* Theme toggle (Available on all pages) */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-foreground/10 text-foreground/80 transition-colors"
+              className="p-2 rounded-full hover:bg-foreground/10 text-foreground/80 transition-colors ml-2"
               aria-label="Toggle Theme"
             >
               {isDark ? <Sun className="w-5 h-5 text-accent" /> : <Moon className="w-5 h-5 text-primary" />}
