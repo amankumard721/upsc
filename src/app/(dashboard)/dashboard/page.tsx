@@ -37,6 +37,7 @@ export default function DashboardPage() {
   const [lastAccessedChapter, setLastAccessedChapter] = useState<Chapter | null>(null);
   const [lastAccessedBook, setLastAccessedBook] = useState<Book | null>(null);
   const [overallProgress, setOverallProgress] = useState(0);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   useEffect(() => {
     // Fetch profile
@@ -54,6 +55,20 @@ export default function DashboardPage() {
         setOverallProgress(Math.min(100, Math.round((completedCount / totalChs) * 100)));
       }
     });
+
+    // Run connection diagnostics
+    const runDiagnostics = async () => {
+      const { supabase } = await import('@/lib/supabase');
+      if (supabase) {
+        const { error } = await supabase.from('books').select('count', { count: 'exact', head: true });
+        if (error) {
+          setDbError(`Supabase Query Error: ${error.message} (Code: ${error.code})`);
+        }
+      } else {
+        setDbError("Supabase connection is not active. NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing on Vercel.");
+      }
+    };
+    runDiagnostics();
 
     // Fetch leaderboard
     db.getLeaderboard().then(data => setLeaderboard(data.slice(0, 3)));
@@ -113,6 +128,15 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 font-sans">
+      {/* DB Connection Diagnostics alert box */}
+      {dbError && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-error-red text-xs font-mono space-y-1">
+          <p className="font-bold">⚠️ Connection Diagnostic Alert:</p>
+          <p>{dbError}</p>
+          <p className="text-[10px] text-foreground/50">Verify your Vercel Environment Variables and ensure the database tables are created via SQL Editor.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Columns (Syllabus, Daily Challenge) */}
         <div className="lg:col-span-2 space-y-8">
