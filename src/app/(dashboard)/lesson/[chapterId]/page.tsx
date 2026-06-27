@@ -85,6 +85,9 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const [ended, setEnded] = useState(false);
   const [isTheater, setIsTheater] = useState(false);
 
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+
   // Refs for timer and speech
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -152,10 +155,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         if (elapsedMsRef.current >= totalLineMs) {
           elapsedMsRef.current = 0;
           setWordIdx(0);
-          if (cursor + 1 >= flatLines.length) {
-            setIsPlaying(false);
-            setEnded(true);
-          } else {
+          if (cursor + 1 < flatLines.length) {
             setCursor(c => c + 1);
           }
         }
@@ -280,11 +280,16 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     );
   }
 
-  const currentFlatLine = flatLines[cursor];
+  const currentFlatLine = flatLines[cursor] || flatLines[0];
   const currentScene = lesson.scenes[currentFlatLine.sceneIdx];
-  const totalDurationStr = formatTime(flatLines.length * BASE_LINE_MS / 1000);
-  const elapsedStr = formatTime((cursor * BASE_LINE_MS + elapsedMsRef.current) / 1000);
-  const progressPercent = ((cursor + elapsedMsRef.current/BASE_LINE_MS) / flatLines.length) * 100;
+  
+  const isCustomAudio = !!chapter?.audio_url;
+  const currentTotalSeconds = isCustomAudio ? audioDuration : (flatLines.length * BASE_LINE_MS / 1000);
+  const currentElapsedSeconds = isCustomAudio ? audioCurrentTime : ((cursor * BASE_LINE_MS + elapsedMsRef.current) / 1000);
+  
+  const totalDurationStr = formatTime(currentTotalSeconds);
+  const elapsedStr = formatTime(currentElapsedSeconds);
+  const progressPercent = currentTotalSeconds > 0 ? (currentElapsedSeconds / currentTotalSeconds) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-[#060d1a] text-[#FAF6EC] font-sans flex flex-col pb-safe">
@@ -298,6 +303,8 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             setEnded(true);
             setIsPlaying(false);
           }}
+          onTimeUpdate={() => setAudioCurrentTime(audioRef.current?.currentTime || 0)}
+          onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
         />
       )}
 
@@ -326,7 +333,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
       </header>
 
       {/* --- Main Content Area --- */}
-      <main className="flex-1 flex flex-col items-center w-full max-w-2xl mx-auto p-4 transition-all duration-500 relative">
+      <main className="flex-1 flex flex-col items-center w-full max-w-2xl mx-auto p-4 transition-all duration-500 relative pb-56">
         <AnimatePresence mode="wait">
           
           {mode === 'video' && (
@@ -455,70 +462,72 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           )}
         </AnimatePresence>
 
-        {/* --- Shared Controls Layer --- */}
-        <div className="w-full mt-6 space-y-5 relative z-30 bg-[#060d1a]">
-          {/* Chapter Chips (Podcast only, or both?) Let's show on both for easy nav */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-edges">
-            {lesson.scenes.map((scene, idx) => (
-              <button
-                key={idx}
-                onClick={() => jumpToScene(idx)}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
-                  currentFlatLine.sceneIdx === idx 
-                    ? 'bg-white/10 border-white/20 text-white font-bold' 
-                    : 'bg-transparent border-white/5 text-white/40 hover:text-white/70'
-                }`}
-              >
-                <span>{scene.icon}</span>
-                <span>{scene.title}</span>
-              </button>
-            ))}
-          </div>
+        {/* --- Shared Controls Layer (Spotify Style) --- */}
+        <div className="fixed bottom-0 left-0 right-0 w-full z-50 bg-[#060d1a]/95 backdrop-blur-xl border-t border-white/5 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+          <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
+            {/* Chapter Chips */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mask-edges">
+              {lesson.scenes.map((scene, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => jumpToScene(idx)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
+                    currentFlatLine.sceneIdx === idx 
+                      ? 'bg-white/10 border-white/20 text-white font-bold' 
+                      : 'bg-transparent border-white/5 text-white/40 hover:text-white/70'
+                  }`}
+                >
+                  <span>{scene.icon}</span>
+                  <span>{scene.title}</span>
+                </button>
+              ))}
+            </div>
 
-          {/* Scrubber */}
-          <div className="relative pt-2">
-            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden cursor-pointer">
-              <div 
-                className="h-full bg-accent relative transition-all duration-200"
-                style={{ width: `${Math.max(progressPercent, 1)}%` }}
-              >
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md" />
+            {/* Scrubber */}
+            <div className="relative pt-1">
+              <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden cursor-pointer">
+                <div 
+                  className="h-full bg-accent relative transition-all duration-200"
+                  style={{ width: `${Math.max(progressPercent, 1)}%` }}
+                >
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-md" />
+                </div>
+              </div>
+              <div className="flex justify-between mt-2 text-[10px] font-mono text-white/40">
+                <span>{elapsedStr}</span>
+                <span>{totalDurationStr}</span>
               </div>
             </div>
-            <div className="flex justify-between mt-2 text-[10px] font-mono text-white/40">
-              <span>{elapsedStr}</span>
-              <span>{totalDurationStr}</span>
-            </div>
-          </div>
 
-          {/* Media Buttons */}
-          <div className="flex items-center justify-between px-4 pb-4">
-            <button 
-              onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
-              className="w-12 text-xs font-mono font-bold text-white/60 hover:text-accent transition"
-            >
-              {playbackSpeed}x
-            </button>
-            
-            <div className="flex items-center gap-6">
-              <button onClick={() => seekBy(-2)} className="p-2 text-white/70 hover:text-white transition">
-                <SkipBack className="w-6 h-6 fill-current" />
-              </button>
-              
+            {/* Media Buttons */}
+            <div className="flex items-center justify-between px-2 pb-2">
               <button 
-                onClick={togglePlay}
-                className="w-16 h-16 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-transform"
+                onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
+                className="w-12 text-xs font-mono font-bold text-white/60 hover:text-accent transition"
               >
-                {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
+                {playbackSpeed}x
               </button>
               
-              <button onClick={() => seekBy(2)} className="p-2 text-white/70 hover:text-white transition">
-                <SkipForward className="w-6 h-6 fill-current" />
-              </button>
-            </div>
+              <div className="flex items-center gap-6">
+                <button onClick={() => seekBy(-2)} className="p-2 text-white/70 hover:text-white transition">
+                  <SkipBack className="w-6 h-6 fill-current" />
+                </button>
+                
+                <button 
+                  onClick={togglePlay}
+                  className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-transform"
+                >
+                  {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-1" />}
+                </button>
+                
+                <button onClick={() => seekBy(2)} className="p-2 text-white/70 hover:text-white transition">
+                  <SkipForward className="w-6 h-6 fill-current" />
+                </button>
+              </div>
 
-            <div className="w-12 flex justify-end">
-               <div className="w-1.5 h-1.5 rounded-full bg-white/20" /> {/* Spacer dot */}
+              <div className="w-12 flex justify-end">
+                <div className="w-1.5 h-1.5 rounded-full bg-white/20" /> {/* Spacer dot */}
+              </div>
             </div>
           </div>
         </div>
