@@ -1,719 +1,465 @@
 'use client';
 
-import React, { useEffect, useState, use, useRef } from 'react';
+import React, { useEffect, useState, useRef, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
-import { Chapter, MCQ, UserProgress, UserProfile } from '@/types';
+import { Chapter } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sfx } from '@/lib/sounds';
-import { formatTime } from '@/lib/utils';
-import { 
-  ArrowLeft, 
-  Play, 
-  Pause, 
-  Volume2, 
-  SkipForward, 
-  CheckCircle, 
-  ChevronRight, 
-  ChevronLeft,
-  BookOpen,
-  Sparkles,
-  Bookmark,
-  FileText,
-  MessageSquare,
-  HelpCircle,
-  XCircle,
-  BookMarked
+import {
+  Play, Pause, SkipBack, SkipForward, ArrowLeft,
+  Video, Radio, Expand, Shrink, FileText, CheckCircle
 } from 'lucide-react';
 
-interface LessonPageProps {
-  params: Promise<{ chapterId: string }>;
+// --- Types ---
+interface Scene {
+  title: string;
+  icon: string;
+  theme: string;
+  lines: string[];
 }
 
-export default function LessonPlayerPage({ params }: LessonPageProps) {
+interface Lesson {
+  title: string;
+  scenes: Scene[];
+}
+
+interface FlatLine {
+  sceneIdx: number;
+  lineText: string;
+  words: string[];
+}
+
+// --- Mock Data Generator ---
+// We generate a structured lesson from the raw chapter data for demonstration.
+function generateMockLesson(chapter: Chapter): Lesson {
+  const defaultScenes: Scene[] = [
+    { title: "Introduction", icon: "📖", theme: "bg-indigo-900", lines: ["Welcome to this lesson.", "Today we are going to explore some fascinating concepts.", "Let's dive right in."] },
+    { title: "Core Concepts", icon: "🧠", theme: "bg-emerald-900", lines: ["The primary idea revolves around foundational principles.", "Understanding these is crucial for mastery.", "Take your time to absorb the details."] },
+    { title: "Summary", icon: "✨", theme: "bg-amber-900", lines: ["We have covered a lot of ground today.", "Review the notes if you need a refresher.", "Great job completing the lesson!"] }
+  ];
+
+  // If chapter has actual content, try to break it into mock scenes
+  if (chapter.content_text && chapter.content_text.length > 50) {
+    const rawSentences = chapter.content_text.match(/[^.!?]+[.!?]+(\s|$)/g)?.map(s => s.trim()).filter(Boolean) || [chapter.content_text];
+    const chunk = Math.ceil(rawSentences.length / 3);
+    return {
+      title: chapter.title,
+      scenes: [
+        { title: "Introduction", icon: "📖", theme: "bg-indigo-950", lines: rawSentences.slice(0, chunk).length ? rawSentences.slice(0, chunk) : ["Welcome to this chapter."] },
+        { title: "Deep Dive", icon: "⚖️", theme: "bg-slate-900", lines: rawSentences.slice(chunk, chunk * 2).length ? rawSentences.slice(chunk, chunk * 2) : ["Let's explore further."] },
+        { title: "Conclusion", icon: "✨", theme: "bg-stone-900", lines: rawSentences.slice(chunk * 2).length ? rawSentences.slice(chunk * 2) : ["That concludes our topic."] }
+      ].filter(s => s.lines.length > 0)
+    };
+  }
+
+  return { title: chapter.title, scenes: defaultScenes };
+}
+
+// --- Playback Configuration ---
+const BASE_LINE_MS = 3000; // 3 seconds per line at 1x speed
+
+export default function LessonPlayerPage({ params }: { params: Promise<{ chapterId: string }> }) {
   const router = useRouter();
   const { chapterId } = use(params);
 
-  // States
+  // Data
   const [chapter, setChapter] = useState<Chapter | null>(null);
-  const [nextChapterId, setNextChapterId] = useState<string | null>(null);
-  const [prevChapterId, setPrevChapterId] = useState<string | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [flatLines, setFlatLines] = useState<FlatLine[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Audio state (SpeechSynthesis)
+
+  // Playback State
+  const [mode, setMode] = useState<'video' | 'podcast'>('video');
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(-1);
-  const [sentences, setSentences] = useState<string[]>([]);
-  const [audioProgress, setAudioProgress] = useState(0); // 0 to 100
+  const [cursor, setCursor] = useState(0);       // Index into flatLines
+  const [wordIdx, setWordIdx] = useState(0);     // Index into current line's words
+  const [ended, setEnded] = useState(false);
+  const [isTheater, setIsTheater] = useState(false);
 
-  // Interactive UI panels
-  const [activeTab, setActiveTab] = useState<'chat' | 'notes' | 'bookmarks'>('chat');
-  const [notes, setNotes] = useState('');
-  const [bookmarks, setBookmarks] = useState<string[]>([]);
-  const [chatQuestion, setChatQuestion] = useState('');
-  const [chatLog, setChatLog] = useState<{ sender: 'user' | 'ai'; text: string }[]>([]);
-  const [chatLoading, setChatLoading] = useState(false);
-  
-  // MCQ popup trigger
-  const [quizPopupMcq, setQuizPopupMcq] = useState<MCQ | null>(null);
-  const [showPopupQuiz, setShowPopupQuiz] = useState(false);
-  const [popupSelectedOpt, setPopupSelectedOpt] = useState<string | null>(null);
-  const [popupAnswered, setPopupAnswered] = useState(false);
+  // Refs for timer and speech
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const lastTimeRef = useRef<number>(0);
+  const elapsedMsRef = useRef<number>(0);
 
-  // Speech synthesis reference
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const sentenceIndexRef = useRef(-1);
-
+  // 1. Load Data
   useEffect(() => {
-    async function loadLesson() {
-      try {
-        const ch = await db.getChapter(chapterId);
-        if (!ch) {
-          setLoading(false);
-          return;
-        }
+    db.getChapter(chapterId).then(ch => {
+      if (ch) {
         setChapter(ch);
-        localStorage.setItem('prepai_last_accessed_chapter_id', ch.id);
-
-        // Split text content into sentences for TTS and highlighting
-        const textToSplit = ch.content_text || '';
-        const sentenceRegex = /[^.!?]+[.!?]+(\s|$)/g;
-        const matched = textToSplit.match(sentenceRegex) || [textToSplit];
-        setSentences(matched.map(s => s.trim()).filter(Boolean));
-
-        // Determine next/prev chapters
-        const siblings = await db.getChapters(ch.book_id);
-        const index = siblings.findIndex(s => s.id === ch.id);
-        if (index > 0) setPrevChapterId(siblings[index - 1].id);
-        if (index < siblings.length - 1) setNextChapterId(siblings[index + 1].id);
-
-        // Load personal notes
-        const savedNotes = localStorage.getItem(`notes_${ch.id}`) || '';
-        setNotes(savedNotes);
-
-        // Load bookmarks
-        const savedBookmarks = JSON.parse(localStorage.getItem(`bookmarks_${ch.id}`) || '[]');
-        setBookmarks(savedBookmarks);
-
-        // Initial welcome chat message
-        setChatLog([
-          { 
-            sender: 'ai', 
-            text: `Jai Hind! I have read through "${ch.title}". You can ask me any doubt regarding this chapter's constitutional contexts, acts, or history.` 
-          }
-        ]);
-
-        // Load a check MCQ for popup
-        const mcqs = await db.getMCQs(ch.id);
-        if (mcqs && mcqs.length > 0) {
-          setQuizPopupMcq(mcqs[Math.floor(Math.random() * mcqs.length)]);
-        }
-
-        // Set up local progress (last accessed position)
-        await db.updateUserProgress(ch.id, { last_position_seconds: 10 });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+        const l = generateMockLesson(ch);
+        setLesson(l);
+        
+        // Flatten scenes
+        const flat: FlatLine[] = [];
+        l.scenes.forEach((scene, sIdx) => {
+          scene.lines.forEach(line => {
+            flat.push({
+              sceneIdx: sIdx,
+              lineText: line,
+              words: line.split(' ')
+            });
+          });
+        });
+        setFlatLines(flat);
       }
-    }
+      setLoading(false);
+    });
 
-    loadLesson();
-
-    // Cleanup speech synthesis on navigate/unmount
     return () => {
-      if (typeof window !== 'undefined') {
-        window.speechSynthesis.cancel();
-      }
+      if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [chapterId]);
 
-  // Spaced Timer for interactive MCQ popup (Triggered after 15 seconds for demo/user testing, instead of full 5 minutes)
+  // 2. Playback Engine
   useEffect(() => {
-    if (loading || !chapter) return;
-    
-    const timer = setTimeout(() => {
-      if (quizPopupMcq) {
-        // Pause audio narration if playing
-        pauseAudio();
-        setShowPopupQuiz(true);
-      }
-    }, 25000); // 25 seconds for interactive preview popup
-
-    return () => clearTimeout(timer);
-  }, [loading, chapter, quizPopupMcq]);
-
-  // Audio Functions (TTS)
-  const speakSentence = (index: number) => {
-    if (typeof window === 'undefined') return;
-    window.speechSynthesis.cancel();
-
-    if (index < 0 || index >= sentences.length) {
-      setIsPlaying(false);
-      setCurrentSentenceIndex(-1);
-      setAudioProgress(100);
+    if (!isPlaying || ended || flatLines.length === 0) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (typeof window !== 'undefined') window.speechSynthesis.cancel();
       return;
     }
 
-    sentenceIndexRef.current = index;
-    setCurrentSentenceIndex(index);
-    setAudioProgress(Math.round((index / sentences.length) * 100));
+    const currentLine = flatLines[cursor];
+    const totalLineMs = BASE_LINE_MS / playbackSpeed;
+    const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100); // min 100ms per word
 
-    const textToSpeak = sentences[index];
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    utteranceRef.current = utterance;
-    utterance.rate = playbackSpeed;
-
-    // Detect voices and prefer premium English/Hindi accent if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(v => v.lang.startsWith('en-IN') || v.lang.startsWith('en-GB') || v.name.includes('Google'));
-    if (preferredVoice) utterance.voice = preferredVoice;
-
-    utterance.onend = () => {
-      const nextIndex = sentenceIndexRef.current + 1;
-      if (nextIndex < sentences.length) {
-        speakSentence(nextIndex);
-      } else {
-        setIsPlaying(false);
-        setCurrentSentenceIndex(-1);
-        setAudioProgress(100);
-        // Complete the lesson progress
-        handleMarkComplete();
-      }
-    };
-
-    utterance.onerror = (e) => {
-      console.error('Speech synthesis error', e);
-      setIsPlaying(false);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const playAudio = () => {
-    if (sentences.length === 0) return;
-    setIsPlaying(true);
-    const startIdx = currentSentenceIndex === -1 ? 0 : currentSentenceIndex;
-    speakSentence(startIdx);
-  };
-
-  const pauseAudio = () => {
-    if (typeof window === 'undefined') return;
-    setIsPlaying(false);
-    window.speechSynthesis.cancel();
-  };
-
-  const skipForward = () => {
-    if (sentences.length === 0) return;
-    const nextIdx = Math.min(sentences.length - 1, currentSentenceIndex + 1);
-    speakSentence(nextIdx);
-  };
-
-  const handleSpeedChange = (speed: number) => {
-    setPlaybackSpeed(speed);
-    if (isPlaying && currentSentenceIndex !== -1) {
-      speakSentence(currentSentenceIndex); // restart active sentence with new speed
+    // Start TTS for the line if just started
+    if (elapsedMsRef.current === 0 && typeof window !== 'undefined') {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
+      utterance.rate = playbackSpeed * 1.1; // Slightly faster to match visuals
+      // Try to find a good voice
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('Google'));
+      if (preferred) utterance.voice = preferred;
+      synthRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
     }
-  };
 
-  // Notes function
-  const handleNotesChange = (text: string) => {
-    setNotes(text);
-    if (chapter) {
-      localStorage.setItem(`notes_${chapter.id}`, text);
-    }
-  };
-
-  // Bookmarks function
-  const toggleBookmark = () => {
-    if (!chapter) return;
-    let updated;
-    const activeText = currentSentenceIndex !== -1 ? sentences[currentSentenceIndex] : 'Chapter Bookmark';
-    if (bookmarks.includes(activeText)) {
-      updated = bookmarks.filter(b => b !== activeText);
-    } else {
-      updated = [...bookmarks, activeText];
-    }
-    setBookmarks(updated);
-    localStorage.setItem(`bookmarks_${chapter.id}`, JSON.stringify(updated));
-  };
-
-  // Chat/Doubt Solver API call (Mocking OpenAI GPT-4 reply locally)
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatQuestion.trim() || !chapter) return;
-
-    const userText = chatQuestion;
-    setChatLog(prev => [...prev, { sender: 'user', text: userText }]);
-    setChatQuestion('');
-    setChatLoading(true);
-
-    try {
-      // Simulate API lag
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      let aiReply = "Thank you for asking. Based on this chapter, the core concept centers around the evolution of Indian administrative systems under British rule. Let me look up standard materials (e.g. Laxmikanth, NCERT) for you.";
-
-      // Intelligent replies based on text keyword matching
-      const query = userText.toLowerCase();
-      if (query.includes('1773') || query.includes('regulating')) {
-        aiReply = "The Regulating Act of 1773 was crucial because it was the first step by the British Government to regulate the East India Company. It created the office of Governor-General of Bengal (Warren Hastings) and subordinate Governors of Bombay/Madras, paving the way for centralisation.";
-      } else if (query.includes('1833') || query.includes('charter')) {
-        aiReply = "The Charter Act of 1833 was the final step of centralisation in British India. It designated the Governor-General of Bengal as the Governor-General of India (Lord William Bentinck). It also made the East India Company a purely administrative body, ending its commercial monopoly.";
-      } else if (query.includes('double') || query.includes('pitt')) {
-        aiReply = "Pitt's India Act of 1784 established the system of 'Double Government'. It created a new Board of Control to handle political/administrative affairs while the Court of Directors continued managing commercial matters. This distinction remained until 1858.";
-      } else if (query.includes('assembly') || query.includes('constituent')) {
-        aiReply = "The Constituent Assembly was formed in Nov 1946 under the Cabinet Mission Plan. It comprised 389 members, chaired by Dr. Sachchidanand Sinha temporarily, then Dr. Rajendra Prasad. Dr. Ambedkar headed the 7-member Drafting Committee.";
-      }
-
-      setChatLog(prev => [...prev, { sender: 'ai', text: aiReply }]);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  // Quiz popup answers
-  const handlePopupQuizSubmit = async (opt: string) => {
-    if (popupAnswered || !quizPopupMcq) return;
-    setPopupSelectedOpt(opt);
-    setPopupAnswered(true);
-
-    const isCorrect = opt === quizPopupMcq.correct_option;
-    if (isCorrect) {
-      sfx.playCorrect();
-      const prof = await db.getUserProfile();
-      if (prof) {
-        await db.updateUserProfile({ total_points: prof.total_points + 20 }); // reward +20 XP
-      }
-    } else {
-      sfx.playIncorrect();
-    }
-  };
-
-  // Mark chapter as complete
-  const handleMarkComplete = async () => {
-    if (!chapter) return;
-    await db.updateUserProgress(chapter.id, { is_completed: true });
+    lastTimeRef.current = performance.now();
     
-    // Add banner notification or redirect
-    alert('Congratulations! You completed the lesson and earned +50 XP!');
-    if (nextChapterId) {
-      router.push(`/lesson/${nextChapterId}`);
+    timerRef.current = setInterval(() => {
+      const now = performance.now();
+      const delta = now - lastTimeRef.current;
+      lastTimeRef.current = now;
+      elapsedMsRef.current += delta;
+
+      if (elapsedMsRef.current >= totalLineMs) {
+        // Line finished
+        elapsedMsRef.current = 0;
+        setWordIdx(0);
+        if (cursor + 1 >= flatLines.length) {
+          setIsPlaying(false);
+          setEnded(true);
+        } else {
+          setCursor(c => c + 1);
+        }
+      } else {
+        // Update word index for karaoke
+        const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
+        setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
+      }
+    }, 50); // High frequency tick for smooth word revealing
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isPlaying, cursor, playbackSpeed, ended, flatLines]);
+
+  // 3. Controls
+  const togglePlay = () => {
+    if (ended) {
+      setCursor(0);
+      setWordIdx(0);
+      elapsedMsRef.current = 0;
+      setEnded(false);
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const seekBy = (linesDelta: number) => {
+    let newCursor = cursor + linesDelta;
+    if (newCursor < 0) newCursor = 0;
+    if (newCursor >= flatLines.length) {
+      newCursor = flatLines.length - 1;
+      setEnded(true);
+      setIsPlaying(false);
     } else {
-      router.push(`/books/${chapter.book_id}`);
+      setEnded(false);
+    }
+    setCursor(newCursor);
+    setWordIdx(0);
+    elapsedMsRef.current = 0;
+    if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+  };
+
+  const jumpToScene = (sceneIdx: number) => {
+    const idx = flatLines.findIndex(f => f.sceneIdx === sceneIdx);
+    if (idx !== -1) {
+      setCursor(idx);
+      setWordIdx(0);
+      elapsedMsRef.current = 0;
+      setEnded(false);
+      setIsPlaying(true);
     }
   };
 
-  // Helper to extract YouTube video ID
-  const getYouTubeId = (url?: string) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  if (loading) {
+  if (loading || !lesson || flatLines.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+      <div className="min-h-screen bg-[#0B1325] flex items-center justify-center p-5">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-white/50 font-light">Synthesizing AI audiobook narration...</p>
       </div>
     );
   }
 
-  if (!chapter) {
-    return (
-      <div className="text-center py-16">
-        <p className="text-white/60">Chapter not found.</p>
-        <Link href="/dashboard" className="text-accent underline mt-2 inline-block">Return to dashboard</Link>
-      </div>
-    );
-  }
-
-  const videoId = getYouTubeId(chapter.video_url);
+  const currentFlatLine = flatLines[cursor];
+  const currentScene = lesson.scenes[currentFlatLine.sceneIdx];
+  const totalDurationStr = formatTime(flatLines.length * BASE_LINE_MS / 1000);
+  const elapsedStr = formatTime((cursor * BASE_LINE_MS + elapsedMsRef.current) / 1000);
+  const progressPercent = ((cursor + elapsedMsRef.current/BASE_LINE_MS) / flatLines.length) * 100;
 
   return (
-    <div className="space-y-8 font-sans pb-16">
-      {/* Back link */}
-      <div className="flex justify-between items-center">
-        <Link href={`/books/${chapter.book_id}`} className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Chapters</span>
-        </Link>
-        <button 
-          onClick={toggleBookmark}
-          className="text-xs bg-white/5 border border-white/10 hover:border-accent hover:text-accent px-3 py-1.5 rounded-xl transition-all flex items-center space-x-1.5"
-        >
-          <Bookmark className="w-3.5 h-3.5 fill-none" />
-          <span>Bookmark Section</span>
+    <div className="min-h-screen bg-[#060d1a] text-[#FAF6EC] font-sans flex flex-col pb-safe">
+      
+      {/* --- Top Bar & Mode Toggle --- */}
+      <header className="flex items-center justify-between p-4 glass-nav sticky top-0 z-50">
+        <button onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
+          <ArrowLeft className="w-5 h-5 text-white" />
         </button>
-      </div>
-
-      {/* Video Embed */}
-      {videoId && (
-        <div className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative bg-black">
-          <iframe 
-            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} 
-            title={chapter.title}
-            frameBorder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowFullScreen
-            className="w-full h-full"
-          />
-        </div>
-      )}
-
-      {/* Premium Audiobook Narration Controller */}
-      <div className="premium-card p-6 bg-slate-900/50 flex flex-col md:flex-row md:items-center justify-between gap-6 relative">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={isPlaying ? pauseAudio : playAudio}
-            className="w-12 h-12 rounded-full bg-accent hover:bg-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-accent/20 transition-all hover:scale-105"
-            aria-label={isPlaying ? 'Pause AI Audiobook' : 'Play AI Audiobook'}
-          >
-            {isPlaying ? <Pause className="w-5 h-5 fill-slate-950" /> : <Play className="w-5 h-5 fill-slate-950 ml-0.5" />}
-          </button>
-          
-          <div>
-            <h3 className="font-display text-sm font-bold text-white flex items-center gap-1.5">
-              <span>AI Audio Narrator</span>
-              {isPlaying && (
-                <div className="flex items-end space-x-0.5 h-3 w-4">
-                  <span className="w-0.5 bg-accent rounded-full animate-bar-1" />
-                  <span className="w-0.5 bg-accent rounded-full animate-bar-2" />
-                  <span className="w-0.5 bg-accent rounded-full animate-bar-3" />
-                  <span className="w-0.5 bg-accent rounded-full animate-bar-4" />
-                </div>
-              )}
-            </h3>
-            <p className="text-[10px] text-white/50 font-mono mt-0.5">Narrating sentence by sentence</p>
-          </div>
-        </div>
-
-        {/* Audiobook Progress Bar */}
-        <div className="flex-1 max-w-md">
-          <div className="flex justify-between text-[10px] text-white/40 mb-1 font-mono">
-            <span>Narration progress</span>
-            <span>{audioProgress}%</span>
-          </div>
-          <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-            <div className="bg-accent h-full transition-all duration-300" style={{ width: `${audioProgress}%` }} />
-          </div>
-        </div>
-
-        {/* Speed / Volume Controller */}
-        <div className="flex items-center space-x-4">
-          {/* Speed */}
-          <div className="flex items-center space-x-1.5">
-            <span className="text-[10px] text-white/40 font-mono uppercase">Speed</span>
-            <select
-              value={playbackSpeed}
-              onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-              className="bg-slate-950 border border-white/10 text-white text-xs rounded-lg px-2.5 py-1 outline-none focus:border-accent"
-            >
-              <option value="0.75">0.75x</option>
-              <option value="1">1.0x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2.0x</option>
-            </select>
-          </div>
-
-          <button
-            onClick={skipForward}
-            className="p-2 border border-white/10 rounded-xl hover:border-accent text-white transition-colors"
-            title="Next Sentence"
-          >
-            <SkipForward className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main split sections: Chapter Text vs Study panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left: Interactive Highlighted Text Reader */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="premium-card p-6 md:p-8 bg-slate-900/30">
-            <h2 className="font-display text-xl font-bold text-white mb-6 border-b border-white/5 pb-4">
-              Chapter Text Content
-            </h2>
-            
-            <div className="prose prose-invert max-w-none text-white/80 leading-relaxed font-light text-sm space-y-4">
-              {sentences.map((sent, idx) => {
-                const isActive = idx === currentSentenceIndex;
-                return (
-                  <span 
-                    key={idx}
-                    onClick={() => speakSentence(idx)}
-                    className={`cursor-pointer transition-all duration-200 inline ${
-                      isActive 
-                        ? 'bg-accent/25 text-white font-medium border-b-2 border-accent px-0.5 rounded shadow-sm scale-[1.01]' 
-                        : 'hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    {sent}{' '}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
+        <div className="flex bg-white/5 border border-white/10 rounded-full p-1 shadow-inner">
+          <button
+            onClick={() => setMode('video')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'video' ? 'bg-accent text-slate-950 shadow-md' : 'text-white/50 hover:text-white/80'}`}
+          >
+            <Video className="w-3.5 h-3.5" /> Video
+          </button>
+          <button
+            onClick={() => setMode('podcast')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'podcast' ? 'bg-accent text-slate-950 shadow-md' : 'text-white/50 hover:text-white/80'}`}
+          >
+            <Radio className="w-3.5 h-3.5" /> Podcast
+          </button>
         </div>
+        
+        <div className="w-10" /> {/* Spacer */}
+      </header>
 
-        {/* Right: Study Sidebar Panels */}
-        <div className="space-y-8">
+      {/* --- Main Content Area --- */}
+      <main className="flex-1 flex flex-col items-center w-full max-w-2xl mx-auto p-4 transition-all duration-500 relative">
+        <AnimatePresence mode="wait">
           
-          {/* Tabs header */}
-          <div className="flex border-b border-white/10">
-            {[
-              { id: 'chat', label: 'AI Doubt Solver', icon: MessageSquare },
-              { id: 'notes', label: 'Notes', icon: FileText },
-              { id: 'bookmarks', label: 'Bookmarks', icon: BookMarked }
-            ].map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 pb-3 text-center text-xs font-semibold flex flex-col items-center justify-center space-y-1 transition-all ${
-                    activeTab === tab.id ? 'text-accent border-b-2 border-accent' : 'text-white/40 hover:text-white/60'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Panel bodies */}
-          <div className="premium-card p-5 bg-slate-900/40 min-h-[300px]">
-            {activeTab === 'chat' && (
-              <div className="space-y-4 flex flex-col h-[350px] justify-between">
-                <div className="flex-1 overflow-y-auto space-y-3.5 pr-2 custom-scrollbar">
-                  {chatLog.map((chat, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`p-3 rounded-xl text-xs leading-relaxed max-w-[85%] ${
-                        chat.sender === 'user' 
-                          ? 'bg-accent/15 border border-accent/20 text-white ml-auto' 
-                          : 'bg-slate-950/60 border border-white/5 text-white/80'
-                      }`}
-                    >
-                      <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-accent block mb-1">
-                        {chat.sender === 'user' ? 'Aspirant' : 'PrepAI Mentor'}
-                      </span>
-                      <span>{chat.text}</span>
-                    </div>
-                  ))}
-                  {chatLoading && (
-                    <div className="bg-slate-950/60 border border-white/5 p-3 rounded-xl text-xs text-white/40 flex items-center space-x-1.5">
-                      <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  )}
-                </div>
-
-                <form onSubmit={handleChatSubmit} className="flex gap-2 border-t border-white/5 pt-3">
-                  <input
-                    type="text"
-                    value={chatQuestion}
-                    onChange={(e) => setChatQuestion(e.target.value)}
-                    placeholder="Ask a doubt about this act..."
-                    className="flex-1 bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2 outline-none transition-all placeholder:text-white/20"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-accent hover:bg-amber-600 text-slate-950 text-xs font-bold px-3 py-2 rounded-xl transition-all"
-                  >
-                    Ask
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {activeTab === 'notes' && (
-              <div className="space-y-4">
-                <span className="text-[10px] text-accent font-bold uppercase tracking-wider block">Personal Study Notes</span>
-                <textarea
-                  value={notes}
-                  onChange={(e) => handleNotesChange(e.target.value)}
-                  placeholder="Summarize key facts (e.g. Warren Hastings, Supreme Court 1774) here. Notes are auto-saved to your profile."
-                  className="w-full min-h-[220px] bg-slate-950 border border-white/10 focus:border-accent rounded-xl p-3 text-xs leading-relaxed text-white outline-none resize-none transition-all"
-                />
-              </div>
-            )}
-
-            {activeTab === 'bookmarks' && (
-              <div className="space-y-4">
-                <span className="text-[10px] text-accent font-bold uppercase tracking-wider block">Bookmarked Citations</span>
-                {bookmarks.length === 0 ? (
-                  <p className="text-xs text-white/30 italic text-center py-8">No sentences bookmarked in this lesson yet.</p>
-                ) : (
-                  <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
-                    {bookmarks.map((b, idx) => (
-                      <div key={idx} className="p-3 bg-slate-950/40 border border-white/5 rounded-xl text-xs text-white/70 italic leading-relaxed relative group">
-                        <span>"{b}"</span>
-                        <button 
-                          onClick={() => {
-                            const updated = bookmarks.filter((_, i) => i !== idx);
-                            setBookmarks(updated);
-                            localStorage.setItem(`bookmarks_${chapter.id}`, JSON.stringify(updated));
-                          }}
-                          className="absolute -top-1.5 -right-1.5 hidden group-hover:block text-error-red bg-slate-900 rounded-full"
-                        >
-                          <XCircle className="w-4 h-4 fill-slate-900" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Quick MCQ pop challenge to test */}
-          <Link
-            href={`/quiz/${chapter.id}`}
-            className="w-full bg-gradient-to-r from-accent to-amber-600 hover:from-amber-600 hover:to-accent text-slate-950 font-bold py-3.5 rounded-2xl transition-all flex items-center justify-center space-x-2 shadow-lg shadow-accent/15"
-          >
-            <HelpCircle className="w-5 h-5" />
-            <span>Launch Chapter MCQ Quiz</span>
-          </Link>
-
-        </div>
-      </div>
-
-      {/* Lesson Navigation footer */}
-      <div className="flex items-center justify-between border-t border-white/5 pt-6 mt-8">
-        {prevChapterId ? (
-          <Link
-            href={`/lesson/${prevChapterId}`}
-            className="text-xs text-white/75 border border-white/10 hover:border-accent hover:text-accent px-4 py-2.5 rounded-xl transition-all flex items-center space-x-1"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Previous Chapter</span>
-          </Link>
-        ) : (
-          <div />
-        )}
-
-        <button
-          onClick={handleMarkComplete}
-          className="bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 font-bold text-xs px-5 py-2.5 rounded-xl transition-all flex items-center space-x-1.5"
-        >
-          <CheckCircle className="w-4 h-4" />
-          <span>Mark Lesson Completed (+50 XP)</span>
-        </button>
-
-        {nextChapterId ? (
-          <Link
-            href={`/lesson/${nextChapterId}`}
-            className="text-xs text-white/75 border border-white/10 hover:border-accent hover:text-accent px-4 py-2.5 rounded-xl transition-all flex items-center space-x-1"
-          >
-            <span>Next Chapter</span>
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        ) : (
-          <div />
-        )}
-      </div>
-
-      {/* Interactive MCQ Popup Modal (Every 5 minutes, simulated at 25 seconds) */}
-      <AnimatePresence>
-        {showPopupQuiz && quizPopupMcq && (
-          <div className="fixed inset-0 z-50 bg-[#0B1325]/80 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-lg bg-slate-900 border-2 border-accent rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden"
+          {mode === 'video' && (
+            <motion.div
+              key="video"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full relative rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col ${isTheater ? 'h-[70vh]' : 'aspect-video'} ${currentScene.theme} ${!isPlaying ? 'paused' : ''}`}
             >
-              <div className="absolute -top-10 -left-10 w-24 h-24 bg-accent/5 rounded-full blur-[20px]" />
+              {/* Ambient Background & Particles */}
+              <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-zoom" />
+              <div className="absolute inset-0 animate-dust-1" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+              <div className="absolute inset-0 animate-dust-2" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 2px, transparent 2px)', backgroundSize: '70px 70px' }} />
+
+              {/* Badge */}
+              <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20">
+                <div className={`w-2 h-2 rounded-full bg-accent ${isPlaying ? 'animate-pulse' : ''}`} />
+                <span className="text-[9px] font-bold tracking-widest text-white uppercase font-mono">AI Narration</span>
+              </div>
               
-              <div className="text-center space-y-2">
-                <span className="bg-accent/15 text-accent border border-accent/20 text-[9px] font-bold px-2.5 py-0.5 rounded-full font-mono uppercase tracking-widest">
-                  Quick check-in question
-                </span>
-                <h3 className="font-display text-lg font-bold text-white leading-snug">Let's verify your attention!</h3>
-                <p className="text-xs text-white/50">Solve this quick MCQ to unlock and resume your audiobook player.</p>
+              <div className="absolute top-4 right-4 z-20">
+                <button onClick={() => setIsTheater(!isTheater)} className="p-2 bg-black/40 backdrop-blur-md rounded-full text-white/70 hover:text-white border border-white/10 transition">
+                  {isTheater ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
+                </button>
               </div>
 
-              <div className="p-4 bg-slate-950/60 border border-white/5 rounded-2xl">
-                <span className="text-[10px] text-accent/60 uppercase font-bold font-mono">Question</span>
-                <p className="text-xs text-white mt-1 leading-relaxed">{quizPopupMcq.question}</p>
+              {/* Center Scene: Teacher + Icon */}
+              <div className="flex-1 flex flex-col items-center justify-center relative z-10 pt-8">
+                <div className="text-6xl mb-6 opacity-90 drop-shadow-2xl animate-breathe filter saturate-150">
+                  {currentScene.icon}
+                </div>
+                
+                {/* Chalk-silhouette Avatar */}
+                <div className="relative w-32 h-40 opacity-80 mix-blend-screen drop-shadow-md">
+                  {/* Body/Robe */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-24 bg-white/20 rounded-t-[3rem] border-t-2 border-l-2 border-r-2 border-white/40" />
+                  {/* Head */}
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/20 rounded-full border-2 border-white/40 flex items-center justify-center">
+                    {/* Eyes */}
+                    <div className="flex gap-3 mb-2 animate-blink">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    </div>
+                    {/* Mouth */}
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-white rounded-full animate-talk" />
+                  </div>
+                  {/* Arm */}
+                  <div className="absolute bottom-6 right-2 w-16 h-4 bg-white/20 border-2 border-white/40 rounded-full origin-left rotate-45 animate-sway" />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                {[
-                  { key: 'A', text: quizPopupMcq.option_a },
-                  { key: 'B', text: quizPopupMcq.option_b },
-                  { key: 'C', text: quizPopupMcq.option_c },
-                  { key: 'D', text: quizPopupMcq.option_d }
-                ].map((opt) => {
-                  const isSelected = popupSelectedOpt === opt.key;
-                  const isCorrect = opt.key === quizPopupMcq.correct_option;
-                  
-                  let optionClass = 'border-white/10 bg-slate-950/40 hover:bg-slate-950/80';
-                  if (popupAnswered) {
-                    if (isCorrect) {
-                      optionClass = 'border-success-green bg-success-green/10 text-white';
-                    } else if (isSelected) {
-                      optionClass = 'border-error-red bg-error-red/10 text-white';
-                    } else {
-                      optionClass = 'border-white/5 opacity-50 bg-slate-950/20';
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={opt.key}
-                      disabled={popupAnswered}
-                      onClick={() => handlePopupQuizSubmit(opt.key)}
-                      className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all flex items-start gap-2.5 ${optionClass}`}
+              {/* Karaoke Captions */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 pt-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20">
+                <p className="text-center font-display text-xl leading-relaxed">
+                  {currentFlatLine.words.map((word, idx) => (
+                    <span 
+                      key={idx} 
+                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= wordIdx ? 'text-white text-shadow-glow font-bold' : 'text-white/40'}`}
+                      style={{ textShadow: idx <= wordIdx ? '0 0 10px rgba(255,255,255,0.5)' : 'none' }}
                     >
-                      <span className="font-mono font-bold bg-white/5 px-1.5 py-0.5 rounded border border-white/10 text-[10px] text-accent mt-0.5">
-                        {opt.key}
-                      </span>
-                      <span className="flex-1">{opt.text}</span>
-                    </button>
+                      {word}
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {mode === 'podcast' && (
+            <motion.div
+              key="podcast"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full flex flex-col items-center mt-6"
+            >
+              {/* Square Cover Art */}
+              <div className={`w-64 h-64 rounded-[2rem] shadow-2xl flex items-center justify-center border-4 border-white/5 transition-all duration-700 relative overflow-hidden ${currentScene.theme} ${!isPlaying ? 'paused' : ''}`}>
+                <div className="absolute inset-0 bg-black/10 mix-blend-overlay animate-zoom" />
+                <div className="text-8xl drop-shadow-2xl animate-breathe">{currentScene.icon}</div>
+              </div>
+
+              {/* Episode Info */}
+              <div className="text-center mt-8 mb-6">
+                <p className="text-[10px] font-mono tracking-widest uppercase text-accent mb-2">
+                  Episode {currentFlatLine.sceneIdx + 1} of {lesson.scenes.length}
+                </p>
+                <h2 className="text-2xl font-bold font-display text-white">{currentScene.title}</h2>
+                <p className="text-xs text-white/50 mt-1 font-medium">Narrated by AI Teacher</p>
+              </div>
+
+              {/* Waveform */}
+              <div className={`flex items-end justify-center gap-1.5 h-16 mb-8 w-full px-8 ${!isPlaying ? 'paused' : ''}`}>
+                {Array.from({ length: 28 }).map((_, i) => {
+                  // Color earlier bars differently
+                  const isPast = (i / 28) < ((cursor+1)/flatLines.length);
+                  const animClass = ['animate-bar-1', 'animate-bar-2', 'animate-bar-3', 'animate-bar-4'][i % 4];
+                  return (
+                    <div 
+                      key={i} 
+                      className={`w-1.5 rounded-full transition-colors ${animClass} ${isPast ? 'bg-accent/80 shadow-[0_0_8px_rgba(216,155,60,0.5)]' : 'bg-white/10'}`} 
+                    />
                   );
                 })}
               </div>
 
-              {popupAnswered && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  <div className="p-3.5 bg-white/5 rounded-xl border border-white/5 text-xs">
-                    <span className="text-[9px] uppercase font-bold text-accent font-mono block mb-1">Answer explanation</span>
-                    <p className="text-white/60 font-light leading-relaxed">{quizPopupMcq.explanation}</p>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setShowPopupQuiz(false);
-                      setPopupSelectedOpt(null);
-                      setPopupAnswered(false);
-                    }}
-                    className="w-full bg-accent hover:bg-amber-600 text-slate-950 font-bold py-3 rounded-xl transition-all text-xs flex items-center justify-center space-x-1"
-                  >
-                    <span>Resume Learning Audiobook</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* --- Shared Controls Layer --- */}
+        <div className="w-full mt-6 space-y-5 relative z-30 bg-[#060d1a]">
+          {/* Chapter Chips (Podcast only, or both?) Let's show on both for easy nav */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mask-edges">
+            {lesson.scenes.map((scene, idx) => (
+              <button
+                key={idx}
+                onClick={() => jumpToScene(idx)}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
+                  currentFlatLine.sceneIdx === idx 
+                    ? 'bg-white/10 border-white/20 text-white font-bold' 
+                    : 'bg-transparent border-white/5 text-white/40 hover:text-white/70'
+                }`}
+              >
+                <span>{scene.icon}</span>
+                <span>{scene.title}</span>
+              </button>
+            ))}
           </div>
-        )}
-      </AnimatePresence>
+
+          {/* Scrubber */}
+          <div className="relative pt-2">
+            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden cursor-pointer">
+              <div 
+                className="h-full bg-accent relative transition-all duration-200"
+                style={{ width: `${Math.max(progressPercent, 1)}%` }}
+              >
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md" />
+              </div>
+            </div>
+            <div className="flex justify-between mt-2 text-[10px] font-mono text-white/40">
+              <span>{elapsedStr}</span>
+              <span>{totalDurationStr}</span>
+            </div>
+          </div>
+
+          {/* Media Buttons */}
+          <div className="flex items-center justify-between px-4 pb-4">
+            <button 
+              onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
+              className="w-12 text-xs font-mono font-bold text-white/60 hover:text-accent transition"
+            >
+              {playbackSpeed}x
+            </button>
+            
+            <div className="flex items-center gap-6">
+              <button onClick={() => seekBy(-2)} className="p-2 text-white/70 hover:text-white transition">
+                <SkipBack className="w-6 h-6 fill-current" />
+              </button>
+              
+              <button 
+                onClick={togglePlay}
+                className="w-16 h-16 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-transform"
+              >
+                {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
+              </button>
+              
+              <button onClick={() => seekBy(2)} className="p-2 text-white/70 hover:text-white transition">
+                <SkipForward className="w-6 h-6 fill-current" />
+              </button>
+            </div>
+
+            <div className="w-12 flex justify-end">
+               <div className="w-1.5 h-1.5 rounded-full bg-white/20" /> {/* Spacer dot */}
+            </div>
+          </div>
+        </div>
+
+        {/* --- Post-Lesson CTA --- */}
+        <AnimatePresence>
+          {ended && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full premium-card p-6 mt-4 border-accent/30 text-center"
+            >
+              <CheckCircle className="w-12 h-12 text-success-green mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-white font-display">Lesson Complete!</h3>
+              <p className="text-xs text-white/60 mt-1 mb-5">You've mastered this topic. Ready to practice?</p>
+              
+              <div className="flex gap-3">
+                <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4" /> Quiz (10)
+                </Link>
+                <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
+                  <FileText className="w-4 h-4" /> Flashcards
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      </main>
     </div>
   );
+}
+
+function formatTime(seconds: number) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
