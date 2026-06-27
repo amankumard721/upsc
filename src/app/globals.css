@@ -118,3 +118,74 @@ html:not(.dark-theme) .text-white\/30 { color: rgba(27, 42, 74, 0.3) !important;
 html:not(.dark-theme) .text-white\/20 { color: rgba(27, 42, 74, 0.2) !important; }
 html:not(.dark-theme) .text-white\/10 { color: rgba(27, 42, 74, 0.1) !important; }
 
+/* Light Theme Card, Input, and Border Overrides */
+html:not(.dark-theme) .bg-slate-900,
+html:not(.dark-theme) .bg-slate-900\/40,
+html:not(.dark-theme) .bg-slate-900\/30,
+html:not(.dark-theme) .bg-slate-900\/50,
+html:not(.dark-theme) .bg-slate-900\/70,
+html:not(.dark-theme) .bg-slate-900\/60,
+html:not(.dark-theme) .bg-slate-900\/50 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(27, 42, 74, 0.12) !important;
+}
+
+html:not(.dark-theme) .bg-slate-950,
+html:not(.dark-theme) .bg-slate-950\/40,
+html:not(.dark-theme) .bg-slate-950\/60,
+html:not(.dark-theme) .bg-slate-950\/20 {
+  background-color: #ffffff !important;
+  border-color: rgba(27, 42, 74, 0.12) !important;
+  color: #1B2A4A !important;
+}
+
+html:not(.dark-theme) input,
+html:not(.dark-theme) textarea,
+html:not(.dark-theme) select {
+  background-color: #ffffff !important;
+  color: #1B2A4A !important;
+  border: 1px solid rgba(27, 42, 74, 0.18) !important;
+}
+
+html:not(.dark-theme) input::placeholder,
+html:not(.dark-theme) textarea::placeholder {
+  color: rgba(27, 42, 74, 0.4) !important;
+}
+
+html:not(.dark-theme) .border-white\/10 {
+  border-color: rgba(27, 42, 74, 0.1) !important;
+}
+
+html:not(.dark-theme) .border-white\/15 {
+  border-color: rgba(27, 42, 74, 0.15) !important;
+}
+
+html:not(.dark-theme) .border-white\/5 {
+  border-color: rgba(27, 42, 74, 0.06) !important;
+}
+
+html:not(.dark-theme) .bg-white\/5 {
+  background-color: rgba(27, 42, 74, 0.04) !important;
+}
+
+html:not(.dark-theme) .bg-white\/10 {
+  background-color: rgba(27, 42, 74, 0.08) !important;
+}
+
+html:not(.dark-theme) .divide-white\/5 > * {
+  border-color: rgba(27, 42, 74, 0.08) !important;
+}
+
+/* Ensure welcome hero remains premium dark navy gradient even in light mode */
+html:not(.dark-theme) .from-primary.to-slate-900 {
+  background: linear-gradient(135deg, #1B2A4A 0%, #0F172A 100%) !important;
+  border: 1px solid rgba(216, 155, 60, 0.2) !important;
+}
+
+html:not(.dark-theme) .from-primary.to-slate-900 h1,
+html:not(.dark-theme) .from-primary.to-slate-900 p,
+html:not(.dark-theme) .from-primary.to-slate-900 span {
+  color: #FAF6EC !important;
+}
+
+
