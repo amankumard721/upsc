@@ -100,6 +100,21 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ── Minimal Header ────────────────────────────── */}
+      <div className="flex items-center justify-between pt-2 pb-4">
+        <div>
+          <p className="text-[10px] font-medium text-foreground/50 uppercase tracking-widest font-mono">
+            {profile?.name?.split(' ')[0] || 'Aspirant'}'s Dashboard
+          </p>
+          <h1 className="text-xl font-bold text-foreground font-display mt-0.5">
+            Ready to learn? 🚀
+          </h1>
+        </div>
+        <Link href="/profile" className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-base font-bold border border-accent/20 shadow-sm transition-transform hover:scale-105">
+          {profile?.name ? profile.name[0].toUpperCase() : 'A'}
+        </Link>
+      </div>
+
       {/* ── Books Section ─────────────────────────────── */}
       <div>
         {/* Header */}
