@@ -59,10 +59,22 @@ export default function DashboardPage() {
     // Check for continue learning in localStorage
     if (typeof window !== 'undefined') {
       const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
-      const incomplete = list.find((p: any) => !p.is_completed);
-      if (incomplete) {
-        db.getChapter(incomplete.chapter_id).then(ch => {
+      const targetProgress = list.find((p: any) => !p.is_completed) || (list.length > 0 ? list[list.length - 1] : null);
+      
+      if (targetProgress) {
+        db.getChapter(targetProgress.chapter_id).then(ch => {
            if (ch) setContinueChapter({ id: ch.id, title: ch.title });
+        });
+      } else {
+        // Fallback: Get the very first chapter from the first book so the UI always shows
+        db.getBooks().then(booksData => {
+          if (booksData && booksData.length > 0) {
+            db.getChapters(booksData[0].id).then(chs => {
+              if (chs && chs.length > 0) {
+                setContinueChapter({ id: chs[0].id, title: chs[0].title });
+              }
+            });
+          }
         });
       }
     }
