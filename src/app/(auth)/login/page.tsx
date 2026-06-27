@@ -33,6 +33,7 @@ function AuthContent() {
   const [step, setStep] = useState<'auth' | 'exam' | 'referral' | 'success'>('auth');
   const [examType, setExamType] = useState('UPSC');
   const [referral, setReferral] = useState('');
+  const [lang, setLang] = useState<'en' | 'hi'>('en');
 
   const handleOAuth = async () => {
     setLoading(true);
@@ -135,7 +136,10 @@ function AuthContent() {
   const handleOnboardingComplete = async () => {
     setLoading(true);
     try {
-      const profileUpdates: any = { exam_type: examType };
+      const profileUpdates: any = { 
+        exam_type: examType,
+        preferred_language: lang
+      };
       if (name) profileUpdates.name = name;
       if (email) profileUpdates.email = email;
       
@@ -145,6 +149,7 @@ function AuthContent() {
       }
 
       await db.updateUserProfile(profileUpdates);
+      localStorage.setItem('prepai_language', lang);
       setStep('success');
     } catch (err) {
       console.error(err);
@@ -357,35 +362,76 @@ function AuthContent() {
                 className="space-y-6"
               >
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-4">
-                    <Award className="w-8 h-8 text-accent" />
+                  <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-3">
+                    <Award className="w-7 h-7 text-accent" />
                   </div>
-                  <h3 className="text-xl font-bold font-display text-foreground">Choose Your Goal</h3>
-                  <p className="text-xs text-foreground/50 mt-1.5 font-light leading-relaxed px-4">Tailor your learning journey and AI recommendations.</p>
+                  <h3 className="text-lg font-bold font-display text-foreground">Set Up Your Profile</h3>
+                  <p className="text-xs text-foreground/50 mt-1 font-light leading-relaxed px-4">Choose your target exam and study language to customize your dashboard.</p>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  {[
-                    { id: 'UPSC', name: 'UPSC Civil Services (IAS/IFS)', desc: 'Standard syllabus coverage & current affairs' },
-                    { id: 'SSC', name: 'SSC CGL & Allied Exams', desc: 'Quantitative, logical reasoning, and static GK' },
-                    { id: 'CTET', name: 'CTET & Teaching Exams', desc: 'Pedagogy and child development tests' }
-                  ].map((exam) => (
-                    <button
-                      key={exam.id}
-                      onClick={() => setExamType(exam.id)}
-                      className={`w-full text-left p-4 rounded-xl border transition-all ${
-                        examType === exam.id
-                          ? 'border-accent bg-accent/10 shadow-[0_0_15px_rgba(216,155,60,0.15)]'
-                          : 'border-white/5 bg-slate-950/40 hover:bg-slate-950/80 hover:border-white/10'
-                      }`}
-                    >
-                      <div className={`font-bold text-sm ${examType === exam.id ? 'text-foreground' : 'text-foreground/80'}`}>{exam.name}</div>
-                      <div className="text-[11px] text-foreground/40 mt-1 font-light">{exam.desc}</div>
-                    </button>
-                  ))}
+                <div className="space-y-4">
+                  {/* Exam Selection */}
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-foreground/50 uppercase tracking-widest ml-1">
+                      Select Target Exam / लक्ष्य परीक्षा
+                    </label>
+                    <div className="space-y-2">
+                      {[
+                        { id: 'UPSC', name: 'UPSC Civil Services (IAS/IFS)', desc: 'Standard syllabus coverage & current affairs' },
+                        { id: 'SSC', name: 'SSC CGL & Allied Exams', desc: 'Quantitative, logical reasoning, and static GK' },
+                        { id: 'CTET', name: 'CTET & Teaching Exams', desc: 'Pedagogy and child development tests' }
+                      ].map((exam) => (
+                        <button
+                          key={exam.id}
+                          type="button"
+                          onClick={() => setExamType(exam.id)}
+                          className={`w-full text-left p-3.5 rounded-xl border transition-all ${
+                            examType === exam.id
+                              ? 'border-accent bg-accent/10 shadow-[0_0_12px_rgba(216,155,60,0.1)]'
+                              : 'border-white/5 bg-slate-950/40 hover:bg-slate-950/80 hover:border-white/10'
+                          }`}
+                        >
+                          <div className={`font-bold text-xs ${examType === exam.id ? 'text-foreground' : 'text-foreground/80'}`}>{exam.name}</div>
+                          <div className="text-[10px] text-foreground/45 mt-0.5 font-light">{exam.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Language Selection */}
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-bold text-foreground/50 uppercase tracking-widest ml-1">
+                      Preferred Language / भाषा चुनें
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setLang('en')}
+                        className={`p-3 rounded-xl border text-center font-bold text-xs transition-all ${
+                          lang === 'en'
+                            ? 'border-accent bg-accent/10 shadow-[0_0_12px_rgba(216,155,60,0.1)] text-foreground'
+                            : 'border-white/5 bg-slate-950/40 hover:bg-slate-950/80 hover:border-white/10 text-foreground/70'
+                        }`}
+                      >
+                        🇬🇧 English Only
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLang('hi')}
+                        className={`p-3 rounded-xl border text-center font-bold text-xs transition-all ${
+                          lang === 'hi'
+                            ? 'border-accent bg-accent/10 shadow-[0_0_12px_rgba(216,155,60,0.1)] text-foreground'
+                            : 'border-white/5 bg-slate-950/40 hover:bg-slate-950/80 hover:border-white/10 text-foreground/70'
+                        }`}
+                      >
+                        🇮🇳 हिंदी (Bilingual)
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={handleExamNext}
                   className="w-full bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_5px_15px_rgba(216,155,60,0.2)]"
                 >

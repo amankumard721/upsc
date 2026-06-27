@@ -13,11 +13,13 @@ import {
   AlertCircle,
   Sparkles
 } from 'lucide-react';
+import { t } from '@/lib/translations';
 
 export default function ChallengePage() {
   const [mcq, setMcq] = useState<MCQ | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [langTick, setLangTick] = useState(0);
 
   // Interaction State
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -28,6 +30,10 @@ export default function ChallengePage() {
   useEffect(() => {
     loadNextChallenge();
     db.getUserProfile().then(setProfile);
+
+    const handleLangChange = () => setLangTick(t => t + 1);
+    window.addEventListener('languageChange', handleLangChange);
+    return () => window.removeEventListener('languageChange', handleLangChange);
   }, []);
 
   const loadNextChallenge = async () => {
@@ -75,7 +81,7 @@ export default function ChallengePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-foreground/50 font-light">Loading your challenge...</p>
+        <p className="text-sm text-foreground/50 font-light">Loading...</p>
       </div>
     );
   }
@@ -86,7 +92,7 @@ export default function ChallengePage() {
         <p className="text-foreground/60">No challenges available right now.</p>
         <Link href="/dashboard" className="text-accent underline inline-flex items-center space-x-1">
           <ArrowLeft className="w-4 h-4" />
-          <span>Return to Dashboard</span>
+          <span>{t('backToDashboard')}</span>
         </Link>
       </div>
     );
@@ -98,10 +104,10 @@ export default function ChallengePage() {
       <div className="flex items-center justify-between border-b border-foreground/5 pb-4">
         <Link href="/dashboard" className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
           <ArrowLeft className="w-4 h-4" />
-          <span>Dashboard</span>
+          <span>{t('dashboardTitle')}</span>
         </Link>
         <div className="flex items-center space-x-3">
-          <span className="font-display font-bold text-lg text-accent">Daily Challenge</span>
+          <span className="font-display font-bold text-lg text-accent">{t('dailyChallenge')}</span>
           {streak > 1 && (
             <span className="bg-amber-500/15 text-amber-500 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider animate-pulse">
               {streak} Streak! 🔥
@@ -124,7 +130,7 @@ export default function ChallengePage() {
             style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
           >
             <div className="flex justify-between items-center text-[10px] text-white/40 uppercase font-mono tracking-wider mb-6">
-              <span className="flex items-center gap-1.5 text-accent"><Target className="w-3.5 h-3.5" /> MCQ Challenge</span>
+              <span className="flex items-center gap-1.5 text-accent"><Target className="w-3.5 h-3.5" /> {t('dailyChallenge')}</span>
               <span className="bg-white/5 px-2 py-1 rounded-md border border-white/10">+25 XP</span>
             </div>
             
@@ -139,7 +145,6 @@ export default function ChallengePage() {
                 
                 let cls = 'border-white/10 bg-white/5 hover:border-accent/40 hover:bg-accent/10';
                 if (selectedOption) {
-                  // While waiting to flip, show selection state
                   if (isSelected) cls = 'border-accent bg-accent/20 scale-[0.98]';
                   else cls = 'border-white/5 opacity-50';
                 }
@@ -168,24 +173,24 @@ export default function ChallengePage() {
           >
             <div className="flex justify-between items-center text-[10px] text-accent uppercase font-mono tracking-wider font-bold mb-6">
               <span className="flex items-center gap-1 bg-accent/10 px-2 py-1 rounded-md border border-accent/20">
-                <Sparkles className="w-3 h-3" /> Result
+                <Sparkles className="w-3 h-3" /> {t('result')}
               </span>
               {selectedOption === mcq.correct_option ? (
-                <span className="text-success-green flex items-center"><CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Correct</span>
+                <span className="text-success-green flex items-center"><CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t('correct')}</span>
               ) : (
-                <span className="text-error-red flex items-center"><AlertCircle className="w-3.5 h-3.5 mr-1" /> Incorrect</span>
+                <span className="text-error-red flex items-center"><AlertCircle className="w-3.5 h-3.5 mr-1" /> {t('incorrect')}</span>
               )}
             </div>
 
             <div className="bg-black/20 border border-white/5 p-4 rounded-xl mb-6">
-              <p className="text-[10px] text-white/40 uppercase font-mono mb-1">Correct Answer</p>
+              <p className="text-[10px] text-white/40 uppercase font-mono mb-1">{t('correctAnswer')}</p>
               <p className="text-base font-bold text-accent">
                 {mcq.correct_option}. {mcq[`option_${mcq.correct_option.toLowerCase()}` as keyof MCQ] as string}
               </p>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 no-scrollbar">
-              <p className="text-[10px] text-white/40 uppercase font-mono mb-2">Explanation</p>
+              <p className="text-[10px] text-white/40 uppercase font-mono mb-2">{t('explanation')}</p>
               <p className="text-sm text-white/80 leading-relaxed">
                 {mcq.explanation}
               </p>
@@ -195,7 +200,7 @@ export default function ChallengePage() {
               onClick={loadNextChallenge}
               className="w-full mt-6 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
             >
-              <span>Next Challenge 🎲</span>
+              <span>{t('nextChallenge')}</span>
             </button>
           </div>
         </motion.div>

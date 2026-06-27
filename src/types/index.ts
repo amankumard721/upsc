@@ -9,6 +9,7 @@ export interface UserProfile {
   created_at: string;
   exam_type?: string;
   referral_code?: string;
+  preferred_language?: string;
 }
 
 export interface Book {

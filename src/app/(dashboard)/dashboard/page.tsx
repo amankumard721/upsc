@@ -10,6 +10,7 @@ import {
   ChevronRight, Award, BookOpen,
   Trophy, Target, TrendingUp, PlayCircle
 } from 'lucide-react';
+import { t } from '@/lib/translations';
 
 const SUBJECT_CHIPS = [
   { label: 'All', emoji: '📚' },
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [continueChapter, setContinueChapter] = useState<Chapter | null>(null);
+  const [langTick, setLangTick] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -62,6 +64,10 @@ export default function DashboardPage() {
       }
     };
     loadData();
+
+    const handleLangChange = () => setLangTick(t => t + 1);
+    window.addEventListener('languageChange', handleLangChange);
+    return () => window.removeEventListener('languageChange', handleLangChange);
   }, []);
 
 
@@ -98,18 +104,18 @@ export default function DashboardPage() {
       <div className="premium-card p-4 bg-gradient-to-r from-accent/15 via-accent/5 to-transparent border-accent/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
         <p className="text-[10px] font-bold text-accent uppercase tracking-widest font-mono mb-1">
-          Daily MCQ Challenge 🔥
+          {t('dailyChallenge')} 🔥
         </p>
         <h3 className="text-sm md:text-base font-bold text-foreground font-display mb-2">
           {continueChapter 
-            ? `Test your knowledge on ${continueChapter.title}`
-            : "Review random questions from your syllabus!"}
+            ? `${t('testKnowledge')} ${continueChapter.title}`
+            : t('syllabusReview')}
         </h3>
         <Link 
           href="/challenge" 
           className="inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-4 py-2 rounded-xl shadow-md transition-all duration-200"
         >
-          <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20 animate-pulse" /> Play Daily Challenge 🎲
+          <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20 animate-pulse" /> {t('playChallenge')}
         </Link>
       </div>
 
@@ -119,9 +125,9 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-foreground font-display flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-accent" />
-            Study Material
+            {t('studyMaterial')}
           </h2>
-          <span className="text-xs text-foreground/40 font-mono">{books.length} Books</span>
+          <span className="text-xs text-foreground/40 font-mono">{books.length} {t('booksCount')}</span>
         </div>
 
         {/* Subject Chips */}
@@ -137,7 +143,7 @@ export default function DashboardPage() {
               }`}
             >
               <span>{chip.emoji}</span>
-              <span>{chip.label}</span>
+              <span>{chip.label === 'All' ? t('all') : chip.label}</span>
             </button>
           ))}
         </div>
@@ -207,7 +213,7 @@ export default function DashboardPage() {
             <div className="w-8 h-8 bg-amber-500/15 rounded-xl flex items-center justify-center">
               <Trophy className="w-4 h-4 text-amber-400" />
             </div>
-            <p className="text-xs font-bold text-foreground">Top Rankers</p>
+            <p className="text-xs font-bold text-foreground">{t('leaderboard')}</p>
           </div>
           <Link href="/leaderboard" className="text-[10px] text-accent font-bold uppercase tracking-wide flex items-center gap-0.5">
             See All <ChevronRight className="w-3 h-3" />

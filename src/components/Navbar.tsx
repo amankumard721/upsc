@@ -17,6 +17,7 @@ import {
   Home,
   ArrowLeft
 } from 'lucide-react';
+import { t, getLanguage } from '@/lib/translations';
 
 const navLinks = [
   { href: '/dashboard', label: 'Home', icon: Home },
@@ -30,6 +31,7 @@ export default function Navbar() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isDark, setIsDark] = useState(true);
+  const [lang, setLang] = useState<'en' | 'hi'>('en');
   const [tappedHref, setTappedHref] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>('');
 
@@ -39,6 +41,7 @@ export default function Navbar() {
     db.getUserProfile().then(setProfile);
     const isDarkLocal = localStorage.getItem('prepai_dark_mode') !== 'false';
     setIsDark(isDarkLocal);
+    setLang(getLanguage());
     const html = document.documentElement;
     if (isDarkLocal) html.classList.add('dark-theme');
     else html.classList.remove('dark-theme');
@@ -51,6 +54,11 @@ export default function Navbar() {
     } else {
       setBookTitle('');
     }
+
+    // Listen to global language change events
+    const handleLangChange = () => setLang(getLanguage());
+    window.addEventListener('languageChange', handleLangChange);
+    return () => window.removeEventListener('languageChange', handleLangChange);
   }, [pathname]);
 
   const toggleDarkMode = () => {
@@ -62,6 +70,16 @@ export default function Navbar() {
     else html.classList.remove('dark-theme');
   };
 
+  const toggleLanguage = () => {
+    const nextLang = lang === 'en' ? 'hi' : 'en';
+    setLang(nextLang);
+    localStorage.setItem('prepai_language', nextLang);
+    if (profile) {
+      db.updateUserProfile({ preferred_language: nextLang }).then(setProfile);
+    }
+    window.dispatchEvent(new Event('languageChange'));
+  };
+
   const getActiveLink = () => {
     if (pathname === '/dashboard') return '/dashboard';
     if (pathname.startsWith('/leaderboard')) return '/leaderboard';
@@ -71,9 +89,9 @@ export default function Navbar() {
   };
 
   const getPageTitle = () => {
-    if (pathname.startsWith('/leaderboard')) return 'Leaderboard';
-    if (pathname.startsWith('/flashcards')) return 'Flashcards';
-    if (pathname.startsWith('/profile')) return 'Profile';
+    if (pathname.startsWith('/leaderboard')) return t('leaderboard');
+    if (pathname.startsWith('/flashcards')) return t('dailyChallenge'); // Or cards
+    if (pathname.startsWith('/profile')) return t('profile');
     if (pathname.startsWith('/books')) return bookTitle || 'Book Details';
     return '';
   };
@@ -121,6 +139,9 @@ export default function Navbar() {
               {navLinks.map((link) => {
                 const isActive = activeHref === link.href;
                 const Icon = link.icon;
+                const resolvedLabel = link.href === '/dashboard' ? t('home') : 
+                                      link.href === '/leaderboard' ? t('leaderboard') :
+                                      link.href === '/profile' ? t('profile') : t('cards');
                 return (
                   <Link
                     key={link.href}
@@ -132,7 +153,7 @@ export default function Navbar() {
                     }`}
                   >
                     <Icon className={`w-4 h-4 ${isActive ? 'fill-accent stroke-none' : ''}`} />
-                    <span>{link.label}</span>
+                    <span>{resolvedLabel}</span>
                   </Link>
                 );
               })}
@@ -153,7 +174,7 @@ export default function Navbar() {
                 </div>
                 {profile.is_premium ? (
                   <div className="hidden sm:flex items-center space-x-1 bg-indigo-500/20 text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-500/30 text-xs font-semibold uppercase tracking-wider">
-                    <Award className="w-3 h-3" />
+                     <Award className="w-3 h-3" />
                     <span>PRO</span>
                   </div>
                 ) : (
@@ -168,10 +189,19 @@ export default function Navbar() {
               </div>
             )}
 
+            {/* Language Switcher */}
+            <button
+              onClick={toggleLanguage}
+              className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-foreground/15 hover:bg-white/5 text-foreground/80 transition-colors ml-1 font-mono uppercase tracking-wider shadow-sm"
+              aria-label="Toggle Language"
+            >
+              {lang === 'en' ? '🇬🇧 EN' : '🇮🇳 HI'}
+            </button>
+
             {/* Theme toggle (Available on all pages) */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-white/10 text-foreground/80 transition-colors ml-2"
+              className="p-2 rounded-full hover:bg-white/10 text-foreground/80 transition-colors ml-1"
               aria-label="Toggle Theme"
             >
               {isDark ? <Sun className="w-5 h-5 text-accent" /> : <Moon className="w-5 h-5 text-primary" />}
@@ -203,7 +233,9 @@ export default function Navbar() {
                   />
                 </span>
                 <span className={`tab-label ${isActive ? 'text-accent font-semibold' : 'text-foreground/40'}`}>
-                  {link.label}
+                  {link.href === '/dashboard' ? t('home') : 
+                   link.href === '/leaderboard' ? t('leaderboard') :
+                   link.href === '/profile' ? t('profile') : t('cards')}
                 </span>
               </Link>
             );

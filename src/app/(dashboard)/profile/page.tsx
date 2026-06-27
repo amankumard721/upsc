@@ -33,6 +33,7 @@ export default function ProfilePage() {
   // Settings form states
   const [editName, setEditName] = useState('');
   const [editExam, setEditExam] = useState('UPSC');
+  const [editLang, setEditLang] = useState<'en' | 'hi'>('en');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Razorpay Checkout Simulation states
@@ -47,6 +48,7 @@ export default function ProfilePage() {
         if (prof) {
           setEditName(prof.name);
           setEditExam(prof.exam_type || 'UPSC');
+          setEditLang((prof.preferred_language || 'en') as 'en' | 'hi');
         }
 
         const quizHistory = await db.getQuizAttempts();
@@ -67,9 +69,12 @@ export default function ProfilePage() {
     try {
       const updated = await db.updateUserProfile({
         name: editName,
-        exam_type: editExam
+        exam_type: editExam,
+        preferred_language: editLang
       });
       setProfile(updated);
+      localStorage.setItem('prepai_language', editLang);
+      window.dispatchEvent(new Event('languageChange'));
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -330,7 +335,7 @@ export default function ProfilePage() {
             )}
 
             <form onSubmit={handleSaveSettings} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Aspirant Name</label>
                   <input
@@ -351,6 +356,17 @@ export default function ProfilePage() {
                     <option value="UPSC">UPSC Civil Services</option>
                     <option value="SSC">SSC CGL</option>
                     <option value="CTET">CTET & Teaching</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Language Preference</label>
+                  <select
+                    value={editLang}
+                    onChange={(e) => setEditLang(e.target.value as 'en' | 'hi')}
+                    className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2.5 outline-none text-foreground transition-all"
+                  >
+                    <option value="en">English Only</option>
+                    <option value="hi">हिंदी (Bilingual)</option>
                   </select>
                 </div>
               </div>
