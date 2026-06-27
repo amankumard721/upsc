@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { db } from '@/lib/supabase';
+import { db, supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types';
 import { 
   BookOpen, 
@@ -22,6 +22,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isDark, setIsDark] = useState(true);
+
+  const isLiveDb = supabase !== null;
 
   useEffect(() => {
     // Fetch profile
@@ -122,6 +124,12 @@ export default function Navbar() {
                 )}
               </div>
             )}
+
+            {/* Live Database status indicator */}
+            <div className="flex items-center space-x-1.5 text-[10px] font-mono px-2 py-1 rounded-full border border-white/10 bg-white/5">
+              <span className={`w-1.5 h-1.5 rounded-full ${isLiveDb ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className="text-foreground/70 hidden sm:inline">{isLiveDb ? 'Live DB' : 'Offline Mock'}</span>
+            </div>
 
             {/* Dark Mode toggle */}
             <button
