@@ -62,7 +62,7 @@ export default function DashboardPage() {
       if (supabase) {
         const { error } = await supabase.from('books').select('count', { count: 'exact', head: true });
         if (error) {
-          setDbError(`Supabase Query Error: ${error.message} (Code: ${error.code})`);
+          setDbError(`Supabase Query Error: ${JSON.stringify(error)}`);
         }
       } else {
         setDbError("Supabase connection is not active. NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing on Vercel.");
