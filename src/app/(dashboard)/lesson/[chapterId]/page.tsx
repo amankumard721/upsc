@@ -30,6 +30,13 @@ interface FlatLine {
   words: string[];
 }
 
+function getYoutubeId(url: string | undefined | null) {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
 // --- Mock Data Generator ---
 // We generate a structured lesson from the raw chapter data for demonstration.
 function generateMockLesson(chapter: Chapter): Lesson {
@@ -253,14 +260,30 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         <AnimatePresence mode="wait">
           
           {mode === 'video' && (
-            <motion.div
-              key="video"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={`w-full relative rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col ${isTheater ? 'h-[70vh]' : 'aspect-video'} ${currentScene.theme} ${!isPlaying ? 'paused' : ''}`}
-            >
-              {/* Ambient Background & Particles */}
+            chapter?.video_url && getYoutubeId(chapter.video_url) ? (
+              <motion.div
+                key="yt-video"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`w-full relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 ${isTheater ? 'h-[70vh]' : 'aspect-video'}`}
+              >
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYoutubeId(chapter.video_url)}?rel=0`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="video"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className={`w-full relative rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col ${isTheater ? 'h-[70vh]' : 'aspect-video'} ${currentScene.theme} ${!isPlaying ? 'paused' : ''}`}
+              >
+                {/* Ambient Background & Particles */}
               <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-zoom" />
               <div className="absolute inset-0 animate-dust-1" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
               <div className="absolute inset-0 animate-dust-2" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 2px, transparent 2px)', backgroundSize: '70px 70px' }} />
@@ -317,6 +340,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                 </p>
               </div>
             </motion.div>
+            )
           )}
 
           {mode === 'podcast' && (
