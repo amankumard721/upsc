@@ -201,46 +201,40 @@ export default function DashboardPage() {
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="shrink-0 w-44 premium-card overflow-hidden flex flex-col group"
+                  className="shrink-0 w-36 premium-card overflow-hidden flex flex-col group border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition-all rounded-[1.25rem] shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
                 >
                   {/* Cover */}
-                  <div className="relative h-28 overflow-hidden bg-primary/30">
+                  <div className="relative h-44 overflow-hidden bg-primary/20">
                     <img
                       src={book.cover_image || ''}
                       alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <span className="absolute top-2 left-2 text-[9px] bg-accent/90 text-slate-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0B1325] via-[#0B1325]/10 to-transparent opacity-100" />
+                    
+                    <span className="absolute top-2.5 left-2.5 text-[8px] bg-black/40 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded-md font-bold uppercase tracking-widest shadow-sm">
                       {book.subject}
                     </span>
+                    
+                    {/* Floating Title inside Cover for premium feel */}
+                    <div className="absolute bottom-2.5 left-2.5 right-2.5">
+                       <h4 className="text-xs font-bold text-white leading-snug line-clamp-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{book.title}</h4>
+                    </div>
                   </div>
 
-                  {/* Info */}
-                  <div className="p-3 flex-1 flex flex-col justify-between gap-2">
-                    <div>
-                      <h4 className="text-xs font-bold text-foreground leading-snug line-clamp-2">{book.title}</h4>
-                      <p className="text-[10px] text-foreground/45 mt-0.5">{book.author}</p>
+                  {/* Info Panel */}
+                  <div className="p-3 flex-1 flex flex-col justify-between">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <p className="text-[9px] text-white/50 font-mono truncate mr-2">{book.author}</p>
+                      <span className="text-[9px] text-white/30 font-mono shrink-0 font-medium bg-white/5 px-1.5 py-0.5 rounded-sm">{book.total_chapters} CH</span>
                     </div>
 
-                    {/* Progress ring + chapters */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <svg className="w-8 h-8 -rotate-90 shrink-0">
-                          <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-foreground/10" />
-                          <circle
-                            cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5"
-                            className="text-accent transition-all duration-700"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={circumference - (circumference * progress) / 100}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <span className="text-[10px] font-mono font-bold text-accent">{progress}%</span>
-                      </div>
-                      <span className="text-[10px] text-foreground/40 font-mono">{book.total_chapters} ch</span>
+                    {/* Clean Linear Progress */}
+                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-accent rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(216,155,60,0.8)]" style={{ width: `${Math.max(progress, 2)}%` }} />
                     </div>
+                    <div className="text-right text-[9px] font-mono text-accent font-bold mt-1 tracking-wide">{progress}% DONE</div>
                   </div>
                 </Link>
               );
