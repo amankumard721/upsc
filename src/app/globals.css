@@ -21,13 +21,23 @@
 :root {
   --background: #FAF6EC;
   --foreground: #1B2A4A;
+  --card-bg: rgba(255,255,255,0.85);
+  --card-border: rgba(27,42,74,0.09);
+  --tab-bar-bg: rgba(250,246,236,0.92);
+  --tab-bar-border: rgba(27,42,74,0.08);
 }
 
-/* Default is Dark theme for that premium, elegant feel across the app, with cream/light mode option */
 .dark-theme {
   --background: #0B1325;
   --foreground: #FAF6EC;
+  --card-bg: rgba(27,42,74,0.35);
+  --card-border: rgba(216,155,60,0.12);
+  --tab-bar-bg: rgba(11,19,37,0.92);
+  --tab-bar-border: rgba(216,155,60,0.1);
 }
+
+/* ─── Base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   background-color: var(--background);
@@ -35,99 +45,202 @@ body {
   font-family: var(--font-sans);
   transition: background-color 0.3s ease, color 0.3s ease;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom styling utilities */
+/* ─── Native App Optimizations ─────────────────────────── */
+html, body {
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  touch-action: manipulation;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(216,155,60,0.18); border-radius: 99px; }
+
+/* ─── Premium Cards ─────────────────────────────────────── */
 .premium-card {
-  background: rgba(27, 42, 74, 0.04);
-  border: 1px solid rgba(27, 42, 74, 0.1);
-  backdrop-filter: blur(8px);
-  border-radius: 1rem;
-  transition: all 0.3s ease;
-}
-
-.dark-theme .premium-card {
-  background: rgba(27, 42, 74, 0.4);
-  border: 1px solid rgba(216, 155, 60, 0.15);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 1.25rem;
+  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s ease;
 }
 
 .premium-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -10px rgba(216, 155, 60, 0.2);
-  border-color: rgba(216, 155, 60, 0.4);
+  transform: translateY(-3px) scale(1.005);
+  box-shadow: 0 16px 32px -12px rgba(216,155,60,0.18);
+  border-color: rgba(216,155,60,0.35);
 }
 
+/* ─── Glass Navbar ──────────────────────────────────────── */
 .glass-nav {
-  background: rgba(250, 246, 236, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(27, 42, 74, 0.08);
+  background: var(--tab-bar-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--tab-bar-border);
 }
 
-.dark-theme .glass-nav {
-  background: rgba(11, 19, 37, 0.8);
-  border-bottom: 1px solid rgba(216, 155, 60, 0.15);
+/* ─── Native Bottom Tab Bar ─────────────────────────────── */
+.native-bottom-bar {
+  background: var(--tab-bar-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--tab-bar-border);
+  /* iOS safe area */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -1px 0 var(--tab-bar-border), 0 -8px 32px rgba(0,0,0,0.08);
 }
 
+.native-tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 64px;
+  padding: 6px 8px 4px;
+  border-radius: 14px;
+  position: relative;
+  transition: transform 0.15s cubic-bezier(.34,1.56,.64,1);
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+.native-tab-item.tapped {
+  transform: scale(0.88) !important;
+}
+
+.native-tab-item.active {
+  transform: scale(1.04);
+}
+
+.tab-pill-indicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: linear-gradient(90deg, #D89B3C, #F3D082);
+  border-radius: 0 0 4px 4px;
+  animation: pill-in 0.25s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes pill-in {
+  from { width: 0; opacity: 0; }
+  to   { width: 24px; opacity: 1; }
+}
+
+.tab-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.native-tab-item.active .tab-icon-wrap {
+  background: rgba(216,155,60,0.12);
+}
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  font-family: var(--font-sans);
+}
+
+/* ─── Safe area bottom padding for page content ─────────── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 12px);
+}
+
+/* ─── Page slide-up entry animation ─────────────────────── */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-in 0.35s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ─── Skeleton shimmer ───────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -400px 0; }
+  to   { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--card-bg) 25%, rgba(216,155,60,0.08) 50%, var(--card-bg) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 10px;
+}
+
+/* ─── Button / Link press feedback ──────────────────────── */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s cubic-bezier(.34,1.56,.64,1), opacity 0.12s ease;
+}
+
+button:active, a:active {
+  transform: scale(0.94) !important;
+  opacity: 0.85;
+}
+
+/* ─── Gold gradient text ─────────────────────────────────── */
 .gold-gradient-text {
   background: linear-gradient(135deg, #D89B3C 0%, #F3D082 50%, #B87D24 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* 3D Flip Card classes for Flashcards */
-.perspective-1000 {
-  perspective: 1000px;
-}
+/* ─── 3D Flashcard flip ──────────────────────────────────── */
+.perspective-1000 { perspective: 1000px; }
+.preserve-3d { transform-style: preserve-3d; }
+.backface-hidden { backface-visibility: hidden; }
+.rotate-y-180 { transform: rotateY(180deg); }
 
-.preserve-3d {
-  transform-style: preserve-3d;
-}
-
-.backface-hidden {
-  backface-visibility: hidden;
-}
-
-.rotate-y-180 {
-  transform: rotateY(180deg);
-}
-
-/* Audio visualizer animations */
+/* ─── Audio visualiser ───────────────────────────────────── */
 @keyframes bounce-bar {
   0%, 100% { height: 4px; }
   50% { height: 16px; }
 }
-
 .animate-bar-1 { animation: bounce-bar 0.8s ease-in-out infinite alternate; }
 .animate-bar-2 { animation: bounce-bar 0.5s ease-in-out infinite alternate 0.1s; }
 .animate-bar-3 { animation: bounce-bar 0.7s ease-in-out infinite alternate 0.2s; }
 .animate-bar-4 { animation: bounce-bar 0.6s ease-in-out infinite alternate 0.3s; }
 
-/* Override text-white classes in light mode (without .dark-theme) for global readability */
-html:not(.dark-theme) .text-white {
-  color: #1B2A4A !important;
-}
-html:not(.dark-theme) .text-white\/90 { color: rgba(27, 42, 74, 0.9) !important; }
-html:not(.dark-theme) .text-white\/80 { color: rgba(27, 42, 74, 0.8) !important; }
-html:not(.dark-theme) .text-white\/75 { color: rgba(27, 42, 74, 0.75) !important; }
-html:not(.dark-theme) .text-white\/70 { color: rgba(27, 42, 74, 0.7) !important; }
-html:not(.dark-theme) .text-white\/60 { color: rgba(27, 42, 74, 0.6) !important; }
-html:not(.dark-theme) .text-white\/50 { color: rgba(27, 42, 74, 0.5) !important; }
-html:not(.dark-theme) .text-white\/45 { color: rgba(27, 42, 74, 0.45) !important; }
-html:not(.dark-theme) .text-white\/40 { color: rgba(27, 42, 74, 0.4) !important; }
-html:not(.dark-theme) .text-white\/30 { color: rgba(27, 42, 74, 0.3) !important; }
-html:not(.dark-theme) .text-white\/20 { color: rgba(27, 42, 74, 0.2) !important; }
-html:not(.dark-theme) .text-white\/10 { color: rgba(27, 42, 74, 0.1) !important; }
+/* ─── Light mode text-white overrides ────────────────────── */
+html:not(.dark-theme) .text-white           { color: #1B2A4A !important; }
+html:not(.dark-theme) .text-white\/90       { color: rgba(27,42,74,0.9) !important; }
+html:not(.dark-theme) .text-white\/80       { color: rgba(27,42,74,0.8) !important; }
+html:not(.dark-theme) .text-white\/70       { color: rgba(27,42,74,0.7) !important; }
+html:not(.dark-theme) .text-white\/60       { color: rgba(27,42,74,0.6) !important; }
+html:not(.dark-theme) .text-white\/50       { color: rgba(27,42,74,0.5) !important; }
+html:not(.dark-theme) .text-white\/40       { color: rgba(27,42,74,0.4) !important; }
+html:not(.dark-theme) .text-white\/30       { color: rgba(27,42,74,0.3) !important; }
+html:not(.dark-theme) .text-white\/20       { color: rgba(27,42,74,0.2) !important; }
+html:not(.dark-theme) .text-white\/10       { color: rgba(27,42,74,0.1) !important; }
 
-/* Light Theme Card, Input, and Border Overrides */
+/* ─── Light mode card overrides ──────────────────────────── */
 html:not(.dark-theme) .bg-slate-900,
 html:not(.dark-theme) .bg-slate-900\/40,
 html:not(.dark-theme) .bg-slate-900\/30,
 html:not(.dark-theme) .bg-slate-900\/50,
 html:not(.dark-theme) .bg-slate-900\/70,
-html:not(.dark-theme) .bg-slate-900\/60,
-html:not(.dark-theme) .bg-slate-900\/50 {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(27, 42, 74, 0.12) !important;
+html:not(.dark-theme) .bg-slate-900\/60 {
+  background-color: rgba(255,255,255,0.85) !important;
+  border-color: rgba(27,42,74,0.1) !important;
 }
 
 html:not(.dark-theme) .bg-slate-950,
@@ -135,7 +248,7 @@ html:not(.dark-theme) .bg-slate-950\/40,
 html:not(.dark-theme) .bg-slate-950\/60,
 html:not(.dark-theme) .bg-slate-950\/20 {
   background-color: #ffffff !important;
-  border-color: rgba(27, 42, 74, 0.12) !important;
+  border-color: rgba(27,42,74,0.1) !important;
   color: #1B2A4A !important;
 }
 
@@ -144,82 +257,25 @@ html:not(.dark-theme) textarea,
 html:not(.dark-theme) select {
   background-color: #ffffff !important;
   color: #1B2A4A !important;
-  border: 1px solid rgba(27, 42, 74, 0.18) !important;
+  border: 1px solid rgba(27,42,74,0.15) !important;
 }
 
 html:not(.dark-theme) input::placeholder,
-html:not(.dark-theme) textarea::placeholder {
-  color: rgba(27, 42, 74, 0.4) !important;
-}
+html:not(.dark-theme) textarea::placeholder { color: rgba(27,42,74,0.4) !important; }
 
-html:not(.dark-theme) .border-white\/10 {
-  border-color: rgba(27, 42, 74, 0.1) !important;
-}
+html:not(.dark-theme) .border-white\/10 { border-color: rgba(27,42,74,0.1) !important; }
+html:not(.dark-theme) .border-white\/15 { border-color: rgba(27,42,74,0.15) !important; }
+html:not(.dark-theme) .border-white\/5  { border-color: rgba(27,42,74,0.06) !important; }
+html:not(.dark-theme) .bg-white\/5      { background-color: rgba(27,42,74,0.04) !important; }
+html:not(.dark-theme) .bg-white\/10     { background-color: rgba(27,42,74,0.08) !important; }
+html:not(.dark-theme) .divide-white\/5 > * { border-color: rgba(27,42,74,0.08) !important; }
 
-html:not(.dark-theme) .border-white\/15 {
-  border-color: rgba(27, 42, 74, 0.15) !important;
-}
-
-html:not(.dark-theme) .border-white\/5 {
-  border-color: rgba(27, 42, 74, 0.06) !important;
-}
-
-html:not(.dark-theme) .bg-white\/5 {
-  background-color: rgba(27, 42, 74, 0.04) !important;
-}
-
-html:not(.dark-theme) .bg-white\/10 {
-  background-color: rgba(27, 42, 74, 0.08) !important;
-}
-
-html:not(.dark-theme) .divide-white\/5 > * {
-  border-color: rgba(27, 42, 74, 0.08) !important;
-}
-
-/* Ensure welcome hero remains premium dark navy gradient even in light mode */
 html:not(.dark-theme) .from-primary.to-slate-900 {
   background: linear-gradient(135deg, #1B2A4A 0%, #0F172A 100%) !important;
-  border: 1px solid rgba(216, 155, 60, 0.2) !important;
+  border: 1px solid rgba(216,155,60,0.2) !important;
 }
-
 html:not(.dark-theme) .from-primary.to-slate-900 h1,
 html:not(.dark-theme) .from-primary.to-slate-900 p,
 html:not(.dark-theme) .from-primary.to-slate-900 span {
   color: #FAF6EC !important;
 }
-
-/* Real Native App Feel Optimizations */
-html, body {
-  /* Disable pull-to-refresh reload */
-  overscroll-behavior-y: contain;
-  /* Smooth scrolling */
-  scroll-behavior: smooth;
-  /* Disable double-tap zoom behavior on mobile */
-  touch-action: manipulation;
-}
-
-/* Tactile Active Tap Feedbacks */
-button, a {
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.1s ease, opacity 0.1s ease;
-}
-
-button:active, a:active {
-  transform: scale(0.96) !important;
-}
-
-/* Remove scrollbar tracks for native app feel */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(216, 155, 60, 0.2);
-  border-radius: 99px;
-}
-
-
-

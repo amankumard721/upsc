@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [mcqAnswered, setMcqAnswered] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
+  const [loading, setLoading] = useState(true);
   
   // Stats & Dynamic Last Accessed
   const [completedChapters, setCompletedChapters] = useState(0);
@@ -46,6 +47,7 @@ export default function DashboardPage() {
     // Fetch books & calculate overall syllabus progress
     db.getBooks().then(booksData => {
       setBooks(booksData);
+      setLoading(false);
       
       // Total chapters across all books
       const totalChs = booksData.reduce((acc, b) => acc + (b.total_chapters || 0), 0);
@@ -54,7 +56,7 @@ export default function DashboardPage() {
         const completedCount = progress.filter((p: any) => p.is_completed).length;
         setOverallProgress(Math.min(100, Math.round((completedCount / totalChs) * 100)));
       }
-    });
+    }).catch(() => setLoading(false));
 
     // Run connection diagnostics
     const runDiagnostics = async () => {
@@ -126,8 +128,24 @@ export default function DashboardPage() {
     return matchesSearch && matchesSubject;
   });
 
+  // Skeleton loader
+  if (loading) {
+    return (
+      <div className="space-y-6 page-enter">
+        <div className="skeleton h-24 w-full" />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="skeleton h-36" />
+          <div className="skeleton h-36" />
+          <div className="skeleton h-36" />
+          <div className="skeleton h-36" />
+        </div>
+        <div className="skeleton h-48 w-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 font-sans page-enter">
       {/* DB Connection Diagnostics alert box */}
       {dbError && (
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-error-red text-xs font-mono space-y-1">
