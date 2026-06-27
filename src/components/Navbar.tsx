@@ -31,6 +31,7 @@ export default function Navbar() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isDark, setIsDark] = useState(true);
   const [tappedHref, setTappedHref] = useState<string | null>(null);
+  const [bookTitle, setBookTitle] = useState<string>('');
 
   const isLiveDb = supabase !== null;
 
@@ -41,6 +42,15 @@ export default function Navbar() {
     const html = document.documentElement;
     if (isDarkLocal) html.classList.add('dark-theme');
     else html.classList.remove('dark-theme');
+
+    if (pathname.startsWith('/books/')) {
+      const bookId = pathname.split('/books/')[1];
+      if (bookId) {
+        db.getBook(bookId).then(b => { if (b) setBookTitle(b.title); });
+      }
+    } else {
+      setBookTitle('');
+    }
   }, [pathname]);
 
   const toggleDarkMode = () => {
@@ -64,6 +74,7 @@ export default function Navbar() {
     if (pathname.startsWith('/leaderboard')) return 'Leaderboard';
     if (pathname.startsWith('/flashcards')) return 'Flashcards';
     if (pathname.startsWith('/profile')) return 'Profile';
+    if (pathname.startsWith('/books')) return bookTitle || 'Book Details';
     return '';
   };
 
