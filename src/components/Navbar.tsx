@@ -136,7 +136,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-foreground/10 shadow-lg px-6 py-2 flex items-center justify-between pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)] border-t border-foreground/10 shadow-lg px-6 py-2 flex items-center justify-between pb-safe">
         {navLinks.map((link) => {
           const isActive = pathname.startsWith(link.href.split('/')[1]);
           const Icon = link.icon;
