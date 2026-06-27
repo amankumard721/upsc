@@ -55,7 +55,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { href: '/flashcards/polity-ch1', label: 'Flashcards', icon: Sparkles },
+    { href: '/flashcards/00000000-0000-0000-0000-000000000002', label: 'Flashcards', icon: Sparkles },
     { href: '/profile', label: 'Profile', icon: User }
   ];
 

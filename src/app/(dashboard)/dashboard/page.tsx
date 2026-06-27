@@ -59,7 +59,7 @@ export default function DashboardPage() {
     db.getLeaderboard().then(data => setLeaderboard(data.slice(0, 3)));
 
     // Fetch daily challenge MCQ
-    db.getMCQs('polity-ch1').then(mcqs => {
+    db.getMCQs('00000000-0000-0000-0000-000000000002').then(mcqs => {
       if (mcqs && mcqs.length > 0) {
         setDailyMCQ(mcqs[0]);
       }
@@ -71,7 +71,7 @@ export default function DashboardPage() {
       const completedCount = progress.filter((p: any) => p.is_completed).length;
       setCompletedChapters(completedCount);
 
-      const lastChId = localStorage.getItem('prepai_last_accessed_chapter_id') || 'polity-ch1';
+      const lastChId = localStorage.getItem('prepai_last_accessed_chapter_id') || '00000000-0000-0000-0000-000000000002';
       db.getChapter(lastChId).then(ch => {
         if (ch) {
           setLastAccessedChapter(ch);
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                 // Calculate completion rate based on mock database
                 // Let's hardcode some percentages for premium feel
                 let percent = 0;
-                if (book.id === 'polity-laxmikanth') percent = 33;
+                if (book.id === '00000000-0000-0000-0000-000000000001') percent = 33;
                 
                 return (
                   <div key={book.id} className="premium-card overflow-hidden bg-slate-900/30 flex flex-col justify-between h-48">
