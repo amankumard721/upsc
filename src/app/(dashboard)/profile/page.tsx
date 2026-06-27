@@ -44,8 +44,10 @@ export default function ProfilePage() {
       try {
         const prof = await db.getUserProfile();
         setProfile(prof);
-        setEditName(prof.name);
-        setEditExam(prof.exam_type || 'UPSC');
+        if (prof) {
+          setEditName(prof.name);
+          setEditExam(prof.exam_type || 'UPSC');
+        }
 
         const quizHistory = await db.getQuizAttempts();
         setAttempts(quizHistory);
