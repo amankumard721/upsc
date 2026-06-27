@@ -67,7 +67,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-white/50 font-light">Loading UPSC study material...</p>
+        <p className="text-sm text-foreground/50 font-light">Loading UPSC study material...</p>
       </div>
     );
   }
@@ -75,7 +75,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
   if (!book) {
     return (
       <div className="text-center py-16 space-y-4">
-        <p className="text-white/60">Book not found in PrepAI database.</p>
+        <p className="text-foreground/60">Book not found in PrepAI database.</p>
         <Link href="/dashboard" className="text-accent underline inline-flex items-center space-x-1">
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Dashboard</span>
@@ -117,19 +117,19 @@ export default function BookDetailsPage({ params }: BookPageProps) {
               {book.subject}
             </span>
           </div>
-          <h1 className="font-display text-lg md:text-xl font-extrabold text-white leading-tight mt-1">{book.title}</h1>
-          <p className="text-white/50 text-xs font-light">By {book.author}</p>
+          <h1 className="font-display text-lg md:text-xl font-extrabold text-foreground leading-tight mt-1">{book.title}</h1>
+          <p className="text-foreground/50 text-xs font-light">By {book.author}</p>
 
           <div className="flex flex-wrap gap-4 text-[10px] font-mono pt-1">
-            <div className="flex items-center text-white/70">
+            <div className="flex items-center text-foreground/70">
               <span className="w-1.5 h-1.5 rounded-full bg-accent/80 mr-1.5 shadow-[0_0_5px_rgba(216,155,60,0.5)]" /> 
               {chapters.length} Chapters
             </div>
-            <div className="flex items-center text-white/70">
+            <div className="flex items-center text-foreground/70">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 mr-1.5 shadow-[0_0_5px_rgba(16,185,129,0.5)]" /> 
               {chapters.filter(c => c.is_free).length} Free
             </div>
-            <div className="flex items-center text-white/70">
+            <div className="flex items-center text-foreground/70">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/80 mr-1.5 shadow-[0_0_5px_rgba(99,102,241,0.5)]" /> 
               {progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length} Done
             </div>
@@ -141,13 +141,13 @@ export default function BookDetailsPage({ params }: BookPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-white/40" />
+          <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-foreground/40" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search chapters by keyword..."
-            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-2xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-white/30"
+            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-2xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-foreground/30"
           />
         </div>
 
@@ -160,7 +160,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
               className={`text-xs px-3.5 py-2 rounded-xl transition-all border ${
                 statusFilter === filter
                   ? 'bg-accent border-accent text-slate-950 font-semibold shadow-sm'
-                  : 'bg-slate-900/40 border-white/10 text-white/70 hover:border-white/20'
+                  : 'bg-slate-900/40 border-white/10 text-foreground/70 hover:border-white/20'
               }`}
             >
               {filter}
@@ -173,7 +173,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
       <div className="space-y-4">
         {filteredChapters.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-            <p className="text-xs text-white/40">No chapters match your search filter criteria.</p>
+            <p className="text-xs text-foreground/40">No chapters match your search filter criteria.</p>
           </div>
         ) : (
           filteredChapters.map(ch => {
@@ -198,7 +198,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
                   
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold text-white text-sm leading-snug">{ch.title}</h3>
+                      <h3 className="font-bold text-foreground text-sm leading-snug">{ch.title}</h3>
                       {isCompleted && (
                         <span className="flex items-center text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">
                           <CheckCircle2 className="w-3 h-3 mr-0.5 fill-emerald-500/10" />
@@ -216,9 +216,9 @@ export default function BookDetailsPage({ params }: BookPageProps) {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-white/50 font-light mt-1 line-clamp-2 leading-relaxed max-w-2xl">{ch.description}</p>
+                    <p className="text-xs text-foreground/50 font-light mt-1 line-clamp-2 leading-relaxed max-w-2xl">{ch.description}</p>
                     
-                    <div className="flex items-center space-x-3 text-[10px] text-white/40 font-mono mt-2">
+                    <div className="flex items-center space-x-3 text-[10px] text-foreground/40 font-mono mt-2">
                       <span className="flex items-center">
                         <Clock className="w-3.5 h-3.5 mr-1" />
                         <span>{Math.round(ch.duration_seconds / 60)} Mins</span>
@@ -239,7 +239,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
                   ) : (
                     <Link
                       href="/profile"
-                      className="w-full sm:w-auto bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-white/80 hover:text-accent font-semibold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1.5"
+                      className="w-full sm:w-auto bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-foreground/80 hover:text-accent font-semibold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1.5"
                     >
                       <Lock className="w-3.5 h-3.5" />
                       <span>Unlock Gold</span>

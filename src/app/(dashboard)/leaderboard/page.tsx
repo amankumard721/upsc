@@ -43,7 +43,7 @@ export default function LeaderboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-white/50 font-light">Retrieving global rankings...</p>
+        <p className="text-sm text-foreground/50 font-light">Retrieving global rankings...</p>
       </div>
     );
   }
@@ -63,11 +63,11 @@ export default function LeaderboardPage() {
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
         <div className="space-y-1">
-          <Link href="/dashboard" className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
+          <Link href="/dashboard" className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span>Dashboard</span>
           </Link>
-          <h1 className="font-display text-2xl md:text-3xl font-extrabold text-white flex items-center">
+          <h1 className="font-display text-2xl md:text-3xl font-extrabold text-foreground flex items-center">
             <Trophy className="w-7 h-7 text-accent mr-2" />
             <span>Academy Rankings</span>
           </h1>
@@ -75,13 +75,13 @@ export default function LeaderboardPage() {
 
         {/* Search */}
         <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-white/40" />
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-foreground/40" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search aspirants..."
-            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl pl-9 pr-3 py-2.5 outline-none transition-all placeholder:text-white/20"
+            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl pl-9 pr-3 py-2.5 outline-none transition-all placeholder:text-foreground/20"
           />
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
             className={`flex-1 text-xs py-2 rounded-xl font-medium transition-all ${
               activeTab === tab
                 ? 'bg-accent text-slate-950 font-bold shadow-sm'
-                : 'text-white/60 hover:text-white'
+                : 'text-foreground/60 hover:text-foreground'
             }`}
           >
             {tab}
@@ -121,7 +121,7 @@ export default function LeaderboardPage() {
                 </span>
               </div>
               <div className="text-center">
-                <div className="text-xs font-bold text-white leading-snug line-clamp-1">{podium[1].name.split(' ')[0]}</div>
+                <div className="text-xs font-bold text-foreground leading-snug line-clamp-1">{podium[1].name.split(' ')[0]}</div>
                 <div className="flex items-center justify-center text-[10px] text-accent font-mono font-bold mt-0.5">
                   <Zap className="w-3 h-3 fill-accent mr-0.5" />
                   <span>{podium[1].total_points}</span>
@@ -148,7 +148,7 @@ export default function LeaderboardPage() {
                 </span>
               </div>
               <div className="text-center relative -top-3">
-                <div className="text-sm font-extrabold text-white leading-snug line-clamp-1">{podium[0].name.split(' ')[0]}</div>
+                <div className="text-sm font-extrabold text-foreground leading-snug line-clamp-1">{podium[0].name.split(' ')[0]}</div>
                 <div className="flex items-center justify-center text-xs text-accent font-mono font-bold mt-0.5">
                   <Zap className="w-3.5 h-3.5 fill-accent mr-0.5" />
                   <span>{podium[0].total_points}</span>
@@ -169,12 +169,12 @@ export default function LeaderboardPage() {
                   alt={podium[2].name} 
                   className="w-14 h-14 rounded-full object-cover border-2 border-amber-700 shadow-md"
                 />
-                <span className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 bg-amber-700 text-white font-mono text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border border-slate-900">
+                <span className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 bg-amber-700 text-foreground font-mono text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border border-slate-900">
                   3
                 </span>
               </div>
               <div className="text-center">
-                <div className="text-xs font-bold text-white leading-snug line-clamp-1">{podium[2].name.split(' ')[0]}</div>
+                <div className="text-xs font-bold text-foreground leading-snug line-clamp-1">{podium[2].name.split(' ')[0]}</div>
                 <div className="flex items-center justify-center text-[10px] text-accent font-mono font-bold mt-0.5">
                   <Zap className="w-3 h-3 fill-accent mr-0.5" />
                   <span>{podium[2].total_points}</span>
@@ -191,7 +191,7 @@ export default function LeaderboardPage() {
 
       {/* Leaderboard Table List */}
       <div className="premium-card overflow-hidden bg-slate-900/20 border border-white/10 rounded-2xl">
-        <div className="px-6 py-4 bg-slate-950/40 border-b border-white/5 flex justify-between text-[10px] font-mono text-white/40 uppercase tracking-widest">
+        <div className="px-6 py-4 bg-slate-950/40 border-b border-white/5 flex justify-between text-[10px] font-mono text-foreground/40 uppercase tracking-widest">
           <span>Rank & Aspirant</span>
           <div className="flex items-center space-x-12 pr-4">
             <span className="hidden sm:inline">Streak</span>
@@ -208,7 +208,7 @@ export default function LeaderboardPage() {
                 key={user.id} 
                 className={`px-6 py-4 flex items-center justify-between transition-all ${
                   isSelf 
-                    ? 'bg-accent/5 border-l-4 border-accent text-white' 
+                    ? 'bg-accent/5 border-l-4 border-accent text-foreground' 
                     : 'hover:bg-white/[0.01]'
                 }`}
               >
@@ -217,7 +217,7 @@ export default function LeaderboardPage() {
                     user.rank === 1 ? 'bg-amber-500/20 text-amber-400' :
                     user.rank === 2 ? 'bg-slate-300/20 text-slate-200' :
                     user.rank === 3 ? 'bg-amber-800/20 text-amber-600' :
-                    'text-white/40'
+                    'text-foreground/40'
                   }`}>
                     {user.rank}
                   </span>
@@ -231,7 +231,7 @@ export default function LeaderboardPage() {
                   />
                   
                   <div>
-                    <span className="text-xs md:text-sm font-bold text-white flex items-center gap-1.5">
+                    <span className="text-xs md:text-sm font-bold text-foreground flex items-center gap-1.5">
                       {user.name}
                       {isSelf && (
                         <span className="bg-accent/15 border border-accent/20 text-accent text-[9px] font-bold px-2 py-0.2 rounded-full uppercase tracking-wider scale-95 font-mono">
@@ -239,7 +239,7 @@ export default function LeaderboardPage() {
                         </span>
                       )}
                     </span>
-                    <span className="text-[10px] text-white/40 block sm:hidden mt-0.5">
+                    <span className="text-[10px] text-foreground/40 block sm:hidden mt-0.5">
                       Streak: {user.streak} days
                     </span>
                   </div>
@@ -264,7 +264,7 @@ export default function LeaderboardPage() {
           })}
 
           {filteredList.length === 0 && (
-            <div className="text-center py-12 text-xs text-white/30 italic">
+            <div className="text-center py-12 text-xs text-foreground/30 italic">
               No aspirants match your search criteria.
             </div>
           )}

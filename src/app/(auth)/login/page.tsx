@@ -161,9 +161,9 @@ function AuthContent() {
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Link href="/" className="font-display font-bold text-4xl tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-accent to-amber-500 inline-block drop-shadow-[0_0_15px_rgba(216,155,60,0.4)]">
-            Prep<span className="text-white font-sans font-light drop-shadow-none">AI</span>
+            Prep<span className="text-foreground font-sans font-light drop-shadow-none">AI</span>
           </Link>
-          <p className="text-[10px] text-white/50 mt-2 font-mono uppercase tracking-[0.2em] font-medium">Civil Services Academy</p>
+          <p className="text-[10px] text-foreground/50 mt-2 font-mono uppercase tracking-[0.2em] font-medium">Civil Services Academy</p>
         </div>
 
         <div className="premium-card p-6 sm:p-8 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
@@ -181,13 +181,13 @@ function AuthContent() {
                   
                   <button
                     onClick={() => setAuthMethod('phone')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg z-10 transition-colors flex justify-center items-center gap-2 ${authMethod === 'phone' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg z-10 transition-colors flex justify-center items-center gap-2 ${authMethod === 'phone' ? 'text-foreground' : 'text-foreground/40 hover:text-foreground/70'}`}
                   >
                     <Phone className="w-3.5 h-3.5" /> Mobile
                   </button>
                   <button
                     onClick={() => setAuthMethod('email')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg z-10 transition-colors flex justify-center items-center gap-2 ${authMethod === 'email' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg z-10 transition-colors flex justify-center items-center gap-2 ${authMethod === 'email' ? 'text-foreground' : 'text-foreground/40 hover:text-foreground/70'}`}
                   >
                     <Mail className="w-3.5 h-3.5" /> Email
                   </button>
@@ -205,9 +205,9 @@ function AuthContent() {
                   <form onSubmit={handlePhoneSubmit} className="space-y-4">
                     {!otpSent ? (
                       <div>
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5 ml-1">Phone Number</label>
+                        <label className="block text-[10px] font-bold text-foreground/50 uppercase tracking-widest mb-1.5 ml-1">Phone Number</label>
                         <div className="relative flex items-center bg-slate-950 border border-white/10 focus-within:border-accent/70 rounded-xl transition-all overflow-hidden group">
-                          <div className="pl-4 pr-3 py-3 border-r border-white/10 text-white/50 font-mono text-sm group-focus-within:text-accent transition-colors">
+                          <div className="pl-4 pr-3 py-3 border-r border-white/10 text-foreground/50 font-mono text-sm group-focus-within:text-accent transition-colors">
                             +91
                           </div>
                           <input
@@ -217,18 +217,18 @@ function AuthContent() {
                             value={phone}
                             onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                             placeholder="98765 43210"
-                            className="w-full bg-transparent text-sm pl-3 pr-4 py-3 outline-none font-mono tracking-widest placeholder:text-white/20"
+                            className="w-full bg-transparent text-sm pl-3 pr-4 py-3 outline-none font-mono tracking-widest placeholder:text-foreground/20"
                           />
                         </div>
                       </div>
                     ) : (
                       <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
-                        <label className="block text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1.5 ml-1 flex justify-between">
+                        <label className="block text-[10px] font-bold text-foreground/50 uppercase tracking-widest mb-1.5 ml-1 flex justify-between">
                           <span>Enter OTP</span>
                           <button type="button" onClick={() => setOtpSent(false)} className="text-accent hover:underline">Change Number</button>
                         </label>
                         <div className="relative">
-                          <Fingerprint className="absolute left-4 top-3.5 w-4 h-4 text-white/30" />
+                          <Fingerprint className="absolute left-4 top-3.5 w-4 h-4 text-foreground/30" />
                           <input
                             type="text"
                             required
@@ -262,21 +262,21 @@ function AuthContent() {
                   <form onSubmit={handleEmailSubmit} className="space-y-4">
                     {/* Sub-tabs for Email */}
                     <div className="flex gap-4 mb-2 ml-1">
-                      <button type="button" onClick={() => setEmailTab('login')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${emailTab === 'login' ? 'text-accent' : 'text-white/30 hover:text-white/60'}`}>Sign In</button>
-                      <button type="button" onClick={() => setEmailTab('signup')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${emailTab === 'signup' ? 'text-accent' : 'text-white/30 hover:text-white/60'}`}>Sign Up</button>
+                      <button type="button" onClick={() => setEmailTab('login')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${emailTab === 'login' ? 'text-accent' : 'text-foreground/30 hover:text-foreground/60'}`}>Sign In</button>
+                      <button type="button" onClick={() => setEmailTab('signup')} className={`text-xs font-bold uppercase tracking-wider transition-colors ${emailTab === 'signup' ? 'text-accent' : 'text-foreground/30 hover:text-foreground/60'}`}>Sign Up</button>
                     </div>
 
                     {emailTab === 'signup' && (
                       <div>
                         <div className="relative">
-                          <User className="absolute left-4 top-3.5 w-4 h-4 text-white/30" />
+                          <User className="absolute left-4 top-3.5 w-4 h-4 text-foreground/30" />
                           <input
                             type="text"
                             required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Full Name"
-                            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-white/30"
+                            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-foreground/30"
                           />
                         </div>
                       </div>
@@ -284,28 +284,28 @@ function AuthContent() {
 
                     <div>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-3.5 w-4 h-4 text-white/30" />
+                        <Mail className="absolute left-4 top-3.5 w-4 h-4 text-foreground/30" />
                         <input
                           type="email"
                           required
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Email Address"
-                          className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-white/30"
+                          className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-foreground/30"
                         />
                       </div>
                     </div>
 
                     <div>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-3.5 w-4 h-4 text-white/30" />
+                        <Lock className="absolute left-4 top-3.5 w-4 h-4 text-foreground/30" />
                         <input
                           type="password"
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="Password"
-                          className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-white/30"
+                          className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-foreground/30"
                         />
                       </div>
                     </div>
@@ -313,7 +313,7 @@ function AuthContent() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center space-x-2 mt-2"
+                      className="w-full bg-white/10 hover:bg-white/20 border border-white/10 text-foreground font-bold py-3 rounded-xl transition-all flex items-center justify-center space-x-2 mt-2"
                     >
                       <span>{emailTab === 'login' ? 'Sign In with Email' : 'Create Account'}</span>
                       {loading ? (
@@ -328,13 +328,13 @@ function AuthContent() {
                 {/* Google Sign-in */}
                 <div className="relative my-7">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
-                  <div className="relative flex justify-center text-[9px] font-bold tracking-widest uppercase"><span className="bg-slate-900 px-3 text-white/30">Or Connect</span></div>
+                  <div className="relative flex justify-center text-[9px] font-bold tracking-widest uppercase"><span className="bg-slate-900 px-3 text-foreground/30">Or Connect</span></div>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleOAuth}
-                  className="w-full border border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-3 text-sm shadow-sm"
+                  className="w-full border border-white/10 bg-white/5 hover:bg-white/10 text-foreground font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-3 text-sm shadow-sm"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -360,8 +360,8 @@ function AuthContent() {
                   <div className="w-16 h-16 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto mb-4">
                     <Award className="w-8 h-8 text-accent" />
                   </div>
-                  <h3 className="text-xl font-bold font-display text-white">Choose Your Goal</h3>
-                  <p className="text-xs text-white/50 mt-1.5 font-light leading-relaxed px-4">Tailor your learning journey and AI recommendations.</p>
+                  <h3 className="text-xl font-bold font-display text-foreground">Choose Your Goal</h3>
+                  <p className="text-xs text-foreground/50 mt-1.5 font-light leading-relaxed px-4">Tailor your learning journey and AI recommendations.</p>
                 </div>
 
                 <div className="space-y-3 pt-2">
@@ -379,8 +379,8 @@ function AuthContent() {
                           : 'border-white/5 bg-slate-950/40 hover:bg-slate-950/80 hover:border-white/10'
                       }`}
                     >
-                      <div className={`font-bold text-sm ${examType === exam.id ? 'text-white' : 'text-white/80'}`}>{exam.name}</div>
-                      <div className="text-[11px] text-white/40 mt-1 font-light">{exam.desc}</div>
+                      <div className={`font-bold text-sm ${examType === exam.id ? 'text-foreground' : 'text-foreground/80'}`}>{exam.name}</div>
+                      <div className="text-[11px] text-foreground/40 mt-1 font-light">{exam.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -407,8 +407,8 @@ function AuthContent() {
                   <div className="w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="w-8 h-8 text-indigo-400" />
                   </div>
-                  <h3 className="text-xl font-bold font-display text-white">Unlock Premium</h3>
-                  <p className="text-xs text-white/50 mt-1.5 font-light leading-relaxed px-4">Enter a friend's invite code to instantly get 7 days of Gold access.</p>
+                  <h3 className="text-xl font-bold font-display text-foreground">Unlock Premium</h3>
+                  <p className="text-xs text-foreground/50 mt-1.5 font-light leading-relaxed px-4">Enter a friend's invite code to instantly get 7 days of Gold access.</p>
                 </div>
 
                 <div className="pt-2">
@@ -430,14 +430,14 @@ function AuthContent() {
                       setReferral('');
                       handleOnboardingComplete();
                     }}
-                    className="flex-1 border border-white/10 hover:bg-white/5 text-white/70 hover:text-white font-medium py-3.5 rounded-xl transition-all"
+                    className="flex-1 border border-white/10 hover:bg-white/5 text-foreground/70 hover:text-foreground font-medium py-3.5 rounded-xl transition-all"
                   >
                     Skip
                   </button>
                   <button
                     onClick={handleOnboardingComplete}
                     disabled={loading}
-                    className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_5px_15px_rgba(99,102,241,0.3)]"
+                    className="flex-1 bg-indigo-500 hover:bg-indigo-400 text-foreground font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 shadow-[0_5px_15px_rgba(99,102,241,0.3)]"
                   >
                     <span>Finish</span>
                     {loading ? (
@@ -463,9 +463,9 @@ function AuthContent() {
                 </div>
                 
                 <div>
-                  <h3 className="text-2xl font-bold text-white font-display">You're All Set!</h3>
-                  <p className="text-sm text-white/60 mt-2 font-light leading-relaxed">
-                    Your <strong className="text-white font-semibold">{examType}</strong> syllabus account has been customized.
+                  <h3 className="text-2xl font-bold text-foreground font-display">You're All Set!</h3>
+                  <p className="text-sm text-foreground/60 mt-2 font-light leading-relaxed">
+                    Your <strong className="text-foreground font-semibold">{examType}</strong> syllabus account has been customized.
                   </p>
                   {referral.trim().toUpperCase() === 'PREPAI99' && (
                     <div className="mt-4 p-3 bg-accent/10 border border-accent/20 rounded-xl">

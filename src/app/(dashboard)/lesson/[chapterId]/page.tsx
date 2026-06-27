@@ -311,19 +311,19 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
       {/* --- Top Bar & Mode Toggle --- */}
       <header className="flex items-center justify-between p-4 glass-nav sticky top-0 z-50">
         <button onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
-          <ArrowLeft className="w-5 h-5 text-white" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         
         <div className="flex bg-white/5 border border-white/10 rounded-full p-1 shadow-inner">
           <button
             onClick={() => setMode('video')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'video' ? 'bg-accent text-slate-950 shadow-md' : 'text-white/50 hover:text-white/80'}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'video' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/50 hover:text-foreground/80'}`}
           >
             <Video className="w-3.5 h-3.5" /> Video
           </button>
           <button
             onClick={() => setMode('podcast')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'podcast' ? 'bg-accent text-slate-950 shadow-md' : 'text-white/50 hover:text-white/80'}`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'podcast' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/50 hover:text-foreground/80'}`}
           >
             <Radio className="w-3.5 h-3.5" /> Podcast
           </button>
@@ -368,11 +368,11 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               {/* Badge */}
               <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20">
                 <div className={`w-2 h-2 rounded-full bg-accent ${isPlaying ? 'animate-pulse' : ''}`} />
-                <span className="text-[9px] font-bold tracking-widest text-white uppercase font-mono">AI Narration</span>
+                <span className="text-[9px] font-bold tracking-widest text-foreground uppercase font-mono">AI Narration</span>
               </div>
               
               <div className="absolute top-4 right-4 z-20">
-                <button onClick={() => setIsTheater(!isTheater)} className="p-2 bg-black/40 backdrop-blur-md rounded-full text-white/70 hover:text-white border border-white/10 transition">
+                <button onClick={() => setIsTheater(!isTheater)} className="p-2 bg-black/40 backdrop-blur-md rounded-full text-foreground/70 hover:text-foreground border border-white/10 transition">
                   {isTheater ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
                 </button>
               </div>
@@ -408,7 +408,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                   {currentFlatLine.words.map((word, idx) => (
                     <span 
                       key={idx} 
-                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= wordIdx ? 'text-white text-shadow-glow font-bold' : 'text-white/40'}`}
+                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= wordIdx ? 'text-foreground text-shadow-glow font-bold' : 'text-foreground/40'}`}
                       style={{ textShadow: idx <= wordIdx ? '0 0 10px rgba(255,255,255,0.5)' : 'none' }}
                     >
                       {word}
@@ -439,8 +439,8 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                 <p className="text-[10px] font-mono tracking-widest uppercase text-accent mb-2">
                   Episode {currentFlatLine.sceneIdx + 1} of {lesson.scenes.length}
                 </p>
-                <h2 className="text-2xl font-bold font-display text-white">{currentScene.title}</h2>
-                <p className="text-xs text-white/50 mt-1 font-medium">Narrated by AI Teacher</p>
+                <h2 className="text-2xl font-bold font-display text-foreground">{currentScene.title}</h2>
+                <p className="text-xs text-foreground/50 mt-1 font-medium">Narrated by AI Teacher</p>
               </div>
 
               {/* Waveform */}
@@ -473,8 +473,8 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                   onClick={() => jumpToScene(idx)}
                   className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
                     currentFlatLine.sceneIdx === idx 
-                      ? 'bg-white/10 border-white/20 text-white font-bold' 
-                      : 'bg-transparent border-white/5 text-white/40 hover:text-white/70'
+                      ? 'bg-white/10 border-white/20 text-foreground font-bold' 
+                      : 'bg-transparent border-white/5 text-foreground/40 hover:text-foreground/70'
                   }`}
                 >
                   <span>{scene.icon}</span>
@@ -493,7 +493,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-md" />
                 </div>
               </div>
-              <div className="flex justify-between mt-2 text-[10px] font-mono text-white/40">
+              <div className="flex justify-between mt-2 text-[10px] font-mono text-foreground/40">
                 <span>{elapsedStr}</span>
                 <span>{totalDurationStr}</span>
               </div>
@@ -503,13 +503,13 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             <div className="flex items-center justify-between px-2 pb-2">
               <button 
                 onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
-                className="w-12 text-xs font-mono font-bold text-white/60 hover:text-accent transition"
+                className="w-12 text-xs font-mono font-bold text-foreground/60 hover:text-accent transition"
               >
                 {playbackSpeed}x
               </button>
               
               <div className="flex items-center gap-6">
-                <button onClick={() => seekBy(-2)} className="p-2 text-white/70 hover:text-white transition">
+                <button onClick={() => seekBy(-2)} className="p-2 text-foreground/70 hover:text-foreground transition">
                   <SkipBack className="w-6 h-6 fill-current" />
                 </button>
                 
@@ -520,7 +520,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                   {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-1" />}
                 </button>
                 
-                <button onClick={() => seekBy(2)} className="p-2 text-white/70 hover:text-white transition">
+                <button onClick={() => seekBy(2)} className="p-2 text-foreground/70 hover:text-foreground transition">
                   <SkipForward className="w-6 h-6 fill-current" />
                 </button>
               </div>
@@ -541,14 +541,14 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               className="w-full premium-card p-6 mt-4 border-accent/30 text-center"
             >
               <CheckCircle className="w-12 h-12 text-success-green mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-white font-display">Lesson Complete!</h3>
-              <p className="text-xs text-white/60 mt-1 mb-5">You've mastered this topic. Ready to practice?</p>
+              <h3 className="text-lg font-bold text-foreground font-display">Lesson Complete!</h3>
+              <p className="text-xs text-foreground/60 mt-1 mb-5">You've mastered this topic. Ready to practice?</p>
               
               <div className="flex gap-3">
                 <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
                   <CheckCircle className="w-4 h-4" /> Quiz (10)
                 </Link>
-                <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
+                <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-foreground font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
                   <FileText className="w-4 h-4" /> Flashcards
                 </Link>
               </div>

@@ -193,7 +193,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-white/50 font-light">Assembling OMR sheet questions...</p>
+        <p className="text-sm text-foreground/50 font-light">Assembling OMR sheet questions...</p>
       </div>
     );
   }
@@ -201,7 +201,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
   if (mcqs.length === 0) {
     return (
       <div className="text-center py-16 space-y-4">
-        <p className="text-white/60">No MCQs seeded for this chapter yet.</p>
+        <p className="text-foreground/60">No MCQs seeded for this chapter yet.</p>
         <Link href={`/lesson/${chapterId}`} className="text-accent underline inline-flex items-center space-x-1">
           <ArrowLeft className="w-4 h-4" />
           <span>Go back to lesson</span>
@@ -216,7 +216,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
     <div className="space-y-8 font-sans max-w-4xl mx-auto pb-16">
       {/* Header info */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
-        <Link href={`/lesson/${chapterId}`} className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
+        <Link href={`/lesson/${chapterId}`} className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Exit Quiz</span>
         </Link>
@@ -232,7 +232,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
               
               {/* Question header badges */}
               <div className="flex items-center justify-between mb-6">
-                <span className="text-[10px] text-white/40 font-mono">
+                <span className="text-[10px] text-foreground/40 font-mono">
                   Question {currentIdx + 1} of {mcqs.length}
                 </span>
 
@@ -256,7 +256,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
               </div>
 
               {/* Question Statement */}
-              <h2 className="text-base md:text-lg font-medium text-white leading-relaxed mb-6">
+              <h2 className="text-base md:text-lg font-medium text-foreground leading-relaxed mb-6">
                 {activeMcq.question}
               </h2>
 
@@ -274,9 +274,9 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
                   let optionStyle = 'border-white/10 bg-slate-950/40 hover:bg-slate-950/80';
                   if (isAnswered) {
                     if (isCorrect) {
-                      optionStyle = 'border-success-green bg-success-green/15 text-white';
+                      optionStyle = 'border-success-green bg-success-green/15 text-foreground';
                     } else if (isSelected) {
-                      optionStyle = 'border-error-red bg-error-red/15 text-white';
+                      optionStyle = 'border-error-red bg-error-red/15 text-foreground';
                     } else {
                       optionStyle = 'border-white/5 opacity-50 bg-slate-950/20';
                     }
@@ -312,7 +312,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-white/70 font-light leading-relaxed">
+                  <p className="text-xs text-foreground/70 font-light leading-relaxed">
                     <span className="font-bold text-accent">Explanation:</span> {activeMcq.explanation}
                   </p>
 
@@ -334,24 +334,24 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
             
             {/* Timer card */}
             <div className="premium-card p-5 bg-slate-900/40 text-center space-y-2">
-              <span className="text-[10px] text-white/40 font-mono uppercase">OMR Time Remaining</span>
+              <span className="text-[10px] text-foreground/40 font-mono uppercase">OMR Time Remaining</span>
               <div className="flex items-center justify-center space-x-2 text-2xl font-mono font-bold">
                 <Clock className={`w-6 h-6 ${timeLeft <= 10 ? 'text-error-red animate-pulse' : 'text-accent'}`} />
-                <span className={timeLeft <= 10 ? 'text-error-red' : 'text-white'}>{timeLeft}s</span>
+                <span className={timeLeft <= 10 ? 'text-error-red' : 'text-foreground'}>{timeLeft}s</span>
               </div>
             </div>
 
             {/* OMR bubble sheet grid */}
             <div className="premium-card p-5 bg-slate-900/40 space-y-4">
               <div className="text-center pb-2 border-b border-white/5">
-                <span className="text-[10px] text-white/40 font-mono uppercase">OMR Sheet Bubbles</span>
+                <span className="text-[10px] text-foreground/40 font-mono uppercase">OMR Sheet Bubbles</span>
               </div>
               <div className="grid grid-cols-5 gap-3">
                 {mcqs.map((_, idx) => {
                   const state = answersState[idx];
                   const isActive = idx === currentIdx;
                   
-                  let bubbleClass = 'border-white/10 bg-slate-950/20 text-white/40';
+                  let bubbleClass = 'border-white/10 bg-slate-950/20 text-foreground/40';
                   if (isActive) {
                     bubbleClass = 'border-accent bg-accent/15 text-accent font-bold ring-1 ring-accent/30';
                   } else if (state) {
@@ -371,7 +371,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
                 })}
               </div>
               
-              <div className="text-[9px] text-white/30 space-y-1.5 pt-2 border-t border-white/5 font-mono">
+              <div className="text-[9px] text-foreground/30 space-y-1.5 pt-2 border-t border-white/5 font-mono">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-success-green/20 border border-success-green/40 inline-block" />
                   <span>Correct: +2.0</span>
@@ -392,8 +392,8 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
           
           <div className="space-y-3">
             <Award className="w-16 h-16 text-accent mx-auto stroke-[1.5]" />
-            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-white">Quiz Completed!</h2>
-            <p className="text-sm text-white/60 max-w-md mx-auto">
+            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-foreground">Quiz Completed!</h2>
+            <p className="text-sm text-foreground/60 max-w-md mx-auto">
               You resolved the OMR sheet evaluation check-in. Detailed score metrics calculated.
             </p>
           </div>
@@ -402,32 +402,32 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
             <div className="p-4 bg-slate-950/40 border border-white/5 rounded-2xl">
               <div className="font-mono text-xl font-bold text-accent">{finalAttempt?.score}</div>
-              <div className="text-[10px] text-white/40 uppercase font-semibold mt-1">Final Score</div>
+              <div className="text-[10px] text-foreground/40 uppercase font-semibold mt-1">Final Score</div>
             </div>
             <div className="p-4 bg-slate-950/40 border border-white/5 rounded-2xl">
               <div className="font-mono text-xl font-bold text-emerald-400">
                 {finalAttempt?.correct_answers} / {finalAttempt?.total_questions}
               </div>
-              <div className="text-[10px] text-white/40 uppercase font-semibold mt-1">Correct answers</div>
+              <div className="text-[10px] text-foreground/40 uppercase font-semibold mt-1">Correct answers</div>
             </div>
             <div className="p-4 bg-slate-950/40 border border-white/5 rounded-2xl">
               <div className="font-mono text-xl font-bold text-red-400">
                 {mcqs.length - (finalAttempt?.correct_answers || 0)}
               </div>
-              <div className="text-[10px] text-white/40 uppercase font-semibold mt-1">Incorrect</div>
+              <div className="text-[10px] text-foreground/40 uppercase font-semibold mt-1">Incorrect</div>
             </div>
             <div className="p-4 bg-slate-950/40 border border-white/5 rounded-2xl">
-              <div className="font-mono text-xl font-bold text-white">
+              <div className="font-mono text-xl font-bold text-foreground">
                 {Math.round(((finalAttempt?.correct_answers || 0) / mcqs.length) * 100)}%
               </div>
-              <div className="text-[10px] text-white/40 uppercase font-semibold mt-1">Accuracy</div>
+              <div className="text-[10px] text-foreground/40 uppercase font-semibold mt-1">Accuracy</div>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-sm mx-auto">
             <button
               onClick={handleShare}
-              className="w-full bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs"
+              className="w-full bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-foreground font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs"
             >
               <Share2 className="w-4 h-4" />
               <span>Share Score Card</span>
@@ -444,7 +444,7 @@ export default function MCQQuizPage({ params }: QuizPageProps) {
           <div className="border-t border-white/5 pt-6 max-w-md mx-auto">
             <Link 
               href={`/lesson/${chapterId}`}
-              className="text-xs text-accent hover:text-white transition-colors underline flex items-center justify-center space-x-1"
+              className="text-xs text-accent hover:text-foreground transition-colors underline flex items-center justify-center space-x-1"
             >
               <span>Go back to Chapter reading player</span>
               <ChevronRight className="w-3.5 h-3.5" />

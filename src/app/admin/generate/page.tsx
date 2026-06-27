@@ -167,11 +167,11 @@ export default function AdminGeneratePage() {
     <div className="space-y-8 font-sans max-w-4xl mx-auto pb-24">
       {/* Header */}
       <div className="border-b border-white/5 pb-4">
-        <Link href="/dashboard" className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
+        <Link href="/dashboard" className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Exit Portal</span>
         </Link>
-        <h1 className="font-display text-2xl md:text-3xl font-extrabold text-white mt-1 flex items-center">
+        <h1 className="font-display text-2xl md:text-3xl font-extrabold text-foreground mt-1 flex items-center">
           <Sparkles className="w-7 h-7 text-accent mr-2" />
           <span>AI MCQ Compiler Portal</span>
         </h1>
@@ -181,16 +181,16 @@ export default function AdminGeneratePage() {
         {/* Left Input Form (1 column) */}
         <div className="space-y-6">
           <div className="premium-card p-6 bg-slate-900/40 space-y-4">
-            <h3 className="text-sm font-bold text-white border-b border-white/5 pb-2">Generation Controls</h3>
+            <h3 className="text-sm font-bold text-foreground border-b border-white/5 pb-2">Generation Controls</h3>
             
             {/* Target Selectors */}
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Standard Book</label>
+                <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Standard Book</label>
                 <select
                   value={selectedBookId}
                   onChange={(e) => setSelectedBookId(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-white focus:border-accent"
+                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-foreground focus:border-accent"
                 >
                   {books.map(b => (
                     <option key={b.id} value={b.id}>{b.title} ({b.author})</option>
@@ -199,11 +199,11 @@ export default function AdminGeneratePage() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Chapter Assignment</label>
+                <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Chapter Assignment</label>
                 <select
                   value={selectedChapterId}
                   onChange={(e) => setSelectedChapterId(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-white focus:border-accent"
+                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-foreground focus:border-accent"
                   disabled={chapters.length === 0}
                 >
                   {chapters.length === 0 ? (
@@ -220,23 +220,23 @@ export default function AdminGeneratePage() {
             {/* MCQ parameters */}
             <div className="space-y-3 pt-2">
               <div>
-                <label className="block text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Question Count</label>
+                <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Question Count</label>
                 <input
                   type="number"
                   min="1"
                   max="20"
                   value={mcqCount}
                   onChange={(e) => setMcqCount(parseInt(e.target.value))}
-                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-white focus:border-accent"
+                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-foreground focus:border-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Target Difficulty</label>
+                <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Target Difficulty</label>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-white focus:border-accent"
+                  className="w-full bg-slate-950 border border-white/10 text-xs rounded-xl px-3 py-2 outline-none text-foreground focus:border-accent"
                 >
                   <option value="Easy">Easy (Conceptual basics)</option>
                   <option value="Medium">Medium (Application analysis)</option>
@@ -275,12 +275,12 @@ export default function AdminGeneratePage() {
           {/* Chapter input text area */}
           {generatedMCQs.length === 0 && (
             <div className="premium-card p-6 bg-slate-900/40 space-y-4">
-              <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider">Chapter Text Material</label>
+              <label className="block text-xs font-semibold text-foreground/60 uppercase tracking-wider">Chapter Text Material</label>
               <textarea
                 value={chapterText}
                 onChange={(e) => setChapterText(e.target.value)}
                 placeholder="Paste the text content of your UPSC chapter, NCERT pages, or reference notes. The AI compiler will extract facts, detect difficulty, and compile mock questions..."
-                className="w-full min-h-[250px] bg-slate-950 border border-white/10 focus:border-accent rounded-2xl p-4 text-xs leading-relaxed text-white outline-none resize-none transition-all"
+                className="w-full min-h-[250px] bg-slate-950 border border-white/10 focus:border-accent rounded-2xl p-4 text-xs leading-relaxed text-foreground outline-none resize-none transition-all"
               />
             </div>
           )}
@@ -289,7 +289,7 @@ export default function AdminGeneratePage() {
           {generatedMCQs.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white">Review Generated Questions</h3>
+                <h3 className="text-sm font-bold text-foreground">Review Generated Questions</h3>
                 <button
                   onClick={handleSaveToDatabase}
                   disabled={saving}
@@ -314,50 +314,50 @@ export default function AdminGeneratePage() {
                   <div className="space-y-3">
                     {/* Question Input */}
                     <div>
-                      <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Question Statement {idx + 1}</label>
+                      <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Question Statement {idx + 1}</label>
                       <textarea
                         value={mcq.question}
                         onChange={(e) => handleEditMCQField(idx, 'question', e.target.value)}
-                        className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs leading-relaxed outline-none text-white focus:border-accent"
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs leading-relaxed outline-none text-foreground focus:border-accent"
                       />
                     </div>
 
                     {/* Options Inputs */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Option A</label>
+                        <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Option A</label>
                         <input
                           type="text"
                           value={mcq.option_a}
                           onChange={(e) => handleEditMCQField(idx, 'option_a', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-white focus:border-accent"
+                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-foreground focus:border-accent"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Option B</label>
+                        <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Option B</label>
                         <input
                           type="text"
                           value={mcq.option_b}
                           onChange={(e) => handleEditMCQField(idx, 'option_b', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-white focus:border-accent"
+                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-foreground focus:border-accent"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Option C</label>
+                        <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Option C</label>
                         <input
                           type="text"
                           value={mcq.option_c}
                           onChange={(e) => handleEditMCQField(idx, 'option_c', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-white focus:border-accent"
+                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-foreground focus:border-accent"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Option D</label>
+                        <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Option D</label>
                         <input
                           type="text"
                           value={mcq.option_d}
                           onChange={(e) => handleEditMCQField(idx, 'option_d', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-white focus:border-accent"
+                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-foreground focus:border-accent"
                         />
                       </div>
                     </div>
@@ -365,11 +365,11 @@ export default function AdminGeneratePage() {
                     {/* Correct option & Explanation */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Correct Option</label>
+                        <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Correct Option</label>
                         <select
                           value={mcq.correct_option}
                           onChange={(e) => handleEditMCQField(idx, 'correct_option', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-white focus:border-accent"
+                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-foreground focus:border-accent"
                         >
                           <option value="A">A</option>
                           <option value="B">B</option>
@@ -378,12 +378,12 @@ export default function AdminGeneratePage() {
                         </select>
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-[9px] font-bold text-white/40 uppercase font-mono mb-1">Answer Explanation</label>
+                        <label className="block text-[9px] font-bold text-foreground/40 uppercase font-mono mb-1">Answer Explanation</label>
                         <input
                           type="text"
                           value={mcq.explanation}
                           onChange={(e) => handleEditMCQField(idx, 'explanation', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-white focus:border-accent"
+                          className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none text-foreground focus:border-accent"
                         />
                       </div>
                     </div>

@@ -189,7 +189,7 @@ export default function DashboardPage() {
               className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200 border ${
                 selectedSubject === chip.label
                   ? 'bg-accent text-slate-950 border-accent shadow-md shadow-accent/20'
-                  : 'bg-foreground/5 border-foreground/10 text-foreground/60 hover:border-foreground/20'
+                  : 'bg-white/5 border-white/10 text-foreground/60 hover:border-white/20'
               }`}
             >
               <span>{chip.emoji}</span>
@@ -224,21 +224,21 @@ export default function DashboardPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent opacity-100" />
                     
-                    <span className="absolute top-2.5 left-2.5 text-[8px] bg-slate-950/40 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded-md font-bold uppercase tracking-widest shadow-sm">
+                    <span className="absolute top-2.5 left-2.5 text-[8px] bg-slate-950/40 backdrop-blur-md border border-white/20 text-foreground px-2 py-1 rounded-md font-bold uppercase tracking-widest shadow-sm">
                       {book.subject}
                     </span>
                     
                     {/* Floating Title inside Cover for premium feel */}
                     <div className="absolute bottom-2.5 left-2.5 right-2.5">
-                       <h4 className="text-xs font-bold text-white leading-snug line-clamp-2 drop-shadow-md">{book.title}</h4>
+                       <h4 className="text-xs font-bold text-foreground leading-snug line-clamp-2 drop-shadow-md">{book.title}</h4>
                     </div>
                   </div>
 
                   {/* Info Panel */}
                   <div className="p-3 flex-1 flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-2.5">
-                      <p className="text-[9px] text-white/50 font-mono truncate mr-2">{book.author}</p>
-                      <span className="text-[9px] text-white/30 font-mono shrink-0 font-medium bg-white/5 px-1.5 py-0.5 rounded-sm">{book.total_chapters} CH</span>
+                      <p className="text-[9px] text-foreground/50 font-mono truncate mr-2">{book.author}</p>
+                      <span className="text-[9px] text-foreground/30 font-mono shrink-0 font-medium bg-white/5 px-1.5 py-0.5 rounded-sm">{book.total_chapters} CH</span>
                     </div>
 
                     {/* Clean Linear Progress */}
@@ -286,11 +286,11 @@ export default function DashboardPage() {
               const isSelected = selectedOption === key;
               const isCorrect = key === dailyMCQ.correct_option;
 
-              let cls = 'border-foreground/10 bg-foreground/4 hover:border-accent/40 hover:bg-accent/5';
+              let cls = 'border-white/10 bg-white/4 hover:border-accent/40 hover:bg-accent/5';
               if (mcqAnswered) {
                 if (isCorrect) cls = 'border-success-green bg-success-green/10';
                 else if (isSelected) cls = 'border-error-red bg-error-red/10';
-                else cls = 'border-foreground/5 opacity-40';
+                else cls = 'border-white/5 opacity-40';
               }
 
               return (
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                   onClick={() => handleMCQ(key)}
                   className={`w-full text-left flex items-start gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${cls}`}
                 >
-                  <span className="shrink-0 w-6 h-6 rounded-full border border-foreground/20 flex items-center justify-center text-[11px] font-bold font-mono text-accent bg-foreground/5 mt-0.5">
+                  <span className="shrink-0 w-6 h-6 rounded-full border border-white/20 flex items-center justify-center text-[11px] font-bold font-mono text-accent bg-white/5 mt-0.5">
                     {key}
                   </span>
                   <span className="text-xs text-foreground/85 leading-relaxed">{text}</span>
@@ -313,7 +313,7 @@ export default function DashboardPage() {
 
           {/* Explanation */}
           {mcqAnswered && (
-            <div className="mt-4 p-3.5 bg-foreground/5 rounded-2xl border border-foreground/8">
+            <div className="mt-4 p-3.5 bg-white/5 rounded-2xl border border-white/8">
               <div className="flex items-center gap-2 mb-2">
                 {selectedOption === dailyMCQ.correct_option ? (
                   <><CheckCircle2 className="w-4 h-4 text-success-green shrink-0" /><span className="text-xs font-bold text-success-green">Correct! Well done!</span></>
@@ -350,7 +350,7 @@ export default function DashboardPage() {
 
         <div className="space-y-2.5">
           {leaderboard.map((entry, idx) => (
-            <div key={entry.id} className={`flex items-center gap-3 p-3 rounded-2xl border ${idx === 0 ? 'bg-amber-500/8 border-amber-500/20' : 'bg-foreground/3 border-foreground/8'}`}>
+            <div key={entry.id} className={`flex items-center gap-3 p-3 rounded-2xl border ${idx === 0 ? 'bg-amber-500/8 border-amber-500/20' : 'bg-white/3 border-white/8'}`}>
               <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold font-mono shrink-0 ${
                 idx === 0 ? 'bg-amber-500/20 text-amber-400' :
                 idx === 1 ? 'bg-slate-400/20 text-slate-300' :

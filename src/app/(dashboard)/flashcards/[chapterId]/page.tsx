@@ -160,7 +160,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-white/50 font-light">Shuffling Spaced Repetition deck...</p>
+        <p className="text-sm text-foreground/50 font-light">Shuffling Spaced Repetition deck...</p>
       </div>
     );
   }
@@ -168,7 +168,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
   if (cards.length === 0) {
     return (
       <div className="text-center py-16 space-y-4">
-        <p className="text-white/60">No flashcards created for this chapter yet.</p>
+        <p className="text-foreground/60">No flashcards created for this chapter yet.</p>
         <Link href={`/lesson/${chapterId}`} className="text-accent underline inline-flex items-center space-x-1">
           <ArrowLeft className="w-4 h-4" />
           <span>Go back to lesson</span>
@@ -184,7 +184,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
       
       {/* Header Info */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
-        <Link href={`/lesson/${chapterId}`} className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
+        <Link href={`/lesson/${chapterId}`} className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Exit Deck</span>
         </Link>
@@ -196,7 +196,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
           
           {/* Progress bar */}
           <div>
-            <div className="flex justify-between text-xs text-white/40 mb-1.5 font-mono">
+            <div className="flex justify-between text-xs text-foreground/40 mb-1.5 font-mono">
               <span>Progress</span>
               <span>{currentIdx + 1} / {cards.length} cards</span>
             </div>
@@ -236,18 +236,18 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
                 className="absolute inset-0 premium-card p-8 bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 rounded-3xl flex flex-col justify-between shadow-[0_20px_40px_rgba(0,0,0,0.5)] z-10"
                 style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
               >
-                <div className="flex justify-between items-center text-[10px] text-white/40 uppercase font-mono tracking-wider">
+                <div className="flex justify-between items-center text-[10px] text-foreground/40 uppercase font-mono tracking-wider">
                   <span>Question</span>
                   <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-md border border-white/10">
                     <RotateCw className="w-3 h-3 animate-spin-slow" /> Tap to Flip
                   </div>
                 </div>
                 
-                <p className="text-center text-xl md:text-2xl font-bold font-display text-white leading-relaxed max-w-md mx-auto drop-shadow-md">
+                <p className="text-center text-xl md:text-2xl font-bold font-display text-foreground leading-relaxed max-w-md mx-auto drop-shadow-md">
                   {activeCard.front_text}
                 </p>
 
-                <div className="text-center text-[10px] text-white/30 uppercase tracking-widest font-mono">
+                <div className="text-center text-[10px] text-foreground/30 uppercase tracking-widest font-mono">
                   Swipe left (Don't Know) / Swipe right (Know)
                 </div>
               </div>
@@ -311,8 +311,8 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
           
           <div className="space-y-3">
             <Award className="w-16 h-16 text-accent mx-auto stroke-[1.5]" />
-            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-white">Session Complete!</h2>
-            <p className="text-sm text-white/60 max-w-md mx-auto">
+            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-foreground">Session Complete!</h2>
+            <p className="text-sm text-foreground/60 max-w-md mx-auto">
               Your Leitner spaced-repetition card index has been rescheduled. We have pushed new cards into review intervals.
             </p>
           </div>
@@ -320,11 +320,11 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
           <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto font-mono text-center">
             <div className="p-4 bg-success-green/10 border border-success-green/20 rounded-2xl">
               <div className="text-2xl font-bold text-success-green">{knowCount}</div>
-              <div className="text-[10px] text-white/40 uppercase font-semibold mt-1">Know (Recall)</div>
+              <div className="text-[10px] text-foreground/40 uppercase font-semibold mt-1">Know (Recall)</div>
             </div>
             <div className="p-4 bg-error-red/10 border border-error-red/20 rounded-2xl">
               <div className="text-2xl font-bold text-error-red">{dontKnowCount}</div>
-              <div className="text-[10px] text-white/40 uppercase font-semibold mt-1">Don't Know (Reset)</div>
+              <div className="text-[10px] text-foreground/40 uppercase font-semibold mt-1">Don't Know (Reset)</div>
             </div>
           </div>
 
@@ -333,7 +333,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-sm mx-auto">
             <Link
               href="/dashboard"
-              className="w-full bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs"
+              className="w-full bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-foreground font-bold py-3.5 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs"
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Back to Dashboard</span>

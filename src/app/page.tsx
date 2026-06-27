@@ -161,7 +161,7 @@ export default function LandingPage() {
             </Link>
             <a 
               href="#features" 
-              className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20 font-semibold text-base px-8 py-4 rounded-full transition-all flex items-center justify-center"
+              className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-foreground border border-white/10 hover:border-white/20 font-semibold text-base px-8 py-4 rounded-full transition-all flex items-center justify-center"
             >
               Explore Features
             </a>
@@ -179,7 +179,7 @@ export default function LandingPage() {
             <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
             <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
             <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
-            <span className="text-xs text-white/40 ml-4 font-mono">prepai.upsc.in/dashboard</span>
+            <span className="text-xs text-foreground/40 ml-4 font-mono">prepai.upsc.in/dashboard</span>
           </div>
           <div className="aspect-[16/9] bg-slate-950 p-6 md:p-10 flex flex-col md:flex-row gap-6 relative">
             <div className="flex-1 space-y-4">
@@ -190,27 +190,27 @@ export default function LandingPage() {
               <div className="pt-4 grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl border border-white/5 bg-white/5">
                   <div className="font-mono text-2xl font-bold text-accent">1,250</div>
-                  <div className="text-xs text-white/50 uppercase">Total XP</div>
+                  <div className="text-xs text-foreground/50 uppercase">Total XP</div>
                 </div>
                 <div className="p-4 rounded-xl border border-white/5 bg-white/5">
                   <div className="font-mono text-2xl font-bold text-amber-500">5 Days</div>
-                  <div className="text-xs text-white/50 uppercase">Study Streak</div>
+                  <div className="text-xs text-foreground/50 uppercase">Study Streak</div>
                 </div>
               </div>
             </div>
             <div className="w-full md:w-80 bg-slate-900 border border-white/10 rounded-xl p-5 flex flex-col justify-between">
               <div>
                 <div className="text-xs text-accent uppercase font-bold tracking-wider mb-2">Live MCQ Practice</div>
-                <div className="text-sm font-semibold mb-4 text-white">Under which act did the Governor of Bengal become Governor-General of India?</div>
+                <div className="text-sm font-semibold mb-4 text-foreground">Under which act did the Governor of Bengal become Governor-General of India?</div>
                 <div className="space-y-2">
                   {['Regulating Act 1773', 'Pitt’s India Act 1784', 'Charter Act 1833'].map((opt, i) => (
-                    <div key={i} className={`p-2.5 rounded-lg border text-xs cursor-pointer ${i === 2 ? 'border-success-green bg-success-green/10 text-white' : 'border-white/10 hover:bg-white/5'}`}>
+                    <div key={i} className={`p-2.5 rounded-lg border text-xs cursor-pointer ${i === 2 ? 'border-success-green bg-success-green/10 text-foreground' : 'border-white/10 hover:bg-white/5'}`}>
                       {opt}
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="mt-4 text-xs text-white/40 border-t border-white/5 pt-3">
+              <div className="mt-4 text-xs text-foreground/40 border-t border-white/5 pt-3">
                 Year Asked: 2018 | Explanation included.
               </div>
             </div>
@@ -220,8 +220,8 @@ export default function LandingPage() {
         {/* Features Section */}
         <section id="features" className="pt-28 pb-16">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white mb-4">Study Smarter, Not Longer</h2>
-            <p className="text-white/60 font-light">PrepAI combines cognitive science tools with artificial intelligence to optimize your UPSC preparation workflow.</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-foreground mb-4">Study Smarter, Not Longer</h2>
+            <p className="text-foreground/60 font-light">PrepAI combines cognitive science tools with artificial intelligence to optimize your UPSC preparation workflow.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -232,8 +232,8 @@ export default function LandingPage() {
                   <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 text-accent">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
-                  <p className="text-sm text-white/60 font-light leading-relaxed">{feature.description}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{feature.title}</h3>
+                  <p className="text-sm text-foreground/60 font-light leading-relaxed">{feature.description}</p>
                 </div>
               );
             })}
@@ -261,9 +261,9 @@ export default function LandingPage() {
               }
             ].map((test, i) => (
               <div key={i} className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 flex flex-col justify-between">
-                <p className="text-white/80 italic font-light leading-relaxed mb-6">"{test.quote}"</p>
+                <p className="text-foreground/80 italic font-light leading-relaxed mb-6">"{test.quote}"</p>
                 <div>
-                  <div className="font-bold text-white text-sm">{test.author}</div>
+                  <div className="font-bold text-foreground text-sm">{test.author}</div>
                   <div className="text-xs text-accent mt-0.5">{test.role}</div>
                 </div>
               </div>
@@ -274,8 +274,8 @@ export default function LandingPage() {
         {/* Pricing */}
         <section className="pt-16">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-white mb-4">Invest in Your LBSNAA Dream</h2>
-            <p className="text-white/60 font-light">Flexible plans designed to assist you in every step of the Civil Services Journey.</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-foreground mb-4">Invest in Your LBSNAA Dream</h2>
+            <p className="text-foreground/60 font-light">Flexible plans designed to assist you in every step of the Civil Services Journey.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -294,16 +294,16 @@ export default function LandingPage() {
                   </span>
                 )}
                 <div>
-                  <div className="text-lg font-bold text-white mb-2">{tier.name}</div>
+                  <div className="text-lg font-bold text-foreground mb-2">{tier.name}</div>
                   <div className="flex items-baseline space-x-1 mb-4">
-                    <span className="text-4xl font-mono font-bold text-white">{tier.price}</span>
-                    {tier.period && <span className="text-white/60 text-sm">{tier.period}</span>}
+                    <span className="text-4xl font-mono font-bold text-foreground">{tier.price}</span>
+                    {tier.period && <span className="text-foreground/60 text-sm">{tier.period}</span>}
                   </div>
-                  <p className="text-sm text-white/50 mb-6 font-light">{tier.description}</p>
+                  <p className="text-sm text-foreground/50 mb-6 font-light">{tier.description}</p>
                   
                   <ul className="space-y-3 mb-8">
                     {tier.features.map((feat, fIdx) => (
-                      <li key={fIdx} className="flex items-center space-x-2.5 text-sm text-white/80">
+                      <li key={fIdx} className="flex items-center space-x-2.5 text-sm text-foreground/80">
                         <Check className="w-4 h-4 text-accent flex-shrink-0" />
                         <span>{feat}</span>
                       </li>
@@ -316,7 +316,7 @@ export default function LandingPage() {
                   className={`w-full py-3.5 rounded-full font-bold text-center transition-all ${
                     tier.isPopular
                       ? 'bg-accent hover:bg-amber-600 text-[#0B1325]'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
+                      : 'bg-white/10 hover:bg-white/20 text-foreground'
                   }`}
                 >
                   {tier.cta}
@@ -328,7 +328,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 bg-[#070b16] py-12 relative z-10 text-center text-xs text-white/40">
+      <footer className="border-t border-white/5 bg-[#070b16] py-12 relative z-10 text-center text-xs text-foreground/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="mb-2">© {new Date().getFullYear()} PrepAI. Made for Civil Services Excellence.</p>
           <p>Privacy Policy | Terms of Service | Contact Support</p>

@@ -140,7 +140,7 @@ export default function ProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-white/50 font-light">Retrieving profile portfolio...</p>
+        <p className="text-sm text-foreground/50 font-light">Retrieving profile portfolio...</p>
       </div>
     );
   }
@@ -172,11 +172,11 @@ export default function ProfilePage() {
       
       {/* Header Info */}
       <div className="border-b border-white/5 pb-4">
-        <Link href="/dashboard" className="text-sm text-white/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
+        <Link href="/dashboard" className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span>Dashboard</span>
         </Link>
-        <h1 className="font-display text-2xl md:text-3xl font-extrabold text-white mt-1">Aspirant Profile</h1>
+        <h1 className="font-display text-2xl md:text-3xl font-extrabold text-foreground mt-1">Aspirant Profile</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -192,7 +192,7 @@ export default function ProfilePage() {
               className="w-20 h-20 rounded-full object-cover mx-auto border-2 border-accent/40"
             />
             <div>
-              <h3 className="text-base font-bold text-white leading-none">{profile?.name}</h3>
+              <h3 className="text-base font-bold text-foreground leading-none">{profile?.name}</h3>
               <span className="text-[10px] text-accent font-mono block mt-1">{profile?.email}</span>
             </div>
 
@@ -203,7 +203,7 @@ export default function ProfilePage() {
                   <span>Gold Premium</span>
                 </div>
               ) : (
-                <div className="inline-flex items-center space-x-1 bg-white/5 text-white/60 px-3 py-1 rounded-full text-xs font-medium border border-white/10">
+                <div className="inline-flex items-center space-x-1 bg-white/5 text-foreground/60 px-3 py-1 rounded-full text-xs font-medium border border-white/10">
                   <span>Free Tier Account</span>
                 </div>
               )}
@@ -212,22 +212,22 @@ export default function ProfilePage() {
 
           {/* Stats Grid */}
           <div className="premium-card p-6 bg-slate-900/40 space-y-4">
-            <h4 className="text-xs text-white/40 uppercase font-bold tracking-wider font-mono border-b border-white/5 pb-2">Academic Metrics</h4>
+            <h4 className="text-xs text-foreground/40 uppercase font-bold tracking-wider font-mono border-b border-white/5 pb-2">Academic Metrics</h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <span className="text-[10px] text-white/50 block">Accuracy</span>
+                <span className="text-[10px] text-foreground/50 block">Accuracy</span>
                 <span className="text-lg font-mono font-bold text-emerald-400">{averageAccuracy}%</span>
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] text-white/50 block">Questions Solved</span>
-                <span className="text-lg font-mono font-bold text-white">{totalQuestionsSolved}</span>
+                <span className="text-[10px] text-foreground/50 block">Questions Solved</span>
+                <span className="text-lg font-mono font-bold text-foreground">{totalQuestionsSolved}</span>
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] text-white/50 block">Points (XP)</span>
+                <span className="text-[10px] text-foreground/50 block">Points (XP)</span>
                 <span className="text-lg font-mono font-bold text-accent">{profile?.total_points}</span>
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] text-white/50 block">Current Streak</span>
+                <span className="text-[10px] text-foreground/50 block">Current Streak</span>
                 <span className="text-lg font-mono font-bold text-amber-500">{profile?.streak} days</span>
               </div>
             </div>
@@ -245,8 +245,8 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-[10px] text-accent uppercase font-bold tracking-wider font-mono">Premium Upgrade</span>
-                <h3 className="text-lg font-bold text-white mt-1">LBSNAA Gold Access</h3>
-                <p className="text-xs text-white/70 font-light mt-1 max-w-sm">
+                <h3 className="text-lg font-bold text-foreground mt-1">LBSNAA Gold Access</h3>
+                <p className="text-xs text-foreground/70 font-light mt-1 max-w-sm">
                   Get unlimited standard chapters, GPT-4 doubt solving, and custom MCQ creators.
                 </p>
               </div>
@@ -273,14 +273,14 @@ export default function ProfilePage() {
           <div className="premium-card p-6 bg-slate-900/40 space-y-4">
             <div>
               <span className="text-[10px] text-accent uppercase font-bold tracking-wider font-mono">Invite Friends</span>
-              <h3 className="text-base font-bold text-white mt-1">Referral Rewards</h3>
-              <p className="text-xs text-white/50 font-light mt-1">
+              <h3 className="text-base font-bold text-foreground mt-1">Referral Rewards</h3>
+              <p className="text-xs text-foreground/50 font-light mt-1">
                 Share your code. Both you and your friend get 7 days of premium access once they complete onboarding.
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-center font-mono font-bold tracking-widest text-white text-base">
+              <div className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-center font-mono font-bold tracking-widest text-foreground text-base">
                 {profile?.referral_code || 'PREPAI99'}
               </div>
               <button
@@ -295,7 +295,7 @@ export default function ProfilePage() {
 
           {/* Achievement badges */}
           <div className="premium-card p-6 bg-slate-900/40 space-y-4">
-            <h3 className="text-sm font-bold text-white border-b border-white/5 pb-2">Achievement Badges</h3>
+            <h3 className="text-sm font-bold text-foreground border-b border-white/5 pb-2">Achievement Badges</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {achievements.map((ach, idx) => {
                 const Icon = ach.icon;
@@ -304,14 +304,14 @@ export default function ProfilePage() {
                     key={idx} 
                     className={`p-4 rounded-xl border text-center space-y-2 flex flex-col items-center justify-center transition-all ${
                       ach.unlocked 
-                        ? 'bg-accent/5 border-accent/30 text-white shadow-sm shadow-accent/5' 
+                        ? 'bg-accent/5 border-accent/30 text-foreground shadow-sm shadow-accent/5' 
                         : 'bg-slate-950/20 border-white/5 opacity-50 grayscale'
                     }`}
                   >
-                    <Icon className={`w-8 h-8 ${ach.unlocked ? 'text-accent' : 'text-white/40'}`} />
+                    <Icon className={`w-8 h-8 ${ach.unlocked ? 'text-accent' : 'text-foreground/40'}`} />
                     <div>
                       <div className="text-xs font-bold leading-tight">{ach.title}</div>
-                      <div className="text-[9px] text-white/50 mt-0.5 leading-snug">{ach.desc}</div>
+                      <div className="text-[9px] text-foreground/50 mt-0.5 leading-snug">{ach.desc}</div>
                     </div>
                   </div>
                 );
@@ -321,7 +321,7 @@ export default function ProfilePage() {
 
           {/* Settings panel form */}
           <div className="premium-card p-6 bg-slate-900/40 space-y-4">
-            <h3 className="text-sm font-bold text-white border-b border-white/5 pb-2">Settings Panel</h3>
+            <h3 className="text-sm font-bold text-foreground border-b border-white/5 pb-2">Settings Panel</h3>
             
             {saveSuccess && (
               <div className="p-3 bg-success-green/10 border border-success-green/20 rounded-xl text-xs text-emerald-400">
@@ -332,21 +332,21 @@ export default function ProfilePage() {
             <form onSubmit={handleSaveSettings} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Aspirant Name</label>
+                  <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Aspirant Name</label>
                   <input
                     type="text"
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2.5 outline-none text-white transition-all"
+                    className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2.5 outline-none text-foreground transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Target Syllabus</label>
+                  <label className="block text-[10px] font-semibold text-foreground/60 uppercase tracking-wider mb-1">Target Syllabus</label>
                   <select
                     value={editExam}
                     onChange={(e) => setEditExam(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2.5 outline-none text-white transition-all"
+                    className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2.5 outline-none text-foreground transition-all"
                   >
                     <option value="UPSC">UPSC Civil Services</option>
                     <option value="SSC">SSC CGL</option>
@@ -365,13 +365,13 @@ export default function ProfilePage() {
 
             <div className="border-t border-white/5 pt-4 mt-4 space-y-3">
               <h4 className="text-xs font-bold text-accent font-mono uppercase tracking-wider">System Alerts</h4>
-              <p className="text-xs text-white/50 font-light">
+              <p className="text-xs text-foreground/50 font-light">
                 Enable local push notifications to get daily streak reminders and quiz results directly on your screen.
               </p>
               <button
                 type="button"
                 onClick={handleTestNotification}
-                className="w-full bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                className="w-full bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-foreground font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
               >
                 <Sparkles className="w-4 h-4 text-accent animate-pulse" />
                 <span>Send Test Push Reminder</span>
@@ -389,10 +389,10 @@ export default function ProfilePage() {
           <div className="w-full max-w-sm bg-slate-900 border border-indigo-500/30 rounded-2xl overflow-hidden shadow-2xl relative">
             
             {/* Razorpay stylized header */}
-            <div className="bg-indigo-600 p-6 text-white text-center space-y-1 relative">
+            <div className="bg-indigo-600 p-6 text-foreground text-center space-y-1 relative">
               <button 
                 onClick={() => setShowRazorpayModal(false)}
-                className="absolute top-4 right-4 text-white/60 hover:text-white"
+                className="absolute top-4 right-4 text-foreground/60 hover:text-foreground"
               >
                 <XCircle className="w-5 h-5 fill-indigo-600" />
               </button>
@@ -406,16 +406,16 @@ export default function ProfilePage() {
 
             <div className="p-6 space-y-6">
               <div className="flex justify-between items-center text-xs font-mono border-b border-white/5 pb-3">
-                <span className="text-white/50">Plan Price:</span>
-                <span className="text-white font-bold">₹199.00 INR</span>
+                <span className="text-foreground/50">Plan Price:</span>
+                <span className="text-foreground font-bold">₹199.00 INR</span>
               </div>
               <div className="flex justify-between items-center text-xs font-mono border-b border-white/5 pb-3">
-                <span className="text-white/50">XP Welcome Bonus:</span>
+                <span className="text-foreground/50">XP Welcome Bonus:</span>
                 <span className="text-accent font-bold">+300 XP</span>
               </div>
 
               <div className="space-y-1 text-center py-2">
-                <span className="text-[10px] text-white/40 block">Secure encryption standard enabled</span>
+                <span className="text-[10px] text-foreground/40 block">Secure encryption standard enabled</span>
                 <div className="flex justify-center gap-2 text-indigo-400">
                   <CreditCard className="w-5 h-5" />
                   <Sparkles className="w-5 h-5 text-accent" />
@@ -425,7 +425,7 @@ export default function ProfilePage() {
               <button
                 onClick={submitMockRazorpayPayment}
                 disabled={paymentLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-foreground font-bold py-3 rounded-xl transition-all flex items-center justify-center space-x-2 text-xs"
               >
                 <span>{paymentLoading ? 'Authenticating Gateway...' : 'Pay ₹199 via Razorpay'}</span>
                 {paymentLoading && (

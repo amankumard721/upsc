@@ -105,7 +105,7 @@ export default function Navbar() {
             <div className="flex items-center space-x-3">
               <button 
                 onClick={() => router.back()} 
-                className="p-2 -ml-2 text-foreground/70 hover:text-foreground transition-colors rounded-full hover:bg-foreground/5"
+                className="p-2 -ml-2 text-foreground/70 hover:text-foreground transition-colors rounded-full hover:bg-white/5"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -128,7 +128,7 @@ export default function Navbar() {
                     className={`flex items-center space-x-2 text-sm font-medium px-4 py-2 rounded-full transition-all duration-200 ${
                       isActive
                         ? 'bg-accent/15 text-accent'
-                        : 'text-foreground/70 hover:text-foreground hover:bg-foreground/5'
+                        : 'text-foreground/70 hover:text-foreground hover:bg-white/5'
                     }`}
                   >
                     <Icon className={`w-4 h-4 ${isActive ? 'fill-accent stroke-none' : ''}`} />
@@ -159,7 +159,7 @@ export default function Navbar() {
                 ) : (
                   <Link
                     href="/profile"
-                    className="hidden sm:flex items-center space-x-1 bg-gradient-to-r from-accent to-amber-600 hover:opacity-90 text-white px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm transition-all"
+                    className="hidden sm:flex items-center space-x-1 bg-gradient-to-r from-accent to-amber-600 hover:opacity-90 text-foreground px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider shadow-sm transition-all"
                   >
                     <Sparkles className="w-3 h-3" />
                     <span>Go Premium</span>
@@ -171,7 +171,7 @@ export default function Navbar() {
             {/* Theme toggle (Available on all pages) */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-foreground/10 text-foreground/80 transition-colors ml-2"
+              className="p-2 rounded-full hover:bg-white/10 text-foreground/80 transition-colors ml-2"
               aria-label="Toggle Theme"
             >
               {isDark ? <Sun className="w-5 h-5 text-accent" /> : <Moon className="w-5 h-5 text-primary" />}
