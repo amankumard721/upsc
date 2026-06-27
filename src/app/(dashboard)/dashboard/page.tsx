@@ -88,43 +88,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 font-sans">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-slate-900 border border-accent/20 p-8 shadow-lg">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[80px] pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center space-x-2 text-accent text-xs font-semibold uppercase tracking-wider mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Civil Services Journey</span>
-            </div>
-            <h1 className="font-display text-3xl md:text-4xl font-extrabold text-white leading-tight">
-              Namaste, {profile?.name || 'Aspirant'}!
-            </h1>
-            <p className="text-white/70 text-sm font-light mt-1.5 max-w-xl">
-              "Arise, awake, and stop not until the goal is reached." Let's master today's target topics.
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-4 bg-white/5 border border-white/10 rounded-2xl p-4">
-            <div className="text-center px-4 border-r border-white/10">
-              <div className="text-2xl font-mono font-bold text-accent">{completedChapters}</div>
-              <div className="text-[10px] text-white/50 uppercase font-semibold">Completed</div>
-            </div>
-            <div className="text-center px-4 border-r border-white/10">
-              <div className="text-2xl font-mono font-bold text-emerald-500">{(profile?.total_points || 0)}</div>
-              <div className="text-[10px] text-white/50 uppercase font-semibold">Total XP</div>
-            </div>
-            <div className="text-center px-4">
-              <div className="text-2xl font-mono font-bold text-amber-500 flex items-center justify-center">
-                <Flame className="w-5 h-5 fill-amber-500 mr-0.5" />
-                <span>{profile?.streak || 0}</span>
-              </div>
-              <div className="text-[10px] text-white/50 uppercase font-semibold">Streak</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Columns (Syllabus, Daily Challenge) */}
         <div className="lg:col-span-2 space-y-8">
