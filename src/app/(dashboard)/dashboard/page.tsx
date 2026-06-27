@@ -32,33 +32,52 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('All');
   
-  // Stats
+  // Stats & Dynamic Last Accessed
   const [completedChapters, setCompletedChapters] = useState(0);
+  const [lastAccessedChapter, setLastAccessedChapter] = useState<Chapter | null>(null);
+  const [lastAccessedBook, setLastAccessedBook] = useState<Book | null>(null);
+  const [overallProgress, setOverallProgress] = useState(0);
 
   useEffect(() => {
     // Fetch profile
     db.getUserProfile().then(setProfile);
 
-    // Fetch books
-    db.getBooks().then(setBooks);
+    // Fetch books & calculate overall syllabus progress
+    db.getBooks().then(booksData => {
+      setBooks(booksData);
+      
+      // Total chapters across all books
+      const totalChs = booksData.reduce((acc, b) => acc + (b.total_chapters || 0), 0);
+      if (totalChs > 0 && typeof window !== 'undefined') {
+        const progress = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
+        const completedCount = progress.filter((p: any) => p.is_completed).length;
+        setOverallProgress(Math.min(100, Math.round((completedCount / totalChs) * 100)));
+      }
+    });
 
     // Fetch leaderboard
     db.getLeaderboard().then(data => setLeaderboard(data.slice(0, 3)));
 
-    // Fetch progress and calculate completed chapters
-    // For now, load a static MCQ for the daily challenge (historical background ch1)
+    // Fetch daily challenge MCQ
     db.getMCQs('polity-ch1').then(mcqs => {
       if (mcqs && mcqs.length > 0) {
-        // Use the first MCQ as daily challenge
         setDailyMCQ(mcqs[0]);
       }
     });
 
-    // Load progress list to see completions
+    // Load progress count & last accessed chapter
     if (typeof window !== 'undefined') {
       const progress = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
       const completedCount = progress.filter((p: any) => p.is_completed).length;
       setCompletedChapters(completedCount);
+
+      const lastChId = localStorage.getItem('prepai_last_accessed_chapter_id') || 'polity-ch1';
+      db.getChapter(lastChId).then(ch => {
+        if (ch) {
+          setLastAccessedChapter(ch);
+          db.getBook(ch.book_id).then(b => setLastAccessedBook(b || null));
+        }
+      });
     }
   }, []);
 
@@ -99,30 +118,36 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Continue Learning Card */}
-          <div className="premium-card p-6 bg-slate-900/40 relative">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-[10px] text-accent uppercase font-bold tracking-widest font-mono">Last Accessed</span>
-                <h3 className="text-lg font-bold text-white mt-1">Chapter 1: Historical Background</h3>
-                <p className="text-xs text-white/60 font-light mt-0.5">Indian Polity — M. Laxmikanth</p>
+          {lastAccessedChapter && (
+            <div className="premium-card p-6 bg-slate-900/40 relative">
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-[10px] text-accent uppercase font-bold tracking-widest font-mono">Last Accessed</span>
+                  <h3 className="text-lg font-bold text-white mt-1">
+                    Chapter {lastAccessedChapter.chapter_number}: {lastAccessedChapter.title}
+                  </h3>
+                  <p className="text-xs text-white/60 font-light mt-0.5">
+                    {lastAccessedBook ? `${lastAccessedBook.title} — ${lastAccessedBook.author}` : 'PrepAI UPSC Syllabus'}
+                  </p>
+                </div>
+                <Link 
+                  href={`/lesson/${lastAccessedChapter.id}`}
+                  className="w-12 h-12 bg-accent hover:bg-amber-600 hover:scale-105 rounded-full flex items-center justify-center text-slate-950 shadow-md shadow-accent/20 transition-all"
+                >
+                  <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
+                </Link>
               </div>
-              <Link 
-                href="/lesson/polity-ch1"
-                className="w-12 h-12 bg-accent hover:bg-amber-600 hover:scale-105 rounded-full flex items-center justify-center text-slate-950 shadow-md shadow-accent/20 transition-all"
-              >
-                <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
-              </Link>
+              <div className="mt-4">
+                <div className="flex justify-between text-xs text-white/50 mb-1">
+                  <span>Syllabus Progress</span>
+                  <span>{overallProgress}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="bg-accent h-full rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }} />
+                </div>
+              </div>
             </div>
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-white/50 mb-1">
-                <span>Course Progress</span>
-                <span>35%</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="bg-accent h-full rounded-full transition-all duration-500" style={{ width: '35%' }} />
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Subjects Syllabus */}
           <div>

@@ -75,6 +75,7 @@ export default function LessonPlayerPage({ params }: LessonPageProps) {
           return;
         }
         setChapter(ch);
+        localStorage.setItem('prepai_last_accessed_chapter_id', ch.id);
 
         // Split text content into sentences for TTS and highlighting
         const textToSplit = ch.content_text || '';
