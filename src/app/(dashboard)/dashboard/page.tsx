@@ -2,448 +2,450 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { sfx } from '@/lib/sounds';
 import { Book, Chapter, MCQ, UserProfile, LeaderboardEntry } from '@/types';
-import { 
-  BookOpen, 
-  Flame, 
-  Zap, 
-  Play, 
-  CheckCircle2, 
-  AlertCircle,
-  TrendingUp, 
-  ChevronRight, 
-  Award,
-  Sparkles,
-  Search,
-  Filter
+import {
+  Flame, Zap, Play, CheckCircle2, AlertCircle,
+  ChevronRight, Award, Sparkles, BookOpen,
+  Trophy, Target, Clock, TrendingUp
 } from 'lucide-react';
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return { text: 'Good Morning', emoji: '🌅' };
+  if (h < 17) return { text: 'Good Afternoon', emoji: '☀️' };
+  if (h < 21) return { text: 'Good Evening', emoji: '🌆' };
+  return { text: 'Study Time', emoji: '🌙' };
+}
+
+const SUBJECT_CHIPS = [
+  { label: 'All', emoji: '📚' },
+  { label: 'Polity', emoji: '📜' },
+  { label: 'History', emoji: '🏛️' },
+  { label: 'Geography', emoji: '🌍' },
+  { label: 'Economy', emoji: '💰' },
+];
+
 export default function DashboardPage() {
-  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [dailyMCQ, setDailyMCQ] = useState<MCQ | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [mcqAnswered, setMcqAnswered] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('All');
+  const [selectedSubject, setSelectedSubject] = useState('All');
   const [loading, setLoading] = useState(true);
-  
-  // Stats & Dynamic Last Accessed
-  const [completedChapters, setCompletedChapters] = useState(0);
-  const [lastAccessedChapter, setLastAccessedChapter] = useState<Chapter | null>(null);
-  const [lastAccessedBook, setLastAccessedBook] = useState<Book | null>(null);
+  const [lastChapter, setLastChapter] = useState<Chapter | null>(null);
+  const [lastBook, setLastBook] = useState<Book | null>(null);
   const [overallProgress, setOverallProgress] = useState(0);
   const [dbError, setDbError] = useState<string | null>(null);
 
+  const greeting = getGreeting();
+
   useEffect(() => {
-    // Fetch profile
     db.getUserProfile().then(setProfile);
 
-    // Fetch books & calculate overall syllabus progress
     db.getBooks().then(booksData => {
       setBooks(booksData);
       setLoading(false);
-      
-      // Total chapters across all books
-      const totalChs = booksData.reduce((acc, b) => acc + (b.total_chapters || 0), 0);
-      if (totalChs > 0 && typeof window !== 'undefined') {
-        const progress = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
-        const completedCount = progress.filter((p: any) => p.is_completed).length;
-        setOverallProgress(Math.min(100, Math.round((completedCount / totalChs) * 100)));
+      const total = booksData.reduce((a, b) => a + (b.total_chapters || 0), 0);
+      if (total > 0 && typeof window !== 'undefined') {
+        const prog = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
+        setOverallProgress(Math.min(100, Math.round((prog.filter((p: any) => p.is_completed).length / total) * 100)));
       }
     }).catch(() => setLoading(false));
 
-    // Run connection diagnostics
-    const runDiagnostics = async () => {
+    // Diagnostics
+    const diag = async () => {
       const { supabase } = await import('@/lib/supabase');
       if (supabase) {
         const { error } = await supabase.from('books').select('count', { count: 'exact', head: true });
-        if (error) {
-          setDbError(`Supabase Query Error: ${JSON.stringify(error)}`);
-        }
+        if (error) setDbError(`Supabase Query Error: ${JSON.stringify(error)}`);
       } else {
-        setDbError("Supabase connection is not active. NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing on Vercel.");
+        setDbError('Supabase connection is not active.');
       }
     };
-    runDiagnostics();
+    diag();
 
-    // Fetch leaderboard
-    db.getLeaderboard().then(data => setLeaderboard(data.slice(0, 3)));
-
-    // Fetch daily challenge MCQ
+    db.getLeaderboard().then(d => setLeaderboard(d.slice(0, 3)));
     db.getMCQs('00000000-0000-0000-0000-000000000002').then(mcqs => {
-      if (mcqs && mcqs.length > 0) {
-        setDailyMCQ(mcqs[0]);
-      }
+      if (mcqs?.length) setDailyMCQ(mcqs[0]);
     });
 
-    // Load progress count & last accessed chapter
     if (typeof window !== 'undefined') {
-      const progress = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
-      const completedCount = progress.filter((p: any) => p.is_completed).length;
-      setCompletedChapters(completedCount);
-
       const lastChId = localStorage.getItem('prepai_last_accessed_chapter_id') || '00000000-0000-0000-0000-000000000002';
       db.getChapter(lastChId).then(ch => {
         if (ch) {
-          setLastAccessedChapter(ch);
-          db.getBook(ch.book_id).then(b => setLastAccessedBook(b || null));
+          setLastChapter(ch);
+          db.getBook(ch.book_id).then(b => setLastBook(b || null));
         }
       });
     }
   }, []);
 
-  const handleMCQSubmit = async (option: string) => {
+  const handleMCQ = async (option: string) => {
     if (mcqAnswered || !dailyMCQ) return;
-    
     setSelectedOption(option);
     setMcqAnswered(true);
-
     const isCorrect = option === dailyMCQ.correct_option;
     if (isCorrect) {
       sfx.playCorrect();
       if (profile) {
-        const updatedProfile = await db.updateUserProfile({
-          total_points: profile.total_points + 25, // +25 XP
-          streak: profile.streak === 0 ? 1 : profile.streak // ensure streak is active
-        });
-        setProfile(updatedProfile);
+        const updated = await db.updateUserProfile({ total_points: profile.total_points + 25 });
+        setProfile(updated);
       }
     } else {
       sfx.playIncorrect();
     }
   };
 
-  const subjects = ['All', 'Polity', 'History', 'Geography', 'Economy'];
-  
-  const filteredBooks = books.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSubject = selectedSubject === 'All' || book.subject === selectedSubject;
-    return matchesSearch && matchesSubject;
-  });
+  const filteredBooks = books.filter(b =>
+    selectedSubject === 'All' || b.subject === selectedSubject
+  );
 
-  // Skeleton loader
+  // ── Skeleton ────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="space-y-6 page-enter">
-        <div className="skeleton h-24 w-full" />
-        <div className="grid grid-cols-2 gap-4">
-          <div className="skeleton h-36" />
-          <div className="skeleton h-36" />
-          <div className="skeleton h-36" />
-          <div className="skeleton h-36" />
+      <div className="space-y-5 page-enter px-1">
+        <div className="skeleton h-28 w-full rounded-3xl" />
+        <div className="flex gap-3">
+          {[1,2,3].map(i => <div key={i} className="skeleton h-20 flex-1 rounded-2xl" />)}
         </div>
-        <div className="skeleton h-48 w-full" />
+        <div className="skeleton h-10 w-full rounded-2xl" />
+        <div className="flex gap-4 overflow-hidden">
+          {[1,2,3].map(i => <div key={i} className="skeleton h-52 w-48 shrink-0 rounded-2xl" />)}
+        </div>
+        <div className="skeleton h-56 w-full rounded-3xl" />
       </div>
     );
   }
 
+  // ── Render ───────────────────────────────────────────────
   return (
-    <div className="space-y-8 font-sans page-enter">
-      {/* DB Connection Diagnostics alert box */}
+    <div className="space-y-6 page-enter">
+
+      {/* DB error */}
       {dbError && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-error-red text-xs font-mono space-y-1">
-          <p className="font-bold">⚠️ Connection Diagnostic Alert:</p>
-          <p>{dbError}</p>
-          <p className="text-[10px] text-foreground/50">Verify your Vercel Environment Variables and ensure the database tables are created via SQL Editor.</p>
+        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-error-red text-xs font-mono">
+          <p className="font-bold">⚠️ {dbError}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Columns (Syllabus, Daily Challenge) */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Continue Learning Card */}
-          {lastAccessedChapter && (
-            <div className="premium-card p-6 bg-slate-900/40 relative">
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[10px] text-accent uppercase font-bold tracking-widest font-mono">Last Accessed</span>
-                  <h3 className="text-lg font-bold text-white mt-1">
-                    Chapter {lastAccessedChapter.chapter_number}: {lastAccessedChapter.title}
-                  </h3>
-                  <p className="text-xs text-white/60 font-light mt-0.5">
-                    {lastAccessedBook ? `${lastAccessedBook.title} — ${lastAccessedBook.author}` : 'PrepAI UPSC Syllabus'}
-                  </p>
-                </div>
-                <Link 
-                  href={`/lesson/${lastAccessedChapter.id}`}
-                  className="w-12 h-12 bg-accent hover:bg-amber-600 hover:scale-105 rounded-full flex items-center justify-center text-slate-950 shadow-md shadow-accent/20 transition-all"
-                >
-                  <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
-                </Link>
+      {/* ── 1. Greeting Header ─────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-[#1e3a6e] to-[#0B1325] p-5 border border-white/8">
+        {/* background orb */}
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-indigo-500/8 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative">
+          <p className="text-xs font-medium text-white/50 uppercase tracking-widest font-mono">
+            {greeting.emoji} {greeting.text}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold text-white font-display leading-tight">
+            {profile?.name?.split(' ')[0] || 'Aspirant'} 👋
+          </h1>
+          <p className="mt-0.5 text-sm text-white/55">
+            {overallProgress > 0 ? `${overallProgress}% syllabus covered` : 'Start your UPSC journey today'}
+          </p>
+
+          {/* Streak + XP pills */}
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/25 text-amber-400 px-3 py-1.5 rounded-full text-xs font-semibold font-mono">
+              <Flame className="w-3.5 h-3.5 fill-amber-400" />
+              {profile?.streak ?? 0} Day Streak
+            </div>
+            <div className="flex items-center gap-1.5 bg-accent/15 border border-accent/25 text-accent px-3 py-1.5 rounded-full text-xs font-semibold font-mono">
+              <Zap className="w-3.5 h-3.5 fill-accent" />
+              {profile?.total_points ?? 0} XP
+            </div>
+            {profile?.is_premium && (
+              <div className="flex items-center gap-1 bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
+                <Award className="w-3 h-3" /> PRO
               </div>
-              <div className="mt-4">
-                <div className="flex justify-between text-xs text-white/50 mb-1">
-                  <span>Syllabus Progress</span>
-                  <span>{overallProgress}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                  <div className="bg-accent h-full rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Subjects Syllabus */}
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <h2 className="font-display text-xl font-bold text-white flex items-center">
-                <BookOpen className="w-5 h-5 text-accent mr-2" />
-                <span>UPSC Standard Books</span>
-              </h2>
-
-              {/* Subject Filters */}
-              <div className="flex items-center space-x-2 overflow-x-auto pb-1 max-w-full">
-                {subjects.map(sub => (
-                  <button
-                    key={sub}
-                    onClick={() => setSelectedSubject(sub)}
-                    className={`text-xs px-3 py-1.5 rounded-full transition-all border ${
-                      selectedSubject === sub
-                        ? 'bg-accent border-accent text-slate-950 font-semibold shadow-sm'
-                        : 'bg-slate-900/40 border-white/10 text-white/70 hover:border-white/20'
-                    }`}
-                  >
-                    {sub}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Books Search bar */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-white/40" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search standard books, authors (e.g. Laxmikanth, Bipin Chandra)..."
-                className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-2xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-white/30"
-              />
-            </div>
-
-            {/* Books Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {filteredBooks.map(book => {
-                // Calculate completion rate based on mock database
-                // Let's hardcode some percentages for premium feel
-                let percent = 0;
-                if (book.id === '00000000-0000-0000-0000-000000000001') percent = 33;
-                
-                return (
-                  <div key={book.id} className="premium-card overflow-hidden bg-slate-900/30 flex flex-col justify-between h-48">
-                    <div className="p-5 flex gap-4">
-                      <img 
-                        src={book.cover_image} 
-                        alt={book.title} 
-                        className="w-16 h-20 rounded-lg object-cover bg-slate-800 shadow-md border border-white/10" 
-                      />
-                      <div>
-                        <span className="text-[9px] bg-accent/15 text-accent border border-accent/25 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider font-mono">
-                          {book.subject}
-                        </span>
-                        <h4 className="font-bold text-white text-sm mt-1.5 line-clamp-2 leading-snug">{book.title}</h4>
-                        <p className="text-xs text-white/50 font-light mt-0.5">{book.author}</p>
-                      </div>
-                    </div>
-
-                    <div className="px-5 pb-5 border-t border-white/5 pt-3.5 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        {/* Custom Radial Progress Ring */}
-                        <svg className="w-6 h-6 transform -rotate-90">
-                          <circle cx="12" cy="12" r="9" className="stroke-slate-800" strokeWidth="2.5" fill="none" />
-                          <circle cx="12" cy="12" r="9" className="stroke-accent" strokeWidth="2.5" fill="none" 
-                                  strokeDasharray={56.5} strokeDashoffset={56.5 - (56.5 * percent) / 100} />
-                        </svg>
-                        <span className="text-xs font-mono font-medium text-white">{percent}%</span>
-                      </div>
-                      <Link 
-                        href={`/books/${book.id}`}
-                        className="text-xs text-accent hover:text-white flex items-center font-medium transition-colors"
-                      >
-                        <span>Study Syllabus</span>
-                        <ChevronRight className="w-4 h-4 ml-0.5" />
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Right Column (Leaderboard, Daily Challenge, Stats Chart) */}
-        <div className="space-y-8">
-          
-          {/* Daily MCQ Challenge */}
-          {dailyMCQ && (
-            <div className="premium-card p-6 bg-slate-900/40 border-2 border-accent/20 shadow-md relative">
-              <div className="absolute top-4 right-4 bg-amber-500/10 text-amber-500 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-amber-500/20">
-                Daily +25 XP
-              </div>
-              <h3 className="font-display text-base font-bold text-white mb-3">Daily MCQ Challenge</h3>
-              <p className="text-xs text-white/90 leading-relaxed font-light mb-4">{dailyMCQ.question}</p>
-
-              <div className="space-y-2">
-                {[
-                  { key: 'A', text: dailyMCQ.option_a },
-                  { key: 'B', text: dailyMCQ.option_b },
-                  { key: 'C', text: dailyMCQ.option_c },
-                  { key: 'D', text: dailyMCQ.option_d }
-                ].map((opt) => {
-                  const isSelected = selectedOption === opt.key;
-                  const isCorrect = opt.key === dailyMCQ.correct_option;
-                  
-                  let optionClass = 'border-white/10 bg-slate-950/40 hover:bg-slate-950/80';
-                  if (mcqAnswered) {
-                    if (isCorrect) {
-                      optionClass = 'border-success-green bg-success-green/10 text-white';
-                    } else if (isSelected) {
-                      optionClass = 'border-error-red bg-error-red/10 text-white';
-                    } else {
-                      optionClass = 'border-white/5 opacity-50 bg-slate-950/20';
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={opt.key}
-                      disabled={mcqAnswered}
-                      onClick={() => handleMCQSubmit(opt.key)}
-                      className={`w-full text-left p-3 rounded-xl border text-xs transition-all flex items-start gap-2.5 ${optionClass}`}
-                    >
-                      <span className="font-mono font-bold bg-white/5 px-1.5 py-0.5 rounded border border-white/10 text-[10px] text-accent mt-0.5">
-                        {opt.key}
-                      </span>
-                      <span className="flex-1">{opt.text}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {mcqAnswered && (
-                <div className="mt-4 p-3 bg-white/5 rounded-xl border border-white/10 text-xs">
-                  <div className="flex items-center space-x-1.5 mb-1 text-accent font-bold">
-                    {selectedOption === dailyMCQ.correct_option ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-success-green" />
-                        <span className="text-success-green">Correct Answer!</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-4 h-4 text-error-red" />
-                        <span className="text-error-red">Incorrect. Correct option was {dailyMCQ.correct_option}</span>
-                      </>
-                    )}
-                  </div>
-                  <p className="text-white/60 font-light leading-relaxed">{dailyMCQ.explanation}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Activity Chart (Custom Premium SVG) */}
-          <div className="premium-card p-6 bg-slate-900/40">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-sm font-bold text-white flex items-center">
-                <TrendingUp className="w-4 h-4 text-accent mr-1.5" />
-                <span>Weekly Activity</span>
-              </h3>
-              <span className="text-[10px] text-white/40 font-mono uppercase">Minutes Studied</span>
-            </div>
-
-            {/* Custom SVG Line Chart */}
-            <div className="w-full h-32 relative">
-              <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                {/* Grid Lines */}
-                <line x1="0" y1="20" x2="300" y2="20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="0" y1="50" x2="300" y2="50" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="0" y1="80" x2="300" y2="80" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-
-                {/* Path Area (Gradient) */}
-                <defs>
-                  <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#D89B3C" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#D89B3C" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <path d="M 10 90 L 50 70 L 95 80 L 140 40 L 185 60 L 230 20 L 290 30 L 290 90 Z" fill="url(#chart-grad)" />
-
-                {/* Path Line */}
-                <path d="M 10 90 L 50 70 L 95 80 L 140 40 L 185 60 L 230 20 L 290 30" fill="none" stroke="#D89B3C" strokeWidth="2.5" strokeLinecap="round" />
-
-                {/* Dots */}
-                {[
-                  { cx: 10, cy: 90, val: 10 },
-                  { cx: 50, cy: 70, val: 30 },
-                  { cx: 95, cy: 80, val: 20 },
-                  { cx: 140, cy: 40, val: 60 },
-                  { cx: 185, cy: 60, val: 40 },
-                  { cx: 230, cy: 20, val: 80 },
-                  { cx: 290, cy: 30, val: 70 }
-                ].map((dot, i) => (
-                  <circle key={i} cx={dot.cx} cy={dot.cy} r="3.5" fill="#FAF6EC" stroke="#1B2A4A" strokeWidth="2" />
-                ))}
-              </svg>
-
-              {/* X Axis Labels */}
-              <div className="flex justify-between text-[9px] text-white/40 mt-1 font-mono uppercase">
-                <span>Mon</span>
-                <span>Tue</span>
-                <span>Wed</span>
-                <span>Thu</span>
-                <span>Fri</span>
-                <span>Sat</span>
-                <span>Sun</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Leaderboard Preview */}
-          <div className="premium-card p-6 bg-slate-900/40">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-sm font-bold text-white flex items-center">
-                <Award className="w-4 h-4 text-accent mr-1.5" />
-                <span>Leaderboard</span>
-              </h3>
-              <Link href="/leaderboard" className="text-[10px] text-accent hover:text-white transition-colors uppercase font-bold flex items-center">
-                <span>Full List</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="space-y-3">
-              {leaderboard.map((entry, idx) => (
-                <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-xl border border-white/5 bg-slate-950/20">
-                  <div className="flex items-center space-x-3">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center font-mono text-xs font-bold ${
-                      idx === 0 ? 'bg-amber-500/20 text-amber-400' :
-                      idx === 1 ? 'bg-slate-400/20 text-slate-300' :
-                      'bg-amber-800/20 text-amber-600'
-                    }`}>
-                      {idx + 1}
-                    </span>
-                    <img src={entry.avatar_url} alt={entry.name} className="w-7 h-7 rounded-full object-cover" />
-                    <span className="text-xs font-semibold text-white/90 line-clamp-1">{entry.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 text-xs font-mono font-medium text-accent">
-                    <Zap className="w-3 h-3 fill-accent" />
-                    <span>{entry.total_points}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
         </div>
       </div>
+
+      {/* ── 2. Quick Stats Row ─────────────────────────── */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { icon: BookOpen, label: 'Chapters', value: books.reduce((a,b) => a + (b.total_chapters||0), 0), color: 'text-accent', bg: 'bg-accent/10' },
+          { icon: Target, label: 'Completed', value: 0, color: 'text-success-green', bg: 'bg-success-green/10' },
+          { icon: Trophy, label: 'Rank', value: '#—', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+        ].map(({ icon: Icon, label, value, color, bg }) => (
+          <div key={label} className="premium-card p-3 flex flex-col items-center gap-1 text-center">
+            <div className={`w-8 h-8 ${bg} rounded-xl flex items-center justify-center`}>
+              <Icon className={`w-4 h-4 ${color}`} />
+            </div>
+            <span className={`text-lg font-bold font-mono ${color}`}>{value}</span>
+            <span className="text-[10px] text-foreground/50 font-medium uppercase tracking-wide">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── 3. Continue Learning Card ──────────────────── */}
+      {lastChapter && (
+        <div className="premium-card p-5 relative overflow-hidden border-accent/20 border">
+          <div className="absolute -top-6 -right-6 w-24 h-24 bg-accent/8 rounded-full blur-2xl" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <span className="text-[10px] text-accent uppercase font-bold tracking-widest font-mono">▶ Continue Learning</span>
+              <h3 className="mt-1 text-base font-bold text-foreground leading-tight">
+                Ch.{lastChapter.chapter_number}: {lastChapter.title}
+              </h3>
+              <p className="text-xs text-foreground/50 mt-0.5 truncate">
+                {lastBook ? `${lastBook.title} · ${lastBook.author}` : 'PrepAI Syllabus'}
+              </p>
+              {/* Progress bar */}
+              <div className="mt-3">
+                <div className="flex justify-between text-[10px] text-foreground/40 font-mono mb-1">
+                  <span>Overall Progress</span>
+                  <span>{overallProgress}%</span>
+                </div>
+                <div className="h-1.5 bg-foreground/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-accent to-amber-400 rounded-full transition-all duration-700"
+                    style={{ width: `${Math.max(overallProgress, 3)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <Link
+              href={`/lesson/${lastChapter.id}`}
+              className="shrink-0 w-12 h-12 bg-accent rounded-2xl flex items-center justify-center shadow-lg shadow-accent/30 hover:bg-amber-500 transition-colors"
+            >
+              <Play className="w-5 h-5 fill-slate-950 text-slate-950 ml-0.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. Books Section ───────────────────────────── */}
+      <div>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-foreground font-display flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-accent" />
+            Study Material
+          </h2>
+          <span className="text-xs text-foreground/40 font-mono">{books.length} Books</span>
+        </div>
+
+        {/* Subject Chips */}
+        <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-4">
+          {SUBJECT_CHIPS.map(chip => (
+            <button
+              key={chip.label}
+              onClick={() => setSelectedSubject(chip.label)}
+              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200 border ${
+                selectedSubject === chip.label
+                  ? 'bg-accent text-slate-950 border-accent shadow-md shadow-accent/20'
+                  : 'bg-foreground/5 border-foreground/10 text-foreground/60 hover:border-foreground/20'
+              }`}
+            >
+              <span>{chip.emoji}</span>
+              <span>{chip.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Books — horizontal scroll on mobile */}
+        {filteredBooks.length === 0 ? (
+          <div className="premium-card p-8 text-center">
+            <p className="text-foreground/40 text-sm">No books found. Add data in Supabase.</p>
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
+            {filteredBooks.map(book => {
+              const progress = book.id === '00000000-0000-0000-0000-000000000001' ? 33 : 0;
+              const circumference = 2 * Math.PI * 16;
+              return (
+                <Link
+                  key={book.id}
+                  href={`/books/${book.id}`}
+                  className="shrink-0 w-44 premium-card overflow-hidden flex flex-col group"
+                >
+                  {/* Cover */}
+                  <div className="relative h-28 overflow-hidden bg-primary/30">
+                    <img
+                      src={book.cover_image || ''}
+                      alt={book.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <span className="absolute top-2 left-2 text-[9px] bg-accent/90 text-slate-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                      {book.subject}
+                    </span>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-3 flex-1 flex flex-col justify-between gap-2">
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground leading-snug line-clamp-2">{book.title}</h4>
+                      <p className="text-[10px] text-foreground/45 mt-0.5">{book.author}</p>
+                    </div>
+
+                    {/* Progress ring + chapters */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-8 h-8 -rotate-90 shrink-0">
+                          <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-foreground/10" />
+                          <circle
+                            cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="2.5"
+                            className="text-accent transition-all duration-700"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={circumference - (circumference * progress) / 100}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="text-[10px] font-mono font-bold text-accent">{progress}%</span>
+                      </div>
+                      <span className="text-[10px] text-foreground/40 font-mono">{book.total_chapters} ch</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── 5. Daily MCQ Challenge ─────────────────────── */}
+      {dailyMCQ && (
+        <div className="premium-card p-5 border-accent/25 border-2 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-2xl" />
+          {/* Badge */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-accent/15 rounded-xl flex items-center justify-center">
+                <Target className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-foreground">Daily MCQ Challenge</p>
+                <p className="text-[10px] text-foreground/45 font-mono">Answer correctly for +25 XP</p>
+              </div>
+            </div>
+            <span className="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/25 px-2 py-1 rounded-full font-bold font-mono">
+              +25 XP
+            </span>
+          </div>
+
+          {/* Question */}
+          <p className="text-sm text-foreground/90 leading-relaxed mb-4 font-medium">
+            {dailyMCQ.question}
+          </p>
+
+          {/* Options */}
+          <div className="space-y-2.5">
+            {(['A','B','C','D'] as const).map(key => {
+              const text = dailyMCQ[`option_${key.toLowerCase()}` as keyof MCQ] as string;
+              const isSelected = selectedOption === key;
+              const isCorrect = key === dailyMCQ.correct_option;
+
+              let cls = 'border-foreground/10 bg-foreground/4 hover:border-accent/40 hover:bg-accent/5';
+              if (mcqAnswered) {
+                if (isCorrect) cls = 'border-success-green bg-success-green/10';
+                else if (isSelected) cls = 'border-error-red bg-error-red/10';
+                else cls = 'border-foreground/5 opacity-40';
+              }
+
+              return (
+                <button
+                  key={key}
+                  disabled={mcqAnswered}
+                  onClick={() => handleMCQ(key)}
+                  className={`w-full text-left flex items-start gap-3 p-3.5 rounded-2xl border transition-all duration-200 ${cls}`}
+                >
+                  <span className="shrink-0 w-6 h-6 rounded-full border border-foreground/20 flex items-center justify-center text-[11px] font-bold font-mono text-accent bg-foreground/5 mt-0.5">
+                    {key}
+                  </span>
+                  <span className="text-xs text-foreground/85 leading-relaxed">{text}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Explanation */}
+          {mcqAnswered && (
+            <div className="mt-4 p-3.5 bg-foreground/5 rounded-2xl border border-foreground/8">
+              <div className="flex items-center gap-2 mb-2">
+                {selectedOption === dailyMCQ.correct_option ? (
+                  <><CheckCircle2 className="w-4 h-4 text-success-green shrink-0" /><span className="text-xs font-bold text-success-green">Correct! Well done!</span></>
+                ) : (
+                  <><AlertCircle className="w-4 h-4 text-error-red shrink-0" /><span className="text-xs font-bold text-error-red">Incorrect. Answer: {dailyMCQ.correct_option}</span></>
+                )}
+              </div>
+              <p className="text-xs text-foreground/60 leading-relaxed">{dailyMCQ.explanation}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 6. Leaderboard Preview ─────────────────────── */}
+      <div className="premium-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-amber-500/15 rounded-xl flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-amber-400" />
+            </div>
+            <p className="text-xs font-bold text-foreground">Top Rankers</p>
+          </div>
+          <Link href="/leaderboard" className="text-[10px] text-accent font-bold uppercase tracking-wide flex items-center gap-0.5">
+            See All <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+
+        <div className="space-y-2.5">
+          {leaderboard.map((entry, idx) => (
+            <div key={entry.id} className={`flex items-center gap-3 p-3 rounded-2xl border ${idx === 0 ? 'bg-amber-500/8 border-amber-500/20' : 'bg-foreground/3 border-foreground/8'}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold font-mono shrink-0 ${
+                idx === 0 ? 'bg-amber-500/20 text-amber-400' :
+                idx === 1 ? 'bg-slate-400/20 text-slate-300' :
+                'bg-amber-800/20 text-amber-700'
+              }`}>
+                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+              </span>
+              <span className="flex-1 text-xs font-medium text-foreground truncate">{entry.name}</span>
+              <span className="text-xs font-bold font-mono text-accent shrink-0">{entry.total_points} XP</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 7. Weekly Activity ─────────────────────────── */}
+      <div className="premium-card p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-indigo-500/15 rounded-xl flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-foreground">Weekly Activity</p>
+            <p className="text-[10px] text-foreground/40 font-mono">Minutes studied per day</p>
+          </div>
+        </div>
+
+        <div className="w-full h-24 relative">
+          <svg className="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#D89B3C" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#D89B3C" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d="M0 70 L43 55 L86 63 L129 30 L172 47 L215 12 L258 22 L300 18 L300 80 L0 80Z" fill="url(#grad)" />
+            <path d="M0 70 L43 55 L86 63 L129 30 L172 47 L215 12 L258 22 L300 18" fill="none" stroke="#D89B3C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div className="flex justify-between text-[9px] text-foreground/35 font-mono uppercase mt-1">
+          {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <span key={d}>{d}</span>)}
+        </div>
+      </div>
+
+      {/* Bottom padding for tab bar */}
+      <div className="h-4" />
     </div>
   );
 }
