@@ -1,0 +1,28 @@
+{
+  "name": "PrepAI UPSC CSE Academy",
+  "short_name": "PrepAI",
+  "description": "Premium UPSC Exam Prep Web App powered by AI",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0B1325",
+  "theme_color": "#1B2A4A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1B2A4A;
+  --color-accent: #D89B3C;
+  --color-cream: #FAF6EC;
+  --color-success-green: #3F7D58;
+  --color-error-red: #B5392F;
+  
+  --font-display: 'Fraunces', serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --color-navy-dark: #0f172a;
+  --color-navy-light: #1e293b;
+  --color-gold-light: #eab308;
+}
+
+:root {
+  --background: #FAF6EC;
+  --foreground: #1B2A4A;
+}
+
+/* Default is Dark theme for that premium, elegant feel across the app, with cream/light mode option */
+.dark-theme {
+  --background: #0B1325;
+  --foreground: #FAF6EC;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* Custom styling utilities */
+.premium-card {
+  background: rgba(27, 42, 74, 0.04);
+  border: 1px solid rgba(27, 42, 74, 0.1);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.dark-theme .premium-card {
+  background: rgba(27, 42, 74, 0.4);
+  border: 1px solid rgba(216, 155, 60, 0.15);
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -10px rgba(216, 155, 60, 0.2);
+  border-color: rgba(216, 155, 60, 0.4);
+}
+
+.glass-nav {
+  background: rgba(250, 246, 236, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(27, 42, 74, 0.08);
+}
+
+.dark-theme .glass-nav {
+  background: rgba(11, 19, 37, 0.8);
+  border-bottom: 1px solid rgba(216, 155, 60, 0.15);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #D89B3C 0%, #F3D082 50%, #B87D24 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* 3D Flip Card classes for Flashcards */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Audio visualizer animations */
+@keyframes bounce-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+.animate-bar-1 { animation: bounce-bar 0.8s ease-in-out infinite alternate; }
+.animate-bar-2 { animation: bounce-bar 0.5s ease-in-out infinite alternate 0.1s; }
+.animate-bar-3 { animation: bounce-bar 0.7s ease-in-out infinite alternate 0.2s; }
+.animate-bar-4 { animation: bounce-bar 0.6s ease-in-out infinite alternate 0.3s; }
