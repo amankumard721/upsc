@@ -8,7 +8,7 @@ import { Book, MCQ, UserProfile, LeaderboardEntry } from '@/types';
 import {
   CheckCircle2, AlertCircle,
   ChevronRight, Award, BookOpen,
-  Trophy, Target, TrendingUp
+  Trophy, Target, TrendingUp, PlayCircle
 } from 'lucide-react';
 
 const SUBJECT_CHIPS = [
@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
+  const [continueChapter, setContinueChapter] = useState<{ id: string, title: string } | null>(null);
 
   useEffect(() => {
     db.getUserProfile().then(setProfile);
@@ -54,6 +55,17 @@ export default function DashboardPage() {
     db.getMCQs('00000000-0000-0000-0000-000000000002').then(mcqs => {
       if (mcqs?.length) setDailyMCQ(mcqs[0]);
     });
+
+    // Check for continue learning in localStorage
+    if (typeof window !== 'undefined') {
+      const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
+      const incomplete = list.find((p: any) => !p.is_completed);
+      if (incomplete) {
+        db.getChapter(incomplete.chapter_id).then(ch => {
+           if (ch) setContinueChapter({ id: ch.id, title: ch.title });
+        });
+      }
+    }
   }, []);
 
   const handleMCQ = async (option: string) => {
@@ -100,17 +112,36 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Minimal Header ────────────────────────────── */}
+      {/* ── Minimal Header / Continue Learning ────────────────────────────── */}
       <div className="flex items-center justify-between pt-2 pb-4">
-        <div>
-          <p className="text-[10px] font-medium text-foreground/50 uppercase tracking-widest font-mono">
-            {profile?.name?.split(' ')[0] || 'Aspirant'}'s Dashboard
-          </p>
-          <h1 className="text-xl font-bold text-foreground font-display mt-0.5">
-            Ready to learn? 🚀
-          </h1>
-        </div>
-        <Link href="/profile" className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-base font-bold border border-accent/20 shadow-sm transition-transform hover:scale-105">
+        {continueChapter ? (
+          <div className="flex-1 mr-4 premium-card p-4 bg-gradient-to-r from-accent/10 to-transparent border-accent/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+            <p className="text-[10px] font-bold text-accent uppercase tracking-widest font-mono mb-1">
+              Jump back in
+            </p>
+            <h1 className="text-sm md:text-base font-bold text-foreground font-display line-clamp-1 pr-6">
+              {continueChapter.title}
+            </h1>
+            <Link 
+              href={`/lesson/${continueChapter.id}`} 
+              className="mt-3 inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-3 py-1.5 rounded-lg shadow-sm transition-all"
+            >
+              <PlayCircle className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20" /> Continue Lesson
+            </Link>
+          </div>
+        ) : (
+          <div>
+            <p className="text-[10px] font-medium text-foreground/50 uppercase tracking-widest font-mono">
+              {profile?.name?.split(' ')[0] || 'Aspirant'}'s Dashboard
+            </p>
+            <h1 className="text-xl font-bold text-foreground font-display mt-0.5">
+              Ready to learn? 🚀
+            </h1>
+          </div>
+        )}
+        
+        <Link href="/profile" className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent text-base font-bold border border-accent/20 shadow-sm transition-transform hover:scale-105 shrink-0">
           {profile?.name ? profile.name[0].toUpperCase() : 'A'}
         </Link>
       </div>
