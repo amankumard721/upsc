@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PrepAI — Premium UPSC CSE AI Academy
+
+Connected to live Supabase database and deployed on Vercel.
 
 ## Getting Started
 
