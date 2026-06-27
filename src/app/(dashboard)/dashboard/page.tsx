@@ -222,15 +222,15 @@ export default function DashboardPage() {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0B1325] via-[#0B1325]/10 to-transparent opacity-100" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent opacity-100" />
                     
-                    <span className="absolute top-2.5 left-2.5 text-[8px] bg-black/40 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded-md font-bold uppercase tracking-widest shadow-sm">
+                    <span className="absolute top-2.5 left-2.5 text-[8px] bg-slate-950/40 backdrop-blur-md border border-white/20 text-white px-2 py-1 rounded-md font-bold uppercase tracking-widest shadow-sm">
                       {book.subject}
                     </span>
                     
                     {/* Floating Title inside Cover for premium feel */}
                     <div className="absolute bottom-2.5 left-2.5 right-2.5">
-                       <h4 className="text-xs font-bold text-white leading-snug line-clamp-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{book.title}</h4>
+                       <h4 className="text-xs font-bold text-white leading-snug line-clamp-2 drop-shadow-md">{book.title}</h4>
                     </div>
                   </div>
 
