@@ -92,7 +92,7 @@ html, body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(216,155,60,0.18); border-radius: 99px; }
 
-/* Hide scroll indicators ONLY when running in the native APK environment */
+/* Hide scroll indicators on native APK and all touch/mobile devices */
 .is-apk *::-webkit-scrollbar,
 .is-apk ::-webkit-scrollbar {
   display: none !important;
@@ -103,6 +103,19 @@ html, body {
 .is-apk * {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  *::-webkit-scrollbar,
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  html, body, * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
 }
 
 /* ─── Premium Cards ─────────────────────────────────────── */
