@@ -121,7 +121,7 @@ export default function Navbar() {
           {isHome ? (
             <Link href="/dashboard" className="flex items-center space-x-2">
               <span className="font-display font-bold text-2xl tracking-tight text-accent flex items-center">
-                Prep<span className="text-foreground font-sans font-light">AI</span>
+                JTET<span className="text-foreground font-sans font-light ml-1.5">Sathi</span>
               </span>
             </Link>
           ) : (

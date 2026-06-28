@@ -4,8 +4,8 @@ import PWARegister from "@/components/PWARegister";
 import AndroidBackButtonHandler from "@/components/AndroidBackButtonHandler";
 
 export const metadata: Metadata = {
-  title: "PrepAI — Premium UPSC Exam Preparation App",
-  description: "Learn and prepare for the UPSC Civil Services Examination with AI-powered narration, interactive MCQ quizzes, and spaced-repetition flashcards.",
+  title: "JTET Sathi — JTET Exam Preparation App",
+  description: "Prepare for the Jharkhand Teacher Eligibility Test (JTET) with AI-powered study materials, interactive MCQ quizzes, and smart practice tests.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

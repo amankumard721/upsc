@@ -206,7 +206,7 @@ export default function DashboardPage() {
 
 
 
-      {/* ── 6. UPSC Test Series Section ─────────────────────── */}
+      {/* ── 6. JTET Test Series Section ─────────────────────── */}
       <div className="premium-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -225,16 +225,16 @@ export default function DashboardPage() {
           <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h4 className="text-xs font-bold text-foreground leading-snug">UPSC Full-Length Mock Test 1</h4>
-                <p className="text-[10px] text-foreground/45 mt-0.5">General Studies Paper I (GS-1)</p>
+                <h4 className="text-xs font-bold text-foreground leading-snug">JTET Full-Length Mock Test 1</h4>
+                <p className="text-[10px] text-foreground/45 mt-0.5">Paper I (Class 1-5)</p>
               </div>
               <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded-md">FREE</span>
             </div>
             
             <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
-              <span>📝 100 {t('questions')}</span>
-              <span>⏱️ 120 {t('minutes')}</span>
-              <span>🎯 200 {t('marks')}</span>
+              <span>📝 150 {t('questions')}</span>
+              <span>⏱️ 150 {t('minutes')}</span>
+              <span>🎯 150 {t('marks')}</span>
             </div>
 
             <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/5">
@@ -255,16 +255,16 @@ export default function DashboardPage() {
           <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h4 className="text-xs font-bold text-foreground leading-snug">UPSC CSAT Mock Test 1</h4>
-                <p className="text-[10px] text-foreground/45 mt-0.5">General Studies Paper II</p>
+                <h4 className="text-xs font-bold text-foreground leading-snug">JTET Paper II Mock Test 1</h4>
+                <p className="text-[10px] text-foreground/45 mt-0.5">Paper II (Class 6-8)</p>
               </div>
               <span className="text-[8px] bg-accent/15 text-accent font-bold px-2 py-0.5 rounded-md">PRO</span>
             </div>
             
             <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
-              <span>📝 80 {t('questions')}</span>
-              <span>⏱️ 120 {t('minutes')}</span>
-              <span>🎯 200 {t('marks')}</span>
+              <span>📝 150 {t('questions')}</span>
+              <span>⏱️ 150 {t('minutes')}</span>
+              <span>🎯 150 {t('marks')}</span>
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">

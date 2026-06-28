@@ -69,10 +69,10 @@ interface MockTest {
 const MOCK_TESTS: Record<string, MockTest> = {
   'mock-1': {
     id: 'mock-1',
-    titleEn: 'UPSC Full-Length Mock Test 1',
-    titleHi: 'UPSC पूर्ण-लंबाई मॉक टेस्ट 1',
-    subtitleEn: 'General Studies Paper I (GS-1)',
-    subtitleHi: 'सामान्य अध्ययन पेपर I (GS-1)',
+    titleEn: 'JTET Full-Length Mock Test 1',
+    titleHi: 'JTET पूर्ण-लंबाई मॉक टेस्ट 1',
+    subtitleEn: 'Paper I (Class 1-5)',
+    subtitleHi: 'पेपर I (Class 1-5)',
     durationMins: 120,
     totalQs: 5,
     totalMarks: 10,
@@ -194,10 +194,10 @@ const MOCK_TESTS: Record<string, MockTest> = {
   },
   'mock-2': {
     id: 'mock-2',
-    titleEn: 'UPSC CSAT Mock Test 1',
-    titleHi: 'UPSC CSAT मॉक टेस्ट 1',
-    subtitleEn: 'General Studies Paper II (CSAT)',
-    subtitleHi: 'सामान्य अध्ययन पेपर II (CSAT)',
+    titleEn: 'JTET Paper II Mock Test 1',
+    titleHi: 'JTET Paper II मॉक टेस्ट 1',
+    subtitleEn: 'Paper II (Class 6-8)',
+    subtitleHi: 'पेपर II (Class 6-8)',
     durationMins: 120,
     totalQs: 3,
     totalMarks: 6,
@@ -231,23 +231,23 @@ const MOCK_TESTS: Record<string, MockTest> = {
         id: 2,
         subject: 'CSAT Logic',
         subjectHi: 'CSAT तार्किकता',
-        qEn: 'If in a certain code language, LBSNAA is coded as MCTOBB, how is UPSC coded?',
-        qHi: 'यदि किसी कूट भाषा में LBSNAA को MCTOBB लिखा जाता है, तो UPSC को क्या लिखा जाएगा?',
+        qEn: 'If in a certain code language, JTET is coded as KUFU, how is SATHI coded?',
+        qHi: 'यदि किसी कूट भाषा में JTET को KUFU लिखा जाता है, तो SATHI को क्या लिखा जाएगा?',
         optionsEn: [
-          'VQTD',
-          'VQTB',
-          'VPTD',
-          'WRTD'
+          'TBUIJ',
+          'TBUHB',
+          'TAUIJ',
+          'UBVIK'
         ],
         optionsHi: [
-          'VQTD',
-          'VQTB',
-          'VPTD',
-          'WRTD'
+          'TBUIJ',
+          'TBUHB',
+          'TAUIJ',
+          'UBVIK'
         ],
         correctOption: 0,
-        explanationEn: 'The coding pattern is +1 shift for each letter. L(+1)->M, B(+1)->C, S(+1)->T, N(+1)->O, A(+1)->B, A(+1)->B. Similarly, U(+1)->V, P(+1)->Q, S(+1)->T, C(+1)->D.',
-        explanationHi: 'कोडिंग पैटर्न प्रत्येक अक्षर के लिए +1 की वृद्धि है। L(+1)->M, B(+1)->C, S(+1)->T, N(+1)->O, A(+1)->B, A(+1)->B। इसी प्रकार, U(+1)->V, P(+1)->Q, S(+1)->T, C(+1)->D। अतः सही उत्तर VQTD है।'
+        explanationEn: 'The coding pattern is +1 shift for each letter. J(+1)->K, T(+1)->U, E(+1)->F, T(+1)->U. Similarly, S(+1)->T, A(+1)->B, T(+1)->U, H(+1)->I, I(+1)->J.',
+        explanationHi: 'कोडिंग पैटर्न प्रत्येक अक्षर के लिए +1 की वृद्धि है। J(+1)->K, T(+1)->U, E(+1)->F, T(+1)->U। इसी प्रकार, S(+1)->T, A(+1)->B, T(+1)->U, H(+1)->I, I(+1)->J। अतः सही उत्तर TBUIJ है।'
       },
       {
         id: 3,
@@ -590,7 +590,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
             onClick={() => { sfx.playSuccess(); setPhase('live'); }}
             className="w-full bg-accent hover:bg-amber-500 text-slate-950 font-bold py-4 rounded-2xl active:scale-[0.98] transition shadow-lg shadow-accent/10 text-sm tracking-wider uppercase"
           >
-            {lang === 'hi' ? 'परीक्षा प्रारंभ करें / Begin Exam' : 'Begin UPSC Mock Exam'}
+            {lang === 'hi' ? 'परीक्षा प्रारंभ करें / Begin Exam' : 'Begin JTET Mock Exam'}
           </button>
         </div>
       )}
@@ -1172,7 +1172,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
             <button
               onClick={() => {
-                navigator.clipboard.writeText(`🎯 I scored ${finalScore} marks on the UPSC test "${test.titleEn}" on PrepAI!`);
+                navigator.clipboard.writeText(`🎯 I scored ${finalScore} marks on the JTET test "${test.titleEn}" on JTET Sathi!`);
                 alert('Copied score metrics details to your clipboard! Share with your friends.');
               }}
               className="w-full bg-white/5 border border-white/10 hover:border-accent text-foreground font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-1.5 text-xs active:scale-95"

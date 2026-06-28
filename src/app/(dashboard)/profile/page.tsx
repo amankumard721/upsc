@@ -32,7 +32,7 @@ export default function ProfilePage() {
 
   // Settings form states
   const [editName, setEditName] = useState('');
-  const [editExam, setEditExam] = useState('UPSC');
+  const [editExam, setEditExam] = useState('JTET');
   const [editLang, setEditLang] = useState<'en' | 'hi'>('en');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -47,7 +47,7 @@ export default function ProfilePage() {
         setProfile(prof);
         if (prof) {
           setEditName(prof.name);
-          setEditExam(prof.exam_type || 'UPSC');
+          setEditExam(prof.exam_type || 'JTET');
           setEditLang((prof.preferred_language || 'en') as 'en' | 'hi');
         }
 
@@ -286,7 +286,7 @@ export default function ProfilePage() {
 
             <div className="flex items-center gap-3">
               <div className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-center font-mono font-bold tracking-widest text-foreground text-base">
-                {profile?.referral_code || 'PREPAI99'}
+                {profile?.referral_code || 'JTETSATHI99'}
               </div>
               <button
                 onClick={copyReferralCode}
@@ -353,7 +353,7 @@ export default function ProfilePage() {
                     onChange={(e) => setEditExam(e.target.value)}
                     className="w-full bg-slate-950 border border-white/10 focus:border-accent text-xs rounded-xl px-3 py-2.5 outline-none text-foreground transition-all"
                   >
-                    <option value="UPSC">UPSC Civil Services</option>
+                    <option value="JTET">JTET Civil Services</option>
                     <option value="SSC">SSC CGL</option>
                     <option value="CTET">CTET & Teaching</option>
                   </select>
@@ -416,8 +416,8 @@ export default function ProfilePage() {
               <div className="text-[10px] bg-white/10 inline-block px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-widest text-indigo-200">
                 Razorpay Checkout
               </div>
-              <h3 className="font-display text-lg font-bold">PrepAI Academy</h3>
-              <p className="text-xs text-indigo-200 font-light">LBSNAA Gold Premium Upgrade</p>
+              <h3 className="font-display text-lg font-bold">JTET Sathi Academy</h3>
+              <p className="text-xs text-indigo-200 font-light">JTET Sathi Premium Upgrade</p>
             </div>
 
             <div className="p-6 space-y-6">

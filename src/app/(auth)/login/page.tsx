@@ -31,7 +31,7 @@ function AuthContent() {
   
   // Onboarding states
   const [step, setStep] = useState<'auth' | 'exam' | 'referral' | 'success'>('auth');
-  const [examType, setExamType] = useState('UPSC');
+  const [examType, setExamType] = useState('JTET');
   const [referral, setReferral] = useState('');
   const [lang, setLang] = useState<'en' | 'hi'>('en');
 
@@ -143,7 +143,7 @@ function AuthContent() {
       if (name) profileUpdates.name = name;
       if (email) profileUpdates.email = email;
       
-      if (referral.trim().toUpperCase() === 'PREPAI99') {
+      if (referral.trim().toUpperCase() === 'JTETSATHI99') {
         profileUpdates.is_premium = true;
         profileUpdates.total_points = 500;
       }
@@ -377,7 +377,7 @@ function AuthContent() {
                     </label>
                     <div className="space-y-2">
                       {[
-                        { id: 'UPSC', name: 'UPSC Civil Services (IAS/IFS)', desc: 'Standard syllabus coverage & current affairs' },
+                        { id: 'JTET', name: 'JTET (Jharkhand Teacher Eligibility Test)', desc: 'Child development, pedagogy, and language tests' },
                         { id: 'SSC', name: 'SSC CGL & Allied Exams', desc: 'Quantitative, logical reasoning, and static GK' },
                         { id: 'CTET', name: 'CTET & Teaching Exams', desc: 'Pedagogy and child development tests' }
                       ].map((exam) => (
@@ -462,11 +462,11 @@ function AuthContent() {
                     type="text"
                     value={referral}
                     onChange={(e) => setReferral(e.target.value)}
-                    placeholder="Enter Code (e.g. PREPAI99)"
+                    placeholder="Enter Code (e.g. JTETSATHI99)"
                     className="w-full bg-slate-950/80 border border-white/15 focus:border-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.2)] text-center font-mono font-bold tracking-widest text-lg rounded-xl py-4 outline-none transition-all placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:font-light"
                   />
                   <div className="text-center text-[10px] text-indigo-300 mt-3 font-mono">
-                    Try code: <span className="font-bold border-b border-indigo-400/40 cursor-pointer" onClick={() => setReferral('PREPAI99')}>PREPAI99</span> for trial unlock.
+                    Try code: <span className="font-bold border-b border-indigo-400/40 cursor-pointer" onClick={() => setReferral('JTETSATHI99')}>JTETSATHI99</span> for trial unlock.
                   </div>
                 </div>
 
@@ -513,7 +513,7 @@ function AuthContent() {
                   <p className="text-sm text-foreground/60 mt-2 font-light leading-relaxed">
                     Your <strong className="text-foreground font-semibold">{examType}</strong> syllabus account has been customized.
                   </p>
-                  {referral.trim().toUpperCase() === 'PREPAI99' && (
+                  {referral.trim().toUpperCase() === 'JTETSATHI99' && (
                     <div className="mt-4 p-3 bg-accent/10 border border-accent/20 rounded-xl">
                       <span className="block text-accent font-semibold text-xs tracking-wide">
                         🌟 7-Days Gold Premium Activated! (+500 XP)

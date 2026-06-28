@@ -43,8 +43,8 @@ export default function LandingPage() {
       icon: Volume2
     },
     {
-      title: 'Interactive UPSC MCQs',
-      description: 'Practice UPSC-level questions with immediate feedback, timer challenges, negative marking, and explanations.',
+      title: 'Interactive JTET MCQs',
+      description: 'Practice JTET-level questions with immediate feedback, timer challenges, negative marking, and explanations.',
       icon: HelpCircle
     },
     {
@@ -75,7 +75,7 @@ export default function LandingPage() {
       href: '/dashboard'
     },
     {
-      name: 'LBSNAA Gold (Premium)',
+      name: 'JTET Sathi Gold (Premium)',
       price: '₹199',
       period: '/month',
       description: 'Unleash full AI potential and offline resources.',
@@ -102,7 +102,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between relative z-10">
         <Link href="/" className="font-display font-bold text-2xl tracking-tight text-accent flex items-center">
-          Prep<span className="text-[#FAF6EC] font-sans font-light">AI</span>
+          JTET<span className="text-[#FAF6EC] font-sans font-light ml-1.5">Sathi</span>
         </Link>
         <div className="flex items-center space-x-4">
           <Link href="/dashboard" className="text-sm font-medium hover:text-accent transition-colors">
@@ -131,14 +131,14 @@ export default function LandingPage() {
             className="inline-flex items-center space-x-2 bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full text-accent text-xs font-semibold uppercase tracking-wider mb-6"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>AI-Powered UPSC Prep Engine</span>
+            <span>AI-Powered JTET Prep Engine</span>
           </motion.div>
 
           <motion.h1 
             variants={itemVariants}
             className="font-display text-4xl sm:text-6xl font-extrabold tracking-tight leading-none mb-6"
           >
-            Shatter the <span className="gold-gradient-text">UPSC CSE</span> Barrier with AI
+            Shatter the <span className="gold-gradient-text">JTET Exam</span> Barrier with AI
           </motion.h1>
 
           <motion.p 
@@ -179,7 +179,7 @@ export default function LandingPage() {
             <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
             <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
             <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
-            <span className="text-xs text-foreground/40 ml-4 font-mono">prepai.upsc.in/dashboard</span>
+            <span className="text-xs text-foreground/40 ml-4 font-mono">jtet.sathi.in/dashboard</span>
           </div>
           <div className="aspect-[16/9] bg-slate-950 p-6 md:p-10 flex flex-col md:flex-row gap-6 relative">
             <div className="flex-1 space-y-4">
@@ -221,7 +221,7 @@ export default function LandingPage() {
         <section id="features" className="pt-28 pb-16">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="font-display text-3xl sm:text-4xl font-extrabold text-foreground mb-4">Study Smarter, Not Longer</h2>
-            <p className="text-foreground/60 font-light">PrepAI combines cognitive science tools with artificial intelligence to optimize your UPSC preparation workflow.</p>
+            <p className="text-foreground/60 font-light">JTET Sathi combines cognitive science tools with artificial intelligence to optimize your JTET preparation workflow.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -247,17 +247,17 @@ export default function LandingPage() {
               {
                 quote: "The audio narrations are game-changing. I listen to Indian Polity by Laxmikanth while commuting. The highlighted reading sync makes revision extremely fast.",
                 author: "Siddharth Verma",
-                role: "UPSC CSE 2025 Aspirant"
+                role: "JTET 2026 Aspirant"
               },
               {
-                quote: "PrepAI's spaced-repetition flashcards helped me memorize hundreds of constitutional articles and amendments. The UI feels incredibly smooth and premium.",
+                quote: "JTET Sathi's spaced-repetition flashcards helped me memorize hundreds of pedagogical definitions and exam patterns. The UI feels incredibly smooth and premium.",
                 author: "Meghna Roy",
-                role: "Cleared UPSC Prelims 2024"
+                role: "Cleared JTET Paper I & II"
               },
               {
                 quote: "The negative marking and immediate OMR explanations gave me realistic test practice. I generated custom chapter MCQs using the AI builder. Worth every rupee.",
                 author: "Vikram Jeet",
-                role: "IPS Officer (CSE Rank 242)"
+                role: "JTET High Scorer"
               }
             ].map((test, i) => (
               <div key={i} className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 flex flex-col justify-between">
@@ -330,7 +330,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-white/5 bg-[#070b16] py-12 relative z-10 text-center text-xs text-foreground/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="mb-2">© {new Date().getFullYear()} PrepAI. Made for Civil Services Excellence.</p>
+          <p className="mb-2">© {new Date().getFullYear()} JTET Sathi. Made for Jharkhand Teacher Eligibility Excellence.</p>
           <p>Privacy Policy | Terms of Service | Contact Support</p>
         </div>
       </footer>

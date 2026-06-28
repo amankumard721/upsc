@@ -17,7 +17,7 @@
 
 @theme {
   --color-primary: #1B2A4A;
-  --color-accent: #D89B3C;
+  --color-accent: #10B981;
   --color-cream: #FAF6EC;
   --color-success-green: #3F7D58;
   --color-error-red: #B5392F;
@@ -56,9 +56,9 @@
   --background: #0B1325;
   --foreground: #FAF6EC;
   --card-bg: rgba(27,42,74,0.35);
-  --card-border: rgba(216,155,60,0.12);
+  --card-border: rgba(16,185,129,0.12);
   --tab-bar-bg: rgba(11,19,37,0.92);
-  --tab-bar-border: rgba(216,155,60,0.1);
+  --tab-bar-border: rgba(16,185,129,0.1);
 
   /* Dark Mode adaptive colors */
   --adaptive-slate-800: #1e293b;
@@ -90,7 +90,7 @@ html, body {
 /* ─── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(216,155,60,0.18); border-radius: 99px; }
+::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.18); border-radius: 99px; }
 
 /* Hide scroll indicators on native APK and all touch/mobile devices */
 .is-apk *::-webkit-scrollbar,
@@ -130,8 +130,8 @@ html, body {
 
 .premium-card:hover {
   transform: translateY(-3px) scale(1.005);
-  box-shadow: 0 16px 32px -12px rgba(216,155,60,0.18);
-  border-color: rgba(216,155,60,0.35);
+  box-shadow: 0 16px 32px -12px rgba(16,185,129,0.18);
+  border-color: rgba(16,185,129,0.35);
 }
 
 /* ─── Glass Navbar ──────────────────────────────────────── */
@@ -183,7 +183,7 @@ html, body {
   transform: translateX(-50%);
   width: 24px;
   height: 3px;
-  background: linear-gradient(90deg, #D89B3C, #F3D082);
+  background: linear-gradient(90deg, #10B981, #34D399);
   border-radius: 0 0 4px 4px;
   animation: pill-in 0.25s cubic-bezier(.34,1.56,.64,1);
 }
@@ -204,7 +204,7 @@ html, body {
 }
 
 .native-tab-item.active .tab-icon-wrap {
-  background: rgba(216,155,60,0.12);
+  background: rgba(16,185,129,0.12);
 }
 
 .tab-label {
@@ -237,7 +237,7 @@ html, body {
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--card-bg) 25%, rgba(216,155,60,0.08) 50%, var(--card-bg) 75%);
+  background: linear-gradient(90deg, var(--card-bg) 25%, rgba(16,185,129,0.08) 50%, var(--card-bg) 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   border-radius: 10px;
@@ -256,7 +256,7 @@ button:active, a:active {
 
 /* ─── Gold gradient text ─────────────────────────────────── */
 .gold-gradient-text {
-  background: linear-gradient(135deg, #D89B3C 0%, #F3D082 50%, #B87D24 100%);
+  background: linear-gradient(135deg, #10B981 0%, #34D399 50%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -329,7 +329,7 @@ html:not(.dark-theme) .divide-white\/5 > * { border-color: rgba(27,42,74,0.08) !
 
 html:not(.dark-theme) .from-primary.to-slate-900 {
   background: linear-gradient(135deg, #1B2A4A 0%, #0F172A 100%) !important;
-  border: 1px solid rgba(216,155,60,0.2) !important;
+  border: 1px solid rgba(16,185,129,0.2) !important;
 }
 html:not(.dark-theme) .from-primary.to-slate-900 h1,
 html:not(.dark-theme) .from-primary.to-slate-900 p,
