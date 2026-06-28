@@ -4,11 +4,13 @@ import React, { useEffect, useState, useRef, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
-import { Chapter } from '@/types';
+import { Chapter, Book } from '@/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, SkipBack, SkipForward, ArrowLeft,
-  Video, Radio, Expand, Shrink, FileText, CheckCircle
+  Video, Radio, Expand, Shrink, FileText, CheckCircle,
+  ChevronDown, MoreHorizontal, ThumbsUp, ThumbsDown, Share2,
+  RotateCcw, RotateCw, Shuffle, Volume2, ListMusic, ListCollapse
 } from 'lucide-react';
 
 // --- Types ---
@@ -38,7 +40,6 @@ function getYoutubeId(url: string | undefined | null) {
 }
 
 // --- Mock Data Generator ---
-// We generate a structured lesson from the raw chapter data for demonstration.
 function generateMockLesson(chapter: Chapter): Lesson {
   const defaultScenes: Scene[] = [
     { title: "Introduction", icon: "📖", theme: "bg-indigo-900", lines: ["Welcome to this lesson.", "Today we are going to explore some fascinating concepts.", "Let's dive right in."] },
@@ -46,7 +47,6 @@ function generateMockLesson(chapter: Chapter): Lesson {
     { title: "Summary", icon: "✨", theme: "bg-amber-900", lines: ["We have covered a lot of ground today.", "Review the notes if you need a refresher.", "Great job completing the lesson!"] }
   ];
 
-  // If chapter has actual content, try to break it into mock scenes
   if (chapter.content_text && chapter.content_text.length > 50) {
     const rawSentences = chapter.content_text.match(/[^.!?]+[.!?]+(\s|$)/g)?.map(s => s.trim()).filter(Boolean) || [chapter.content_text];
     const chunk = Math.ceil(rawSentences.length / 3);
@@ -63,8 +63,7 @@ function generateMockLesson(chapter: Chapter): Lesson {
   return { title: chapter.title, scenes: defaultScenes };
 }
 
-// --- Playback Configuration ---
-const BASE_LINE_MS = 3000; // 3 seconds per line at 1x speed
+const BASE_LINE_MS = 4000; // 4 seconds per line at 1x speed
 
 export default function LessonPlayerPage({ params }: { params: Promise<{ chapterId: string }> }) {
   const router = useRouter();
@@ -72,12 +71,13 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
 
   // Data
   const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [book, setBook] = useState<Book | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [flatLines, setFlatLines] = useState<FlatLine[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Playback State
-  const [mode, setMode] = useState<'video' | 'podcast'>('video');
+  const [mode, setMode] = useState<'video' | 'podcast'>('podcast'); // default to podcast to match playing now
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [cursor, setCursor] = useState(0);       // Index into flatLines
@@ -88,6 +88,10 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
 
+  // Interaction State
+  const [liked, setLiked] = useState<'up' | 'down' | null>(null);
+  const [likeCount, setLikeCount] = useState(66);
+
   // Refs for timer and speech
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -95,7 +99,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const elapsedMsRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // 1. Load Data
+  // Load Data
   useEffect(() => {
     db.getChapter(chapterId).then(ch => {
       if (ch) {
@@ -103,6 +107,9 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         const l = generateMockLesson(ch);
         setLesson(l);
         
+        // Fetch book cover
+        db.getBook(ch.book_id).then(b => setBook(b || null));
+
         // Flatten scenes
         const flat: FlatLine[] = [];
         l.scenes.forEach((scene, sIdx) => {
@@ -125,7 +132,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     };
   }, [chapterId]);
 
-  // 2. Playback Engine
+  // Playback Engine
   useEffect(() => {
     if (!isPlaying || ended || flatLines.length === 0) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -139,12 +146,10 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100);
 
     if (chapter?.audio_url) {
-      // Use real audio file instead of TTS
       if (audioRef.current && audioRef.current.paused) {
         audioRef.current.play().catch(console.error);
       }
       
-      // Auto-advance cursor loosely based on time since we don't have exact VTT sync
       lastTimeRef.current = performance.now();
       timerRef.current = setInterval(() => {
         const now = performance.now();
@@ -152,23 +157,29 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         lastTimeRef.current = now;
         elapsedMsRef.current += delta;
 
+        // Roughly match word tracking
+        const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
+        setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
+
         if (elapsedMsRef.current >= totalLineMs) {
           elapsedMsRef.current = 0;
           setWordIdx(0);
           if (cursor + 1 < flatLines.length) {
             setCursor(c => c + 1);
+          } else {
+            setEnded(true);
+            setIsPlaying(false);
           }
         }
       }, 50);
 
     } else {
-      // Use Browser TTS
       if (elapsedMsRef.current === 0 && typeof window !== 'undefined') {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
         utterance.rate = playbackSpeed * 1.1; 
         const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('Google'));
+        const preferred = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('Google') || v.lang.startsWith('hi-IN'));
         if (preferred) utterance.voice = preferred;
         synthRef.current = utterance;
         window.speechSynthesis.speak(utterance);
@@ -203,7 +214,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     };
   }, [isPlaying, cursor, playbackSpeed, ended, flatLines, chapter]);
 
-  // 3. Save Progress
+  // Save Progress
   useEffect(() => {
     if (typeof window !== 'undefined' && chapter) {
       try {
@@ -214,7 +225,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         
         const newProg = {
           id: existingIdx !== -1 ? list[existingIdx].id : Math.random().toString(36).substr(2, 9),
-          user_id: 'default-user', // Mock user for local tracking
+          user_id: 'default-user',
           chapter_id: chapterId,
           is_completed: isCompleted,
           last_position_seconds: (cursor * BASE_LINE_MS) / 1000,
@@ -234,7 +245,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     }
   }, [cursor, ended, chapter, chapterId]);
 
-  // 4. Controls
+  // Controls
   const togglePlay = () => {
     if (ended) {
       setCursor(0);
@@ -272,15 +283,84 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     }
   };
 
+  const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    
+    if (chapter?.audio_url && audioRef.current) {
+      const newTime = percentage * audioDuration;
+      audioRef.current.currentTime = newTime;
+      setAudioCurrentTime(newTime);
+      
+      const totalLines = flatLines.length;
+      const newCursor = Math.min(Math.floor(percentage * totalLines), totalLines - 1);
+      setCursor(newCursor);
+      setWordIdx(0);
+    } else {
+      const totalLines = flatLines.length;
+      const newCursor = Math.min(Math.floor(percentage * totalLines), totalLines - 1);
+      setCursor(newCursor);
+      setWordIdx(0);
+      elapsedMsRef.current = 0;
+    }
+  };
+
+  const handleSkipTime = (direction: 'forward' | 'backward') => {
+    if (chapter?.audio_url && audioRef.current) {
+      const delta = direction === 'forward' ? 10 : -10;
+      let newTime = audioRef.current.currentTime + delta;
+      if (newTime < 0) newTime = 0;
+      if (newTime > audioDuration) newTime = audioDuration;
+      audioRef.current.currentTime = newTime;
+      setAudioCurrentTime(newTime);
+
+      const percentage = newTime / audioDuration;
+      const totalLines = flatLines.length;
+      const newCursor = Math.min(Math.floor(percentage * totalLines), totalLines - 1);
+      setCursor(newCursor);
+      setWordIdx(0);
+    } else {
+      seekBy(direction === 'forward' ? 2 : -2);
+    }
+  };
+
+  const handleLike = (type: 'up' | 'down') => {
+    if (liked === type) {
+      setLiked(null);
+      if (type === 'up') setLikeCount(c => c - 1);
+    } else {
+      if (liked === 'up') setLikeCount(c => c - 1);
+      setLiked(type);
+      if (type === 'up') setLikeCount(c => c + 1);
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: chapter?.title || 'PrepAI Lesson',
+        text: `Listen to this narration of ${chapter?.title}`,
+        url: window.location.href,
+      }).catch(console.error);
+    } else {
+      alert('Share link copied to clipboard!');
+      navigator.clipboard.writeText(window.location.href);
+    }
+  };
+
   if (loading || !lesson || flatLines.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0B1325] flex items-center justify-center p-5">
+      <div className="min-h-screen bg-[#060D1A] flex items-center justify-center p-5">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   const currentFlatLine = flatLines[cursor] || flatLines[0];
+  const prevFlatLine = cursor > 0 ? flatLines[cursor - 1] : null;
+  const nextFlatLine = cursor + 1 < flatLines.length ? flatLines[cursor + 1] : null;
+
   const currentScene = lesson.scenes[currentFlatLine.sceneIdx];
   
   const isCustomAudio = !!chapter?.audio_url;
@@ -292,9 +372,9 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const progressPercent = currentTotalSeconds > 0 ? (currentElapsedSeconds / currentTotalSeconds) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-[#060d1a] text-[#FAF6EC] font-sans flex flex-col pb-safe">
+    <div className="min-h-screen bg-[#060D1A] text-foreground font-sans flex flex-col relative overflow-hidden select-none">
       
-      {/* Hidden Audio Element for Custom MP3s */}
+      {/* Hidden Audio Element */}
       {chapter?.audio_url && (
         <audio 
           ref={audioRef} 
@@ -308,248 +388,313 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         />
       )}
 
-      {/* --- Top Bar & Mode Toggle --- */}
-      <header className="flex items-center justify-between p-4 glass-nav sticky top-0 z-50">
-        <button onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition">
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+      {/* --- Blurred Cover Background for Premium Feel --- */}
+      {mode === 'podcast' && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center blur-[60px] scale-110 opacity-30 pointer-events-none transition-all duration-700 z-0"
+          style={{ backgroundImage: `url(${book?.cover_image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800'})` }}
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#060D1A]/50 via-[#060D1A]/85 to-[#060D1A] pointer-events-none z-0" />
+
+      {/* --- Header --- */}
+      <header className="flex items-center justify-between px-6 pt-4 pb-2 z-10 relative">
+        <button onClick={() => router.back()} className="p-2 -ml-2 text-foreground/80 hover:text-foreground transition rounded-full hover:bg-white/5">
+          <ChevronDown className="w-6 h-6" />
         </button>
         
-        <div className="flex bg-white/5 border border-white/10 rounded-full p-1 shadow-inner">
+        <div className="text-center">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-foreground/40 uppercase font-mono mb-0.5">Playing Now</p>
+          <span className="text-xs font-semibold text-accent">{book?.title || 'PrepAI Academy'}</span>
+        </div>
+        
+        <button className="p-2 -mr-2 text-foreground/80 hover:text-foreground transition rounded-full hover:bg-white/5">
+          <MoreHorizontal className="w-6 h-6" />
+        </button>
+      </header>
+
+      {/* --- Mode switcher (Integrated into Header area) --- */}
+      <div className="flex justify-center my-2 z-10 relative">
+        <div className="flex bg-white/5 border border-white/10 rounded-full p-0.5 shadow-inner">
           <button
             onClick={() => setMode('video')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'video' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/50 hover:text-foreground/80'}`}
+            className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold transition-all ${mode === 'video' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/50 hover:text-foreground'}`}
           >
-            <Video className="w-3.5 h-3.5" /> Video
+            <Video className="w-3 h-3" /> Video
           </button>
           <button
             onClick={() => setMode('podcast')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${mode === 'podcast' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/50 hover:text-foreground/80'}`}
+            className={`flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold transition-all ${mode === 'podcast' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/50 hover:text-foreground'}`}
           >
-            <Radio className="w-3.5 h-3.5" /> Podcast
+            <Radio className="w-3 h-3" /> Podcast
           </button>
         </div>
-        
-        <div className="w-10" /> {/* Spacer */}
-      </header>
+      </div>
 
       {/* --- Main Content Area --- */}
-      <main className="flex-1 flex flex-col items-center w-full max-w-2xl mx-auto p-4 transition-all duration-500 relative pb-56">
-        <AnimatePresence mode="wait">
-          
-          {mode === 'video' && (
-            chapter?.video_url && getYoutubeId(chapter.video_url) ? (
-              <motion.div
-                key="yt-video"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className={`w-full relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 ${isTheater ? 'h-[70vh]' : 'aspect-video'}`}
-              >
-                <iframe
-                  src={`https://www.youtube.com/embed/${getYoutubeId(chapter.video_url)}?rel=0`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="video"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className={`w-full relative rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col ${isTheater ? 'h-[70vh]' : 'aspect-video'} ${currentScene.theme} ${!isPlaying ? 'paused' : ''}`}
-              >
-                {/* Ambient Background & Particles */}
+      <main className="flex-1 flex flex-col justify-between w-full max-w-xl mx-auto px-6 pb-6 pt-4 z-10 relative overflow-y-auto no-scrollbar">
+        
+        {mode === 'video' ? (
+          /* VIDEO MODE */
+          chapter?.video_url && getYoutubeId(chapter.video_url) ? (
+            <div className="w-full my-auto aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative">
+              <iframe
+                src={`https://www.youtube.com/embed/${getYoutubeId(chapter.video_url)}?rel=0`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            </div>
+          ) : (
+            <div className={`w-full my-auto aspect-video rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col relative ${currentScene.theme}`}>
               <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-zoom" />
-              <div className="absolute inset-0 animate-dust-1" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-              <div className="absolute inset-0 animate-dust-2" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 2px, transparent 2px)', backgroundSize: '70px 70px' }} />
-
-              {/* Badge */}
+              
               <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20">
                 <div className={`w-2 h-2 rounded-full bg-accent ${isPlaying ? 'animate-pulse' : ''}`} />
-                <span className="text-[9px] font-bold tracking-widest text-foreground uppercase font-mono">AI Narration</span>
+                <span className="text-[9px] font-bold tracking-widest text-foreground uppercase font-mono">AI Teacher</span>
               </div>
               
-              <div className="absolute top-4 right-4 z-20">
-                <button onClick={() => setIsTheater(!isTheater)} className="p-2 bg-black/40 backdrop-blur-md rounded-full text-foreground/70 hover:text-foreground border border-white/10 transition">
-                  {isTheater ? <Shrink className="w-4 h-4" /> : <Expand className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {/* Center Scene: Teacher + Icon */}
-              <div className="flex-1 flex flex-col items-center justify-center relative z-10 pt-8">
-                <div className="text-6xl mb-6 opacity-90 drop-shadow-2xl animate-breathe filter saturate-150">
-                  {currentScene.icon}
-                </div>
-                
-                {/* Chalk-silhouette Avatar */}
-                <div className="relative w-32 h-40 opacity-80 mix-blend-screen drop-shadow-md">
-                  {/* Body/Robe */}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-24 bg-white/20 rounded-t-[3rem] border-t-2 border-l-2 border-r-2 border-white/40" />
-                  {/* Head */}
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/20 rounded-full border-2 border-white/40 flex items-center justify-center">
-                    {/* Eyes */}
-                    <div className="flex gap-3 mb-2 animate-blink">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+              <div className="flex-1 flex flex-col items-center justify-center relative z-10 pt-4">
+                <div className="text-5xl mb-4 drop-shadow-2xl animate-breathe">{currentScene.icon}</div>
+                <div className="relative w-28 h-32 opacity-80 flex flex-col items-center justify-end pb-4">
+                  <div className="w-20 h-16 bg-white/20 rounded-t-full border-t border-white/40" />
+                  <div className="w-12 h-12 bg-white/20 rounded-full border border-white/40 flex items-center justify-center mb-1">
+                    <div className="flex gap-2">
+                      <div className="w-1 h-1 bg-white rounded-full" />
+                      <div className="w-1 h-1 bg-white rounded-full" />
                     </div>
-                    {/* Mouth */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-4 h-1.5 bg-white rounded-full animate-talk" />
                   </div>
-                  {/* Arm */}
-                  <div className="absolute bottom-6 right-2 w-16 h-4 bg-white/20 border-2 border-white/40 rounded-full origin-left rotate-45 animate-sway" />
                 </div>
               </div>
 
-              {/* Karaoke Captions */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 pt-16 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20">
-                <p className="text-center font-display text-xl leading-relaxed">
+              {/* Karaoke lines in Video mode */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-black/90 to-transparent z-20">
+                <p className="text-center font-display text-base leading-relaxed">
                   {currentFlatLine.words.map((word, idx) => (
                     <span 
                       key={idx} 
-                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= wordIdx ? 'text-foreground text-shadow-glow font-bold' : 'text-foreground/40'}`}
-                      style={{ textShadow: idx <= wordIdx ? '0 0 10px rgba(255,255,255,0.5)' : 'none' }}
+                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= wordIdx ? 'text-accent font-bold' : 'text-white/40'}`}
                     >
                       {word}
                     </span>
                   ))}
                 </p>
               </div>
-            </motion.div>
-            )
-          )}
-
-          {mode === 'podcast' && (
-            <motion.div
-              key="podcast"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="w-full flex flex-col items-center mt-6"
-            >
-              {/* Square Cover Art */}
-              <div className={`w-64 h-64 rounded-[2rem] shadow-2xl flex items-center justify-center border-4 border-white/5 transition-all duration-700 relative overflow-hidden ${currentScene.theme} ${!isPlaying ? 'paused' : ''}`}>
-                <div className="absolute inset-0 bg-black/10 mix-blend-overlay animate-zoom" />
-                <div className="text-8xl drop-shadow-2xl animate-breathe">{currentScene.icon}</div>
+            </div>
+          )
+        ) : (
+          /* PODCAST MODE (Spotify lyrics/audio style) */
+          <div className="flex-1 flex flex-col justify-around py-4">
+            
+            {/* Center Lyrics Layout */}
+            <div className="flex flex-col justify-center text-center space-y-6 my-auto px-4">
+              {/* Previous line (faded) */}
+              <div className="h-10 overflow-hidden flex items-center justify-center">
+                {prevFlatLine && (
+                  <p className="text-foreground/30 text-sm font-medium line-clamp-1 truncate max-w-md">
+                    {prevFlatLine.lineText}
+                  </p>
+                )}
               </div>
 
-              {/* Episode Info */}
-              <div className="text-center mt-8 mb-6">
-                <p className="text-[10px] font-mono tracking-widest uppercase text-accent mb-2">
-                  Episode {currentFlatLine.sceneIdx + 1} of {lesson.scenes.length}
-                </p>
-                <h2 className="text-2xl font-bold font-display text-foreground">{currentScene.title}</h2>
-                <p className="text-xs text-foreground/50 mt-1 font-medium">Narrated by AI Teacher</p>
+              {/* Current highlighted line */}
+              <div className="min-h-[120px] flex items-center justify-center">
+                <h2 className="text-xl md:text-2xl font-bold font-sans text-foreground leading-relaxed max-w-lg">
+                  {currentFlatLine.words.map((word, idx) => {
+                    const isActive = idx <= wordIdx;
+                    return (
+                      <span 
+                        key={idx} 
+                        className={`inline-block mx-[3px] transition-all duration-200 py-0.5 px-1 rounded ${
+                          isActive 
+                            ? 'text-accent font-extrabold bg-accent/10 border-b-2 border-accent shadow-sm' 
+                            : 'text-foreground/45 font-medium'
+                        }`}
+                      >
+                        {word}
+                      </span>
+                    );
+                  })}
+                </h2>
               </div>
 
-              {/* Waveform */}
-              <div className={`flex items-end justify-center gap-1.5 h-16 mb-8 w-full px-8 ${!isPlaying ? 'paused' : ''}`}>
-                {Array.from({ length: 28 }).map((_, i) => {
-                  // Color earlier bars differently
-                  const isPast = (i / 28) < ((cursor+1)/flatLines.length);
-                  const animClass = ['animate-bar-1', 'animate-bar-2', 'animate-bar-3', 'animate-bar-4'][i % 4];
-                  return (
-                    <div 
-                      key={i} 
-                      className={`w-1.5 rounded-full transition-colors ${animClass} ${isPast ? 'bg-accent/80 shadow-[0_0_8px_rgba(216,155,60,0.5)]' : 'bg-white/10'}`} 
-                    />
-                  );
-                })}
+              {/* Next line (faded) */}
+              <div className="h-10 overflow-hidden flex items-center justify-center">
+                {nextFlatLine && (
+                  <p className="text-foreground/20 text-sm font-medium line-clamp-1 truncate max-w-md">
+                    {nextFlatLine.lineText}
+                  </p>
+                )}
               </div>
+            </div>
 
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* --- Shared Controls Layer (Spotify Style) --- */}
-        <div className="fixed bottom-0 left-0 right-0 w-full z-50 bg-[#060d1a]/95 backdrop-blur-xl border-t border-white/5 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-          <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
-            {/* Chapter Chips */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mask-edges">
-              {lesson.scenes.map((scene, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => jumpToScene(idx)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${
-                    currentFlatLine.sceneIdx === idx 
-                      ? 'bg-white/10 border-white/20 text-foreground font-bold' 
-                      : 'bg-transparent border-white/5 text-foreground/40 hover:text-foreground/70'
+            {/* Action Bar (Thumbs Up/Down Pill and Share Pill) */}
+            <div className="flex items-center justify-between px-4 mb-4">
+              <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-1 shadow-md">
+                <button 
+                  onClick={() => handleLike('up')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition ${
+                    liked === 'up' 
+                      ? 'bg-accent text-slate-950 font-bold' 
+                      : 'text-foreground/70 hover:text-foreground'
                   }`}
                 >
-                  <span>{scene.icon}</span>
-                  <span>{scene.title}</span>
+                  <ThumbsUp className="w-3.5 h-3.5" />
+                  <span>{likeCount}</span>
                 </button>
-              ))}
-            </div>
-
-            {/* Scrubber */}
-            <div className="relative pt-1">
-              <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden cursor-pointer">
-                <div 
-                  className="h-full bg-accent relative transition-all duration-200"
-                  style={{ width: `${Math.max(progressPercent, 1)}%` }}
-                >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-md" />
-                </div>
-              </div>
-              <div className="flex justify-between mt-2 text-[10px] font-mono text-foreground/40">
-                <span>{elapsedStr}</span>
-                <span>{totalDurationStr}</span>
-              </div>
-            </div>
-
-            {/* Media Buttons */}
-            <div className="flex items-center justify-between px-2 pb-2">
-              <button 
-                onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
-                className="w-12 text-xs font-mono font-bold text-foreground/60 hover:text-accent transition"
-              >
-                {playbackSpeed}x
-              </button>
-              
-              <div className="flex items-center gap-6">
-                <button onClick={() => seekBy(-2)} className="p-2 text-foreground/70 hover:text-foreground transition">
-                  <SkipBack className="w-6 h-6 fill-current" />
-                </button>
-                
+                <div className="w-[1px] h-4 bg-white/10 mx-1" />
                 <button 
-                  onClick={togglePlay}
-                  className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-transform"
+                  onClick={() => handleLike('down')}
+                  className={`flex items-center p-2 rounded-full transition ${
+                    liked === 'down' 
+                      ? 'text-accent' 
+                      : 'text-foreground/50 hover:text-foreground'
+                  }`}
                 >
-                  {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-1" />}
-                </button>
-                
-                <button onClick={() => seekBy(2)} className="p-2 text-foreground/70 hover:text-foreground transition">
-                  <SkipForward className="w-6 h-6 fill-current" />
+                  <ThumbsDown className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div className="w-12 flex justify-end">
-                <div className="w-1.5 h-1.5 rounded-full bg-white/20" /> {/* Spacer dot */}
-              </div>
+              <button 
+                onClick={handleShare}
+                className="flex items-center gap-2 bg-white/5 border border-white/10 hover:border-accent hover:text-accent px-5 py-2.5 rounded-full text-xs font-semibold transition shadow-md"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share</span>
+              </button>
+            </div>
+            
+          </div>
+        )}
+
+        {/* --- Scrubber & Timeline Panel --- */}
+        <div className="space-y-4 pt-4 border-t border-white/5">
+          
+          {/* Track Info Panel */}
+          <div className="flex items-center space-x-4 px-2">
+            <img 
+              src={book?.cover_image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'} 
+              alt={chapter?.title} 
+              className="w-14 h-14 rounded-xl object-cover bg-slate-800 border border-white/10 shadow-lg flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-foreground truncate">{chapter?.title}</h3>
+              <p className="text-xs text-foreground/50 truncate font-medium">By {book?.author || 'PrepAI Engine'}</p>
             </div>
           </div>
+
+          {/* Timeline and Scrubber */}
+          <div className="space-y-2">
+            <div 
+              onClick={handleScrub}
+              className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer relative group flex items-center"
+            >
+              <div 
+                className="h-full bg-accent rounded-full relative transition-all duration-100"
+                style={{ width: `${Math.max(progressPercent, 1)}%` }}
+              >
+                {/* Drag Handle knob */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-150" />
+              </div>
+            </div>
+            
+            {/* Timeline info row */}
+            <div className="flex justify-between items-center text-[10px] font-mono text-foreground/45">
+              <span>{elapsedStr}</span>
+              
+              {/* Scene/Section current marker */}
+              <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[9px] font-semibold text-accent max-w-[180px] truncate">
+                <ListCollapse className="w-3 h-3 text-accent/70 shrink-0" />
+                <span className="truncate">{currentScene.title}</span>
+              </div>
+              
+              <span>-{formatTime(Math.max(currentTotalSeconds - currentElapsedSeconds, 0))}</span>
+            </div>
+          </div>
+
+          {/* Control Buttons */}
+          <div className="flex items-center justify-between px-2 pt-2">
+            {/* Speed Option */}
+            <button 
+              onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
+              className="w-12 text-xs font-mono font-bold text-foreground/60 hover:text-accent transition text-left"
+            >
+              {playbackSpeed}x
+            </button>
+
+            {/* Playback Controls */}
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={() => seekBy(-1)} 
+                className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
+                disabled={cursor === 0}
+              >
+                <SkipBack className="w-5 h-5 fill-current" />
+              </button>
+
+              <button 
+                onClick={() => handleSkipTime('backward')}
+                className="p-2 text-foreground/65 hover:text-foreground transition"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+
+              <button 
+                onClick={togglePlay}
+                className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+              >
+                {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+              </button>
+
+              <button 
+                onClick={() => handleSkipTime('forward')}
+                className="p-2 text-foreground/65 hover:text-foreground transition"
+              >
+                <RotateCw className="w-5 h-5" />
+              </button>
+
+              <button 
+                onClick={() => seekBy(1)}
+                className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
+                disabled={cursor === flatLines.length - 1}
+              >
+                <SkipForward className="w-5 h-5 fill-current" />
+              </button>
+            </div>
+
+            {/* Bottom Playlist Queue Toggle */}
+            <div className="w-12 flex justify-end">
+              <button 
+                onClick={() => alert(`Syllabus Structure: ${lesson.scenes.map(s => s.title).join(' → ')}`)}
+                className="p-2 text-foreground/60 hover:text-accent transition"
+                title="Scene Queue"
+              >
+                <ListMusic className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
         </div>
 
-        {/* --- Post-Lesson CTA --- */}
+        {/* --- Post-Lesson CTA Card --- */}
         <AnimatePresence>
           {ended && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full premium-card p-6 mt-4 border-accent/30 text-center"
+              exit={{ opacity: 0, y: 30 }}
+              className="absolute inset-x-6 bottom-56 premium-card p-6 bg-slate-900 border border-accent/25 text-center z-30 shadow-2xl"
             >
-              <CheckCircle className="w-12 h-12 text-success-green mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-foreground font-display">Lesson Complete!</h3>
-              <p className="text-xs text-foreground/60 mt-1 mb-5">You've mastered this topic. Ready to practice?</p>
+              <CheckCircle className="w-10 h-10 text-success-green mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-foreground font-display">Lesson Completed! 🎉</h3>
+              <p className="text-[11px] text-foreground/60 mt-1 mb-4">You've mastered this chapter. What's next?</p>
               
               <div className="flex gap-3">
-                <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4" /> Quiz (10)
+                <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs shadow-md">
+                  <CheckCircle className="w-3.5 h-3.5" /> Start Quiz
                 </Link>
-                <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-foreground font-bold py-3 rounded-xl transition flex justify-center items-center gap-2 text-sm">
-                  <FileText className="w-4 h-4" /> Flashcards
+                <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-foreground font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs">
+                  <FileText className="w-3.5 h-3.5" /> Flashcards
                 </Link>
               </div>
             </motion.div>
@@ -562,6 +707,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
 }
 
 function formatTime(seconds: number) {
+  if (isNaN(seconds)) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
