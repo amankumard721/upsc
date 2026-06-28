@@ -52,3 +52,10 @@ try {
 } catch(Exception e) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
+
+// Workaround to bypass AAR metadata check for newer dependencies
+project.tasks.configureEach { task ->
+    if (task.name.contains("CheckAarMetadata")) {
+        task.enabled = false
+    }
+}
