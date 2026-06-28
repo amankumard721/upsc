@@ -307,8 +307,11 @@ export const db = {
     };
     if (supabase) {
       const { data, error } = await supabase.from('books').insert(newBook).select().single();
-      if (!error && data) return data as Book;
-      if (error) console.error("Error creating book in Supabase:", error);
+      if (error) {
+        console.error("Error creating book in Supabase:", error);
+        throw new Error(error.message);
+      }
+      if (data) return data as Book;
     }
     return newBook;
   },
@@ -317,7 +320,11 @@ export const db = {
   async deleteBook(bookId: string): Promise<boolean> {
     if (supabase) {
       const { error } = await supabase.from('books').delete().eq('id', bookId);
-      return !error;
+      if (error) {
+        console.error("Error deleting book in Supabase:", error);
+        throw new Error(error.message);
+      }
+      return true;
     }
     return true;
   },
@@ -332,8 +339,11 @@ export const db = {
     };
     if (supabase) {
       const { data, error } = await supabase.from('chapters').insert(newChapter).select().single();
-      if (!error && data) return data as Chapter;
-      if (error) console.error("Error creating chapter in Supabase:", error);
+      if (error) {
+        console.error("Error creating chapter in Supabase:", error);
+        throw new Error(error.message);
+      }
+      if (data) return data as Chapter;
     }
     return newChapter;
   },
@@ -342,7 +352,11 @@ export const db = {
   async deleteChapter(chapterId: string): Promise<boolean> {
     if (supabase) {
       const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
-      return !error;
+      if (error) {
+        console.error("Error deleting chapter in Supabase:", error);
+        throw new Error(error.message);
+      }
+      return true;
     }
     return true;
   },
@@ -357,8 +371,11 @@ export const db = {
     };
     if (supabase) {
       const { data, error } = await supabase.from('mcqs').insert(newMCQ).select().single();
-      if (!error && data) return data as MCQ;
-      if (error) console.error("Error creating MCQ in Supabase:", error);
+      if (error) {
+        console.error("Error creating MCQ in Supabase:", error);
+        throw new Error(error.message);
+      }
+      if (data) return data as MCQ;
     }
     return newMCQ;
   },
@@ -373,8 +390,11 @@ export const db = {
     };
     if (supabase) {
       const { data, error } = await supabase.from('flashcards').insert(newFC).select().single();
-      if (!error && data) return data as Flashcard;
-      if (error) console.error("Error creating Flashcard in Supabase:", error);
+      if (error) {
+        console.error("Error creating Flashcard in Supabase:", error);
+        throw new Error(error.message);
+      }
+      if (data) return data as Flashcard;
     }
     return newFC;
   }

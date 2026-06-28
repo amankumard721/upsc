@@ -136,8 +136,8 @@ export default function AdminDashboardPage() {
       setBookAuthor('');
       setBookCover('');
       setBookTotalChapters(1);
-    } catch (err) {
-      setError('Failed to create book in Supabase.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create book in Supabase.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -198,8 +198,8 @@ export default function AdminDashboardPage() {
       setChapterAudio('');
       setChapterVideo('');
       setChapterText('');
-    } catch (err) {
-      setError('Failed to create chapter in Supabase.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create chapter in Supabase.');
       console.error(err);
     } finally {
       setLoading(false);
