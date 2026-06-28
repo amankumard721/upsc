@@ -485,45 +485,37 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           /* PODCAST MODE (Spotify lyrics/audio style) */
           <div className="flex-1 flex flex-col justify-center py-4 my-auto">
             
-            {/* Center Lyrics Layout */}
-            <div className="flex flex-col justify-center text-center space-y-6 my-auto px-4">
-              {/* Previous line (faded) */}
-              <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
-                {prevFlatLine && (
-                  <p className="text-foreground/30 text-sm font-medium line-clamp-1 truncate max-w-md">
-                    {prevFlatLine.lineText}
+            {/* Live AI Transcription Layout */}
+            <div className="flex-1 flex flex-col justify-center px-6 py-6 max-h-[320px] overflow-y-auto no-scrollbar my-auto">
+              <div className="space-y-4 text-left">
+                {/* Past 3 Lines */}
+                {flatLines.slice(Math.max(0, cursor - 3), cursor).map((line, idx) => (
+                  <p 
+                    key={idx} 
+                    className="text-foreground/30 text-sm md:text-base font-medium leading-relaxed transition-all duration-500"
+                  >
+                    {line.lineText}
                   </p>
-                )}
-              </div>
+                ))}
 
-              {/* Current highlighted line */}
-              <div className="min-h-[120px] flex items-center justify-center flex-shrink-0">
-                <h2 className="text-xl md:text-2xl font-bold font-sans text-foreground leading-relaxed max-w-lg">
-                  {currentFlatLine.words.map((word, idx) => {
-                    const isActive = idx <= wordIdx;
-                    return (
-                      <span 
+                {/* Current Active Line being Transcribed */}
+                <div className="min-h-[100px]">
+                  <p className="text-base md:text-lg font-bold text-foreground leading-relaxed">
+                    {currentFlatLine.words.slice(0, wordIdx + 1).map((word, idx) => (
+                      <motion.span 
                         key={idx} 
-                        className={`inline-block mx-[3px] transition-all duration-200 py-0.5 px-1 rounded ${
-                          isActive 
-                            ? 'text-accent font-extrabold bg-accent/10 border-b-2 border-accent shadow-sm' 
-                            : 'text-foreground/45 font-medium'
-                        }`}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="inline-block mr-1.5 text-accent"
                       >
                         {word}
-                      </span>
-                    );
-                  })}
-                </h2>
-              </div>
-
-              {/* Next line (faded) */}
-              <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
-                {nextFlatLine && (
-                  <p className="text-foreground/20 text-sm font-medium line-clamp-1 truncate max-w-md">
-                    {nextFlatLine.lineText}
+                      </motion.span>
+                    ))}
+                    {/* Blinking typing cursor */}
+                    <span className="inline-block w-1.5 h-4.5 bg-accent ml-1 animate-pulse rounded-full align-middle" />
                   </p>
-                )}
+                </div>
               </div>
             </div>
 
