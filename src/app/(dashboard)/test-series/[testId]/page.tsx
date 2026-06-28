@@ -501,7 +501,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
       {/* PHASE 1: INSTRUCTION SCREEN                              */}
       {/* ──────────────────────────────────────────────────────── */}
       {phase === 'instruction' && (
-        <div className="h-full w-full overflow-y-auto p-4 pb-28 space-y-6 pt-6 max-w-3xl mx-auto no-scrollbar">
+        <div className="h-full w-full overflow-y-auto p-4 pb-28 space-y-6 max-w-3xl mx-auto no-scrollbar" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
           {/* Header */}
           <div className="flex items-center gap-3 bg-slate-900/60 border border-white/5 p-4 rounded-2xl">
             <button onClick={() => router.push('/dashboard')} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition active:scale-95">
@@ -601,7 +601,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
       {phase === 'live' && (
         <div className="fixed inset-0 h-[100dvh] w-screen flex flex-col overflow-hidden bg-slate-950 z-50">
           {/* Header Controls */}
-          <div className="flex items-center justify-between bg-slate-950 border-b border-white/5 py-4 px-4 shrink-0">
+          <div className="flex items-center justify-between bg-slate-950 border-b border-white/5 pb-4 px-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}>
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setPaused(!paused)} 
@@ -915,7 +915,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
       {/* PHASE 3: COMPREHENSIVE RESULT & SCORE ANALYSIS SCREEN   */}
       {/* ──────────────────────────────────────────────────────── */}
       {phase === 'result' && (
-        <div className="h-full w-full overflow-y-auto p-4 pb-28 space-y-6 pt-6 max-w-3xl mx-auto no-scrollbar">
+        <div className="h-full w-full overflow-y-auto p-4 pb-28 space-y-6 max-w-3xl mx-auto no-scrollbar" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
           {/* Header */}
           <div className="flex items-center justify-between bg-slate-900/60 border border-white/5 p-4 rounded-2xl">
             <h1 className="text-sm md:text-base font-bold text-foreground">
