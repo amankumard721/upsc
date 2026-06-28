@@ -34,7 +34,12 @@ export const translations: Record<Language, Record<string, string>> = {
     referralCode: "Your Referral Code",
     all: "All",
     free: "Free",
-    completed: "Completed"
+    completed: "Completed",
+    testSeries: "Test Series",
+    startTest: "Start Test",
+    questions: "Questions",
+    minutes: "Mins",
+    marks: "Marks"
   },
   hi: {
     dashboardTitle: "डैशबोर्ड",
@@ -69,7 +74,12 @@ export const translations: Record<Language, Record<string, string>> = {
     referralCode: "आपका रेफ़रल कोड",
     all: "सभी",
     free: "मुफ़्त",
-    completed: "पूर्ण"
+    completed: "पूर्ण",
+    testSeries: "टेस्ट सीरीज",
+    startTest: "टेस्ट शुरू करें",
+    questions: "प्रश्न",
+    minutes: "मिनट",
+    marks: "अंक"
   }
 };
 

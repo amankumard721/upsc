@@ -206,34 +206,107 @@ export default function DashboardPage() {
 
 
 
-      {/* ── 6. Leaderboard Preview ─────────────────────── */}
+      {/* ── 6. UPSC Test Series Section ─────────────────────── */}
       <div className="premium-card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-500/15 rounded-xl flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-amber-400" />
+            <div className="w-8 h-8 bg-accent/15 rounded-xl flex items-center justify-center">
+              <Award className="w-4 h-4 text-accent" />
             </div>
-            <p className="text-xs font-bold text-foreground">{t('leaderboard')}</p>
+            <p className="text-xs font-bold text-foreground">{t('testSeries')}</p>
           </div>
-          <Link href="/leaderboard" className="text-[10px] text-accent font-bold uppercase tracking-wide flex items-center gap-0.5">
-            See All <ChevronRight className="w-3 h-3" />
-          </Link>
+          <span className="text-[9px] bg-accent/10 text-accent font-extrabold uppercase px-2 py-0.5 rounded-md border border-accent/20 tracking-wider">
+            Premium Pack
+          </span>
         </div>
 
-        <div className="space-y-2.5">
-          {leaderboard.map((entry, idx) => (
-            <div key={entry.id} className={`flex items-center gap-3 p-3 rounded-2xl border ${idx === 0 ? 'bg-amber-500/8 border-amber-500/20' : 'bg-white/3 border-white/8'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold font-mono shrink-0 ${
-                idx === 0 ? 'bg-amber-500/20 text-amber-400' :
-                idx === 1 ? 'bg-slate-400/20 text-slate-300' :
-                'bg-amber-800/20 text-amber-700'
-              }`}>
-                {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-              </span>
-              <span className="flex-1 text-xs font-medium text-foreground truncate">{entry.name}</span>
-              <span className="text-xs font-bold font-mono text-accent shrink-0">{entry.total_points} XP</span>
+        <div className="space-y-3.5">
+          {/* Test 1: Full Length Mock */}
+          <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h4 className="text-xs font-bold text-foreground leading-snug">UPSC Full-Length Mock Test 1</h4>
+                <p className="text-[10px] text-foreground/45 mt-0.5">General Studies Paper I (GS-1)</p>
+              </div>
+              <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded-md">FREE</span>
             </div>
-          ))}
+            
+            <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
+              <span>📝 100 {t('questions')}</span>
+              <span>⏱️ 120 {t('minutes')}</span>
+              <span>🎯 200 {t('marks')}</span>
+            </div>
+
+            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/5">
+              <div className="flex-1 bg-white/5 h-1 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '45%' }} />
+              </div>
+              <span className="text-[8px] font-mono font-bold text-emerald-400">45% Attempted</span>
+              <Link 
+                href="/quiz/00000000-0000-0000-0000-000000000002"
+                className="bg-accent text-slate-950 text-[10px] font-extrabold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95 shadow-sm uppercase tracking-wider"
+              >
+                <PlayCircle className="w-3.5 h-3.5 fill-slate-950/20" /> {t('startTest')}
+              </Link>
+            </div>
+          </div>
+
+          {/* Test 2: CSAT */}
+          <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h4 className="text-xs font-bold text-foreground leading-snug">UPSC CSAT Mock Test 1</h4>
+                <p className="text-[10px] text-foreground/45 mt-0.5">General Studies Paper II</p>
+              </div>
+              <span className="text-[8px] bg-accent/15 text-accent font-bold px-2 py-0.5 rounded-md">PRO</span>
+            </div>
+            
+            <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
+              <span>📝 80 {t('questions')}</span>
+              <span>⏱️ 120 {t('minutes')}</span>
+              <span>🎯 200 {t('marks')}</span>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
+              <span className="text-[8px] font-mono text-foreground/30">Never Attempted</span>
+              <Link 
+                href="/quiz/00000000-0000-0000-0000-000000000002"
+                className="bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
+              >
+                <PlayCircle className="w-3.5 h-3.5" /> {t('startTest')}
+              </Link>
+            </div>
+          </div>
+
+          {/* Test 3: Sectional Test */}
+          <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h4 className="text-xs font-bold text-foreground leading-snug">Daily Mini Test (Polity)</h4>
+                <p className="text-[10px] text-foreground/45 mt-0.5">Syllabus-wise Sectional Test</p>
+              </div>
+              <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded-md">FREE</span>
+            </div>
+            
+            <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
+              <span>📝 20 {t('questions')}</span>
+              <span>⏱️ 20 {t('minutes')}</span>
+              <span>🎯 40 {t('marks')}</span>
+            </div>
+
+            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/5">
+              <div className="flex-1 bg-white/5 h-1 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }} />
+              </div>
+              <span className="text-[8px] font-mono font-bold text-emerald-400">100% Score: 36/40</span>
+              <Link 
+                href="/quiz/00000000-0000-0000-0000-000000000002"
+                className="bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
+              >
+                Re-take
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
