@@ -10,6 +10,28 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Secret Bypass Query Param or Cookie for testing on main domain
+  const hasBypassParam = url.searchParams.get('bypassAdmin') === 'true';
+  const hasBypassCookie = req.cookies.get('prepai_admin_bypass')?.value === 'true';
+
+  // If user wants to disable the bypass explicitly
+  if (url.searchParams.get('bypassAdmin') === 'false') {
+    const response = NextResponse.next();
+    response.cookies.delete('prepai_admin_bypass');
+    return response;
+  }
+
+  // If bypass is active, let them access /admin anywhere!
+  if (url.pathname.startsWith('/admin')) {
+    if (hasBypassParam || hasBypassCookie) {
+      const response = NextResponse.next();
+      if (hasBypassParam && !hasBypassCookie) {
+        response.cookies.set('prepai_admin_bypass', 'true', { path: '/' });
+      }
+      return response;
+    }
+  }
+
   // Auto-detect if request is hitting the Admin subdomain
   // Matches "admin.prepai.in", "upsc-admin.vercel.app", "admin-upsc.vercel.app", etc.
   const isAdminDomain = hostname.toLowerCase().includes('admin');
