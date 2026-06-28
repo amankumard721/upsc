@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PrepAI</string>
+    <string name="title_activity_main">PrepAI</string>
+    <string name="package_name">com.prepai.app</string>
+    <string name="custom_url_scheme">com.prepai.app</string>
+</resources>
