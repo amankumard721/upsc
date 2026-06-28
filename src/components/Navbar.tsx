@@ -99,8 +99,13 @@ export default function Navbar() {
   const activeHref = getActiveLink();
   const isHome = pathname === '/dashboard';
   
-  // Immersive screens manage their own headers entirely (Lesson, Quiz, Test Series)
-  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz') || pathname.startsWith('/test-series');
+  // Immersive screens manage their own headers entirely (Lesson, Quiz, Test Series, Flashcards, Challenge)
+  const isImmersive = 
+    pathname.startsWith('/lesson') || 
+    pathname.startsWith('/quiz') || 
+    pathname.startsWith('/test-series') || 
+    pathname.startsWith('/flashcards') || 
+    pathname.startsWith('/challenge');
 
   if (isImmersive) {
     return null; // Hide global top and bottom navbars entirely

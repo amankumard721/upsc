@@ -180,7 +180,7 @@ export default function FlashcardsPage({ params }: FlashcardPageProps) {
   const activeCard = cards[currentIdx];
 
   return (
-    <div className="space-y-8 font-sans max-w-2xl mx-auto pb-16">
+    <div className="space-y-8 font-sans max-w-2xl mx-auto pb-16 px-4" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
       
       {/* Header Info */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4">

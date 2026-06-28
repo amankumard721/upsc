@@ -99,7 +99,7 @@ export default function ChallengePage() {
   }
 
   return (
-    <div className="space-y-8 font-sans max-w-xl mx-auto pb-16">
+    <div className="space-y-8 font-sans max-w-xl mx-auto pb-16 px-4" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-foreground/5 pb-4">
         <Link href="/dashboard" className="text-sm text-foreground/60 hover:text-accent inline-flex items-center space-x-1.5 transition-colors">
