@@ -612,66 +612,80 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           </div>
         </div>
 
-        {/* Control Buttons */}
-        <div className="flex items-center justify-between px-2 pt-2">
+        {/* Playback Controls Row */}
+        <div className="flex items-center justify-center gap-6 pt-2">
+          <button 
+            onClick={() => seekBy(-1)} 
+            className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
+            disabled={cursor === 0}
+          >
+            <SkipBack className="w-5 h-5 fill-current" />
+          </button>
+
+          <button 
+            onClick={() => handleSkipTime('backward')}
+            className="p-2 text-foreground/65 hover:text-foreground transition"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+
+          <button 
+            onClick={togglePlay}
+            className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+          >
+            {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+          </button>
+
+          <button 
+            onClick={() => handleSkipTime('forward')}
+            className="p-2 text-foreground/65 hover:text-foreground transition"
+          >
+            <RotateCw className="w-5 h-5" />
+          </button>
+
+          <button 
+            onClick={() => seekBy(1)}
+            className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
+            disabled={cursor === flatLines.length - 1}
+          >
+            <SkipForward className="w-5 h-5 fill-current" />
+          </button>
+        </div>
+
+        {/* Bottom Toolbar Row */}
+        <div className="flex items-center justify-between px-4 pt-2 border-t border-white/5">
           {/* Speed Option */}
           <button 
             onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
-            className="w-12 text-xs font-mono font-bold text-foreground/60 hover:text-accent transition text-left"
+            className="text-xs font-mono font-bold text-foreground/60 hover:text-accent transition px-2 py-1 rounded hover:bg-white/5"
           >
             {playbackSpeed}x
           </button>
 
-          {/* Playback Controls */}
-          <div className="flex items-center gap-6">
-            <button 
-              onClick={() => seekBy(-1)} 
-              className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
-              disabled={cursor === 0}
-            >
-              <SkipBack className="w-5 h-5 fill-current" />
-            </button>
+          {/* Shuffle Toggle */}
+          <button 
+            onClick={() => alert("Shuffle is active")}
+            className="p-2 text-foreground/60 hover:text-accent transition"
+          >
+            <Shuffle className="w-4.5 h-4.5" />
+          </button>
 
-            <button 
-              onClick={() => handleSkipTime('backward')}
-              className="p-2 text-foreground/65 hover:text-foreground transition"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
+          {/* Share Toggle */}
+          <button 
+            onClick={handleShare}
+            className="p-2 text-foreground/60 hover:text-accent transition"
+          >
+            <Share2 className="w-4.5 h-4.5" />
+          </button>
 
-            <button 
-              onClick={togglePlay}
-              className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
-            >
-              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
-            </button>
-
-            <button 
-              onClick={() => handleSkipTime('forward')}
-              className="p-2 text-foreground/65 hover:text-foreground transition"
-            >
-              <RotateCw className="w-5 h-5" />
-            </button>
-
-            <button 
-              onClick={() => seekBy(1)}
-              className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
-              disabled={cursor === flatLines.length - 1}
-            >
-              <SkipForward className="w-5 h-5 fill-current" />
-            </button>
-          </div>
-
-          {/* Bottom Playlist Queue Toggle */}
-          <div className="w-12 flex justify-end">
-            <button 
-              onClick={() => alert(`Syllabus Structure: ${lesson.scenes.map(s => s.title).join(' → ')}`)}
-              className="p-2 text-foreground/60 hover:text-accent transition"
-              title="Scene Queue"
-            >
-              <ListMusic className="w-5 h-5" />
-            </button>
-          </div>
+          {/* Playlist Queue Toggle */}
+          <button 
+            onClick={() => alert(`Syllabus Structure: ${lesson.scenes.map(s => s.title).join(' → ')}`)}
+            className="p-2 text-foreground/60 hover:text-accent transition"
+            title="Scene Queue"
+          >
+            <ListMusic className="w-5 h-5" />
+          </button>
         </div>
 
       </div>
