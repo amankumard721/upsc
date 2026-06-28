@@ -243,7 +243,7 @@ export default function DashboardPage() {
               </div>
               <span className="text-[8px] font-mono font-bold text-emerald-400">45% Attempted</span>
               <Link 
-                href="/quiz/00000000-0000-0000-0000-000000000002"
+                href="/test-series/mock-1"
                 className="bg-accent text-slate-950 text-[10px] font-extrabold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95 shadow-sm uppercase tracking-wider"
               >
                 <PlayCircle className="w-3.5 h-3.5 fill-slate-950/20" /> {t('startTest')}
@@ -270,7 +270,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
               <span className="text-[8px] font-mono text-foreground/30">Never Attempted</span>
               <Link 
-                href="/quiz/00000000-0000-0000-0000-000000000002"
+                href="/test-series/mock-2"
                 className="bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
               >
                 <PlayCircle className="w-3.5 h-3.5" /> {t('startTest')}
@@ -300,7 +300,7 @@ export default function DashboardPage() {
               </div>
               <span className="text-[8px] font-mono font-bold text-emerald-400">100% Score: 36/40</span>
               <Link 
-                href="/quiz/00000000-0000-0000-0000-000000000002"
+                href="/test-series/mock-1"
                 className="bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
               >
                 Re-take
