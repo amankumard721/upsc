@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
+import AndroidBackButtonHandler from "@/components/AndroidBackButtonHandler";
 
 export const metadata: Metadata = {
   title: "PrepAI — Premium UPSC Exam Preparation App",
@@ -33,6 +34,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <PWARegister />
+        <AndroidBackButtonHandler />
         {children}
       </body>
     </html>
