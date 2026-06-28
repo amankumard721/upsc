@@ -31,7 +31,7 @@ task clean(type: Delete) {
 subprojects {
     afterEvaluate { project ->
         project.tasks.configureEach { task ->
-            if (task.name.contains("CheckAarMetadata")) {
+            if (task.name.toLowerCase().contains("aarmetadata")) {
                 task.enabled = false
             }
         }

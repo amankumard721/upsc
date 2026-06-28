@@ -55,7 +55,7 @@ try {
 
 // Workaround to bypass AAR metadata check for newer dependencies
 project.tasks.configureEach { task ->
-    if (task.name.contains("CheckAarMetadata")) {
+    if (task.name.toLowerCase().contains("aarmetadata")) {
         task.enabled = false
     }
 }
