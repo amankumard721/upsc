@@ -19,6 +19,18 @@ function setLocalData<T>(key: string, data: T): void {
   }
 }
 
+// Helper to generate RFC4122-compliant UUIDs
+function generateUUID(): string {
+  if (typeof window !== 'undefined' && window.crypto && (window.crypto as any).randomUUID) {
+    return (window.crypto as any).randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export const db = {
   // 1. Get User Profile
   async getUserProfile(userId?: string): Promise<UserProfile | null> {
@@ -299,7 +311,7 @@ export const db = {
 
   // 14. Create Book
   async createBook(book: Omit<Book, 'id' | 'created_at'>): Promise<Book> {
-    const id = `book-${Math.random().toString(36).substr(2, 9)}`;
+    const id = generateUUID();
     const newBook: Book = {
       id,
       created_at: new Date().toISOString(),
@@ -337,7 +349,7 @@ export const db = {
 
   // 16. Create Chapter
   async createChapter(chapter: Omit<Chapter, 'id' | 'created_at'>): Promise<Chapter> {
-    const id = `chapter-${Math.random().toString(36).substr(2, 9)}`;
+    const id = generateUUID();
     const newChapter: Chapter = {
       id,
       created_at: new Date().toISOString(),
@@ -375,7 +387,7 @@ export const db = {
 
   // 18. Create MCQ
   async createMCQ(mcq: Omit<MCQ, 'id' | 'created_at'>): Promise<MCQ> {
-    const id = `mcq-${Math.random().toString(36).substr(2, 9)}`;
+    const id = generateUUID();
     const newMCQ: MCQ = {
       id,
       created_at: new Date().toISOString(),
@@ -394,7 +406,7 @@ export const db = {
 
   // 19. Create Flashcard
   async createFlashcard(fc: Omit<Flashcard, 'id' | 'created_at'>): Promise<Flashcard> {
-    const id = `flashcard-${Math.random().toString(36).substr(2, 9)}`;
+    const id = generateUUID();
     const newFC: Flashcard = {
       id,
       created_at: new Date().toISOString(),
