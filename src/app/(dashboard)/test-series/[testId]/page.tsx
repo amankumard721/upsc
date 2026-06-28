@@ -495,13 +495,13 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground font-sans relative overflow-x-hidden pb-16">
+    <div className="h-[100dvh] w-screen bg-slate-950 text-foreground font-sans relative overflow-hidden">
       
       {/* ──────────────────────────────────────────────────────── */}
       {/* PHASE 1: INSTRUCTION SCREEN                              */}
       {/* ──────────────────────────────────────────────────────── */}
       {phase === 'instruction' && (
-        <div className="max-w-3xl mx-auto p-4 space-y-6 pt-6">
+        <div className="h-full w-full overflow-y-auto p-4 pb-28 space-y-6 pt-6 max-w-3xl mx-auto no-scrollbar">
           {/* Header */}
           <div className="flex items-center gap-3 bg-slate-900/60 border border-white/5 p-4 rounded-2xl">
             <button onClick={() => router.push('/dashboard')} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition active:scale-95">
@@ -915,7 +915,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
       {/* PHASE 3: COMPREHENSIVE RESULT & SCORE ANALYSIS SCREEN   */}
       {/* ──────────────────────────────────────────────────────── */}
       {phase === 'result' && (
-        <div className="max-w-3xl mx-auto p-4 space-y-6 pt-6">
+        <div className="h-full w-full overflow-y-auto p-4 pb-28 space-y-6 pt-6 max-w-3xl mx-auto no-scrollbar">
           {/* Header */}
           <div className="flex items-center justify-between bg-slate-900/60 border border-white/5 p-4 rounded-2xl">
             <h1 className="text-sm md:text-base font-bold text-foreground">
