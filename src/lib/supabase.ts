@@ -309,6 +309,9 @@ export const db = {
       const { data, error } = await supabase.from('books').insert(newBook).select().single();
       if (error) {
         console.error("Error creating book in Supabase:", error);
+        if (typeof window !== 'undefined') {
+          window.alert("SUPABASE BOOK ERROR: " + error.message + " | Details: " + (error.details || 'None') + " | Hint: " + (error.hint || 'None'));
+        }
         throw new Error(error.message);
       }
       if (data) return data as Book;
@@ -322,6 +325,9 @@ export const db = {
       const { error } = await supabase.from('books').delete().eq('id', bookId);
       if (error) {
         console.error("Error deleting book in Supabase:", error);
+        if (typeof window !== 'undefined') {
+          window.alert("SUPABASE DELETE BOOK ERROR: " + error.message);
+        }
         throw new Error(error.message);
       }
       return true;
@@ -341,6 +347,9 @@ export const db = {
       const { data, error } = await supabase.from('chapters').insert(newChapter).select().single();
       if (error) {
         console.error("Error creating chapter in Supabase:", error);
+        if (typeof window !== 'undefined') {
+          window.alert("SUPABASE CHAPTER ERROR: " + error.message + " | Details: " + (error.details || 'None') + " | Hint: " + (error.hint || 'None'));
+        }
         throw new Error(error.message);
       }
       if (data) return data as Chapter;
@@ -354,6 +363,9 @@ export const db = {
       const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
       if (error) {
         console.error("Error deleting chapter in Supabase:", error);
+        if (typeof window !== 'undefined') {
+          window.alert("SUPABASE DELETE CHAPTER ERROR: " + error.message);
+        }
         throw new Error(error.message);
       }
       return true;
