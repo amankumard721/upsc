@@ -431,13 +431,12 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         </div>
       </div>
 
-      {/* --- Main Content Area --- */}
-      <main className="flex-1 flex flex-col justify-between w-full max-w-xl mx-auto px-6 pb-6 pt-4 z-10 relative overflow-y-auto no-scrollbar">
-        
+      {/* --- Scrollable Content Area (Middle) --- */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar w-full max-w-xl mx-auto px-6 py-4 flex flex-col justify-center z-10 relative">
         {mode === 'video' ? (
           /* VIDEO MODE */
           chapter?.video_url && getYoutubeId(chapter.video_url) ? (
-            <div className="w-full my-auto aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative">
+            <div className="w-full my-auto aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative flex-shrink-0">
               <iframe
                 src={`https://www.youtube.com/embed/${getYoutubeId(chapter.video_url)}?rel=0`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -446,7 +445,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               />
             </div>
           ) : (
-            <div className={`w-full my-auto aspect-video rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col relative ${currentScene.theme}`}>
+            <div className={`w-full my-auto aspect-video rounded-3xl overflow-hidden transition-all duration-700 shadow-2xl border border-white/10 flex flex-col relative flex-shrink-0 ${currentScene.theme}`}>
               <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-zoom" />
               
               <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20">
@@ -484,12 +483,12 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           )
         ) : (
           /* PODCAST MODE (Spotify lyrics/audio style) */
-          <div className="flex-1 flex flex-col justify-around py-4">
+          <div className="flex-1 flex flex-col justify-center py-4 my-auto">
             
             {/* Center Lyrics Layout */}
             <div className="flex flex-col justify-center text-center space-y-6 my-auto px-4">
               {/* Previous line (faded) */}
-              <div className="h-10 overflow-hidden flex items-center justify-center">
+              <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
                 {prevFlatLine && (
                   <p className="text-foreground/30 text-sm font-medium line-clamp-1 truncate max-w-md">
                     {prevFlatLine.lineText}
@@ -498,7 +497,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               </div>
 
               {/* Current highlighted line */}
-              <div className="min-h-[120px] flex items-center justify-center">
+              <div className="min-h-[120px] flex items-center justify-center flex-shrink-0">
                 <h2 className="text-xl md:text-2xl font-bold font-sans text-foreground leading-relaxed max-w-lg">
                   {currentFlatLine.words.map((word, idx) => {
                     const isActive = idx <= wordIdx;
@@ -519,7 +518,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               </div>
 
               {/* Next line (faded) */}
-              <div className="h-10 overflow-hidden flex items-center justify-center">
+              <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
                 {nextFlatLine && (
                   <p className="text-foreground/20 text-sm font-medium line-clamp-1 truncate max-w-md">
                     {nextFlatLine.lineText}
@@ -529,7 +528,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             </div>
 
             {/* Action Bar (Thumbs Up/Down Pill and Share Pill) */}
-            <div className="flex items-center justify-between px-4 mb-4">
+            <div className="flex items-center justify-between px-4 mt-6 flex-shrink-0">
               <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-1 shadow-md">
                 <button 
                   onClick={() => handleLike('up')}
@@ -566,142 +565,141 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             
           </div>
         )}
+      </main>
 
-        {/* --- Scrubber & Timeline Panel --- */}
-        <div className="space-y-4 pt-4 border-t border-white/5">
-          
-          {/* Track Info Panel */}
-          <div className="flex items-center space-x-4 px-2">
-            <img 
-              src={book?.cover_image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'} 
-              alt={chapter?.title} 
-              className="w-14 h-14 rounded-xl object-cover bg-slate-800 border border-white/10 shadow-lg flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-foreground truncate">{chapter?.title}</h3>
-              <p className="text-xs text-foreground/50 truncate font-medium">By {book?.author || 'PrepAI Engine'}</p>
-            </div>
+      {/* --- Fixed Bottom Scrubber & Timeline Panel --- */}
+      <div className="w-full max-w-xl mx-auto px-6 pb-6 pt-4 z-10 relative border-t border-white/5 space-y-4 bg-[#060D1A]/95 backdrop-blur-md flex-shrink-0">
+        
+        {/* Track Info Panel */}
+        <div className="flex items-center space-x-4 px-2">
+          <img 
+            src={book?.cover_image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'} 
+            alt={chapter?.title} 
+            className="w-14 h-14 rounded-xl object-cover bg-slate-800 border border-white/10 shadow-lg flex-shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground truncate">{chapter?.title}</h3>
+            <p className="text-xs text-foreground/50 truncate font-medium">By {book?.author || 'PrepAI Engine'}</p>
           </div>
-
-          {/* Timeline and Scrubber */}
-          <div className="space-y-2">
-            <div 
-              onClick={handleScrub}
-              className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer relative group flex items-center"
-            >
-              <div 
-                className="h-full bg-accent rounded-full relative transition-all duration-100"
-                style={{ width: `${Math.max(progressPercent, 1)}%` }}
-              >
-                {/* Drag Handle knob */}
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-150" />
-              </div>
-            </div>
-            
-            {/* Timeline info row */}
-            <div className="flex justify-between items-center text-[10px] font-mono text-foreground/45">
-              <span>{elapsedStr}</span>
-              
-              {/* Scene/Section current marker */}
-              <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[9px] font-semibold text-accent max-w-[180px] truncate">
-                <ListCollapse className="w-3 h-3 text-accent/70 shrink-0" />
-                <span className="truncate">{currentScene.title}</span>
-              </div>
-              
-              <span>-{formatTime(Math.max(currentTotalSeconds - currentElapsedSeconds, 0))}</span>
-            </div>
-          </div>
-
-          {/* Control Buttons */}
-          <div className="flex items-center justify-between px-2 pt-2">
-            {/* Speed Option */}
-            <button 
-              onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
-              className="w-12 text-xs font-mono font-bold text-foreground/60 hover:text-accent transition text-left"
-            >
-              {playbackSpeed}x
-            </button>
-
-            {/* Playback Controls */}
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={() => seekBy(-1)} 
-                className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
-                disabled={cursor === 0}
-              >
-                <SkipBack className="w-5 h-5 fill-current" />
-              </button>
-
-              <button 
-                onClick={() => handleSkipTime('backward')}
-                className="p-2 text-foreground/65 hover:text-foreground transition"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={togglePlay}
-                className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
-              >
-                {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
-              </button>
-
-              <button 
-                onClick={() => handleSkipTime('forward')}
-                className="p-2 text-foreground/65 hover:text-foreground transition"
-              >
-                <RotateCw className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={() => seekBy(1)}
-                className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
-                disabled={cursor === flatLines.length - 1}
-              >
-                <SkipForward className="w-5 h-5 fill-current" />
-              </button>
-            </div>
-
-            {/* Bottom Playlist Queue Toggle */}
-            <div className="w-12 flex justify-end">
-              <button 
-                onClick={() => alert(`Syllabus Structure: ${lesson.scenes.map(s => s.title).join(' → ')}`)}
-                className="p-2 text-foreground/60 hover:text-accent transition"
-                title="Scene Queue"
-              >
-                <ListMusic className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
         </div>
 
-        {/* --- Post-Lesson CTA Card --- */}
-        <AnimatePresence>
-          {ended && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 30 }}
-              className="absolute inset-x-6 bottom-56 premium-card p-6 bg-slate-900 border border-accent/25 text-center z-30 shadow-2xl"
+        {/* Timeline and Scrubber */}
+        <div className="space-y-2">
+          <div 
+            onClick={handleScrub}
+            className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer relative group flex items-center"
+          >
+            <div 
+              className="h-full bg-accent rounded-full relative transition-all duration-100"
+              style={{ width: `${Math.max(progressPercent, 1)}%` }}
             >
-              <CheckCircle className="w-10 h-10 text-success-green mx-auto mb-3" />
-              <h3 className="text-sm font-bold text-foreground font-display">Lesson Completed! 🎉</h3>
-              <p className="text-[11px] text-foreground/60 mt-1 mb-4">You've mastered this chapter. What's next?</p>
-              
-              <div className="flex gap-3">
-                <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs shadow-md">
-                  <CheckCircle className="w-3.5 h-3.5" /> Start Quiz
-                </Link>
-                <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-foreground font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs">
-                  <FileText className="w-3.5 h-3.5" /> Flashcards
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {/* Drag Handle knob */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-150" />
+            </div>
+          </div>
+          
+          {/* Timeline info row */}
+          <div className="flex justify-between items-center text-[10px] font-mono text-foreground/45">
+            <span>{elapsedStr}</span>
+            
+            {/* Scene/Section current marker */}
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[9px] font-semibold text-accent max-w-[180px] truncate">
+              <ListCollapse className="w-3 h-3 text-accent/70 shrink-0" />
+              <span className="truncate">{currentScene.title}</span>
+            </div>
+            
+            <span>-{formatTime(Math.max(currentTotalSeconds - currentElapsedSeconds, 0))}</span>
+          </div>
+        </div>
 
-      </main>
+        {/* Control Buttons */}
+        <div className="flex items-center justify-between px-2 pt-2">
+          {/* Speed Option */}
+          <button 
+            onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
+            className="w-12 text-xs font-mono font-bold text-foreground/60 hover:text-accent transition text-left"
+          >
+            {playbackSpeed}x
+          </button>
+
+          {/* Playback Controls */}
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => seekBy(-1)} 
+              className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
+              disabled={cursor === 0}
+            >
+              <SkipBack className="w-5 h-5 fill-current" />
+            </button>
+
+            <button 
+              onClick={() => handleSkipTime('backward')}
+              className="p-2 text-foreground/65 hover:text-foreground transition"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={togglePlay}
+              className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+            >
+              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+            </button>
+
+            <button 
+              onClick={() => handleSkipTime('forward')}
+              className="p-2 text-foreground/65 hover:text-foreground transition"
+            >
+              <RotateCw className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={() => seekBy(1)}
+              className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
+              disabled={cursor === flatLines.length - 1}
+            >
+              <SkipForward className="w-5 h-5 fill-current" />
+            </button>
+          </div>
+
+          {/* Bottom Playlist Queue Toggle */}
+          <div className="w-12 flex justify-end">
+            <button 
+              onClick={() => alert(`Syllabus Structure: ${lesson.scenes.map(s => s.title).join(' → ')}`)}
+              className="p-2 text-foreground/60 hover:text-accent transition"
+              title="Scene Queue"
+            >
+              <ListMusic className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* --- Post-Lesson CTA Card --- */}
+      <AnimatePresence>
+        {ended && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            className="absolute inset-x-6 bottom-56 premium-card p-6 bg-slate-900 border border-accent/25 text-center z-30 shadow-2xl"
+          >
+            <CheckCircle className="w-10 h-10 text-success-green mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-foreground font-display">Lesson Completed! 🎉</h3>
+            <p className="text-[11px] text-foreground/60 mt-1 mb-4">You've mastered this chapter. What's next?</p>
+            
+            <div className="flex gap-3">
+              <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs shadow-md">
+                <CheckCircle className="w-3.5 h-3.5" /> Start Quiz
+              </Link>
+              <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-foreground font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs">
+                <FileText className="w-3.5 h-3.5" /> Flashcards
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
