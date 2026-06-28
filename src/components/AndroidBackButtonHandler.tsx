@@ -15,6 +15,9 @@ export default function AndroidBackButtonHandler() {
     // Only run on native platforms (Android / iOS)
     if (!Capacitor.isNativePlatform()) return;
 
+    // Add is-apk class to html element for targeting APK-specific styling
+    document.documentElement.classList.add('is-apk');
+
     // Apply native status bar styling
     StatusBar.setBackgroundColor({ color: '#0B1325' }).catch(() => {});
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
