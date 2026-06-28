@@ -99,8 +99,8 @@ export default function Navbar() {
   const activeHref = getActiveLink();
   const isHome = pathname === '/dashboard';
   
-  // Immersive screens manage their own headers entirely (Lesson, Quiz)
-  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz');
+  // Immersive screens manage their own headers entirely (Lesson, Quiz, Test Series)
+  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz') || pathname.startsWith('/test-series');
 
   if (isImmersive) {
     return null; // Hide global top and bottom navbars entirely
@@ -109,7 +109,7 @@ export default function Navbar() {
   return (
     <>
       {/* ── Desktop Top Bar ─────────────────────────────────── */}
-      <header className="glass-nav sticky top-0 z-40 w-full transition-all duration-300">
+      <header className="glass-nav sticky top-0 z-40 w-full transition-all duration-300" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Left Section */}
