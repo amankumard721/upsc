@@ -99,12 +99,6 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const elapsedMsRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Live Speech Recognition States
-  const [transcribedLines, setTranscribedLines] = useState<string[]>([]);
-  const [currentTranscription, setCurrentTranscription] = useState<string>('');
-  const [recLang, setRecLang] = useState<'hi-IN' | 'en-IN'>('hi-IN');
-  const recognitionRef = useRef<any>(null);
-
   // Load Data
   useEffect(() => {
     db.getChapter(chapterId).then(ch => {
@@ -137,79 +131,6 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [chapterId]);
-
-  // 1.5. Initialize and Manage Speech Recognition
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn("Web Speech API SpeechRecognition is not supported in this browser.");
-      return;
-    }
-
-    const rec = new SpeechRecognition();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = recLang;
-
-    rec.onresult = (event: any) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
-        }
-      }
-
-      if (finalTranscript) {
-        setTranscribedLines(prev => [...prev, finalTranscript.trim()]);
-        setCurrentTranscription('');
-      } else {
-        setCurrentTranscription(interimTranscript);
-      }
-    };
-
-    rec.onerror = (err: any) => {
-      console.error("Speech recognition error:", err);
-    };
-
-    rec.onend = () => {
-      // Auto-restart if playing is active
-      if (isPlaying) {
-        try {
-          rec.start();
-        } catch (e) {}
-      }
-    };
-
-    recognitionRef.current = rec;
-
-    // Cleanup on language change or unmount
-    return () => {
-      try {
-        rec.stop();
-      } catch (e) {}
-    };
-  }, [recLang, isPlaying]);
-
-  // Synchronize SpeechRecognition start/stop with audio playback state
-  useEffect(() => {
-    if (!recognitionRef.current) return;
-
-    if (isPlaying) {
-      try {
-        recognitionRef.current.start();
-      } catch (e) {}
-    } else {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
-    }
-  }, [isPlaying]);
 
   // Playback Engine
   useEffect(() => {
@@ -564,55 +485,45 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           /* PODCAST MODE (Spotify lyrics/audio style) */
           <div className="flex-1 flex flex-col justify-center py-4 my-auto">
             
-            {/* Live AI Transcription Layout */}
-            <div className="flex-1 flex flex-col justify-center px-6 py-6 max-h-[320px] overflow-y-auto no-scrollbar my-auto">
-              {/* Language Selector for Live STT */}
-              <div className="flex justify-between items-center mb-4 border-b border-white/5 pb-2 flex-shrink-0">
-                <span className="text-[10px] font-bold tracking-wider text-foreground/40 uppercase">AI Speech to Text</span>
-                <div className="flex gap-1.5 bg-white/5 rounded-lg p-0.5 border border-white/5">
-                  <button 
-                    onClick={() => setRecLang('hi-IN')}
-                    className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${recLang === 'hi-IN' ? 'bg-accent text-slate-950 shadow' : 'text-foreground/50'}`}
-                  >
-                    Hindi (HI)
-                  </button>
-                  <button 
-                    onClick={() => setRecLang('en-IN')}
-                    className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${recLang === 'en-IN' ? 'bg-accent text-slate-950 shadow' : 'text-foreground/50'}`}
-                  >
-                    English (EN)
-                  </button>
-                </div>
+            {/* Center Lyrics Layout */}
+            <div className="flex flex-col justify-center text-center space-y-6 my-auto px-4">
+              {/* Previous line (faded) */}
+              <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
+                {prevFlatLine && (
+                  <p className="text-foreground/30 text-sm font-medium line-clamp-1 truncate max-w-md">
+                    {prevFlatLine.lineText}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-4 text-left">
-                {/* Past Transcribed Lines */}
-                {transcribedLines.length > 0 ? (
-                  transcribedLines.slice(-3).map((line, idx) => (
-                    <p 
-                      key={idx} 
-                      className="text-foreground/35 text-sm md:text-base font-medium leading-relaxed transition-all duration-500"
-                    >
-                      {line}
-                    </p>
-                  ))
-                ) : null}
+              {/* Current highlighted line */}
+              <div className="min-h-[120px] flex items-center justify-center flex-shrink-0">
+                <h2 className="text-xl md:text-2xl font-bold font-sans text-foreground leading-relaxed max-w-lg">
+                  {currentFlatLine.words.map((word, idx) => {
+                    const isActive = idx <= wordIdx;
+                    return (
+                      <span 
+                        key={idx} 
+                        className={`inline-block mx-[3px] transition-all duration-200 py-0.5 px-1 rounded ${
+                          isActive 
+                            ? 'text-accent font-extrabold bg-accent/10 border-b-2 border-accent shadow-sm' 
+                            : 'text-foreground/45 font-medium'
+                        }`}
+                      >
+                        {word}
+                      </span>
+                    );
+                  })}
+                </h2>
+              </div>
 
-                {/* Current Active Line being Transcribed */}
-                <div className="min-h-[100px]">
-                  {transcribedLines.length === 0 && !currentTranscription ? (
-                    <p className="text-xs text-foreground/30 italic flex items-center gap-2 py-4">
-                      <span className="w-2.5 h-2.5 rounded-full bg-accent animate-ping shrink-0" />
-                      <span>{recLang === 'hi-IN' ? 'ऑडियो सुन रहा है... कृपया स्पीकर पर चलाएं' : 'Listening to audio... Please play on speaker to transcribe'}</span>
-                    </p>
-                  ) : (
-                    <p className="text-base md:text-lg font-bold text-accent leading-relaxed">
-                      {currentTranscription}
-                      {/* Blinking typing cursor */}
-                      <span className="inline-block w-1.5 h-4.5 bg-accent ml-1 animate-pulse rounded-full align-middle" />
-                    </p>
-                  )}
-                </div>
+              {/* Next line (faded) */}
+              <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
+                {nextFlatLine && (
+                  <p className="text-foreground/20 text-sm font-medium line-clamp-1 truncate max-w-md">
+                    {nextFlatLine.lineText}
+                  </p>
+                )}
               </div>
             </div>
 
