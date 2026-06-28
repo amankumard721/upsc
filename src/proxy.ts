@@ -11,8 +11,8 @@ export function proxy(req: NextRequest) {
   }
 
   // Auto-detect if request is hitting the Admin subdomain
-  // Matches "admin.prepai.in", "admin.yourdomain.com", or vercel previews like "prepai-admin.vercel.app"
-  const isAdminDomain = hostname.startsWith('admin.') || hostname.includes('-admin.');
+  // Matches "admin.prepai.in", "upsc-admin.vercel.app", "admin-upsc.vercel.app", etc.
+  const isAdminDomain = hostname.toLowerCase().includes('admin');
 
   if (isAdminDomain) {
     // 1. Redirect root "/" of admin subdomain directly to /admin
