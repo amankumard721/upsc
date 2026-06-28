@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 
 export default function DashboardLayout({
@@ -6,6 +9,17 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz');
+
+  if (isImmersive) {
+    return (
+      <div className="min-h-screen bg-[#060D1A] w-full">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
