@@ -10,7 +10,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz');
+  const isImmersive = pathname.startsWith('/lesson') || pathname.startsWith('/quiz') || pathname.startsWith('/test-series');
 
   if (isImmersive) {
     return (

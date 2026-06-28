@@ -599,9 +599,9 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
       {/* PHASE 2: LIVE TEST SIMULATOR SCREEN                      */}
       {/* ──────────────────────────────────────────────────────── */}
       {phase === 'live' && (
-        <div className="max-w-4xl mx-auto flex flex-col min-h-[90vh]">
+        <div className="fixed inset-0 h-[100dvh] w-screen flex flex-col overflow-hidden bg-slate-950 z-50">
           {/* Header Controls */}
-          <div className="flex items-center justify-between bg-slate-950 border-b border-white/5 py-4 px-4 sticky top-0 z-20">
+          <div className="flex items-center justify-between bg-slate-950 border-b border-white/5 py-4 px-4 shrink-0">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setPaused(!paused)} 
@@ -644,7 +644,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
           )}
 
           {/* Meta Info Row */}
-          <div className="flex items-center justify-between py-3 px-4 bg-slate-900/40 border-b border-white/5">
+          <div className="flex items-center justify-between py-3 px-4 bg-slate-900/40 border-b border-white/5 shrink-0">
             <div className="flex items-center gap-2">
               <span className="w-7 h-7 bg-accent/20 text-accent border border-accent/25 rounded-full flex items-center justify-center text-xs font-bold font-mono">
                 {currentIdx + 1}
@@ -676,7 +676,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
           </div>
 
           {/* Question Statement */}
-          <div className="flex-1 p-4 space-y-6 pt-6 overflow-y-auto">
+          <div className="flex-1 p-4 space-y-6 pt-6 overflow-y-auto overflow-x-hidden max-w-2xl mx-auto w-full">
             <div className="flex items-center gap-1.5 text-[10px] bg-white/5 border border-white/10 text-foreground/60 w-fit px-2 py-0.5 rounded font-mono uppercase">
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <span>{test.questions[currentIdx].subject}</span>
@@ -713,7 +713,7 @@ export default function USPCTestSeriesPage({ params }: TestSeriesPageProps) {
           </div>
 
           {/* Bottom Navigation Toolbar */}
-          <div className="bg-slate-950 border-t border-white/5 p-4 flex gap-3 sticky bottom-0 z-20">
+          <div className="bg-slate-950 border-t border-white/5 p-4 flex gap-3 shrink-0">
             <button
               onClick={handleMarkForReview}
               className="flex-1 border border-white/10 hover:border-amber-500 hover:text-amber-400 py-3.5 rounded-xl font-bold text-xs active:scale-[0.97] transition flex items-center justify-center gap-1.5"
