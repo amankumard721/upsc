@@ -345,3 +345,47 @@ html:not(.dark-theme) .from-primary.to-slate-900 span {
 .animate-breathe { animation: breathe 4s ease-in-out infinite; }
 
 .paused *, .paused { animation-play-state: paused !important; }
+
+/* ─── Global Native Touch/Feel Optimizations ─── */
+* {
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection in reading text or input fields */
+input, textarea, select, [contenteditable="true"], .selectable-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Focus states (Native look) */
+*:focus {
+  outline: none !important;
+}
+
+/* Active touch feedback scale */
+.btn-active-scale, button, a.premium-card, .native-tab-item {
+  transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.btn-active-scale:active, button:active, a.premium-card:active {
+  transform: scale(0.97) !important;
+}
+
+/* Page transitions & scroll snapping */
+.native-scroll-container {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbars globally on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
