@@ -35,6 +35,41 @@ export default function AdminDashboardPage() {
   const [chapterVideo, setChapterVideo] = useState('');
   const [chapterDuration, setChapterDuration] = useState(300);
   const [chapterText, setChapterText] = useState('');
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAudio(true);
+    setError('');
+    setSuccess('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'Audio ppodcst polity');
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setChapterAudio(data.url);
+        setSuccess(`Audio "${file.name}" uploaded to Cloudflare R2 and linked successfully!`);
+      } else {
+        throw new Error(data.error || 'Failed to upload.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error uploading file to Cloudflare R2.');
+    } finally {
+      setUploadingAudio(false);
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     loadBooks();
@@ -420,16 +455,32 @@ export default function AdminDashboardPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-foreground/50 uppercase flex items-center gap-1">
-                    <UploadCloud className="w-3.5 h-3.5 text-accent/80" /> Custom Audio URL (MP3)
+                  <label className="text-[11px] font-bold text-foreground/50 uppercase flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <UploadCloud className="w-3.5 h-3.5 text-accent/80" /> Audio File (MP3 / R2)
+                    </span>
+                    {uploadingAudio && <span className="text-[9px] text-accent font-bold animate-pulse">Uploading to Cloudflare R2...</span>}
                   </label>
-                  <input 
-                    type="url" 
-                    placeholder="https://storage.supabase.co/.../audio.mp3"
-                    value={chapterAudio}
-                    onChange={e => setChapterAudio(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
-                  />
+                  
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Paste Audio URL or upload file →"
+                      value={chapterAudio}
+                      onChange={e => setChapterAudio(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
+                    />
+                    <label className={`cursor-pointer shrink-0 bg-white/5 border border-white/10 hover:border-accent hover:text-accent font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 ${uploadingAudio ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <UploadCloud className="w-4 h-4" />
+                      <span>{uploadingAudio ? 'Uploading...' : 'Upload File'}</span>
+                      <input 
+                        type="file" 
+                        accept="audio/*" 
+                        onChange={handleAudioUpload} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-foreground/50 uppercase flex items-center gap-1">
