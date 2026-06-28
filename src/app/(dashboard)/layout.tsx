@@ -14,7 +14,7 @@ export default function DashboardLayout({
 
   if (isImmersive) {
     return (
-      <div className="min-h-screen bg-[#060D1A] w-full">
+      <div className="h-[100dvh] w-screen overflow-hidden bg-[#060D1A]">
         {children}
       </div>
     );

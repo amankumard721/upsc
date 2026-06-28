@@ -351,7 +351,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
 
   if (loading || !lesson || flatLines.length === 0) {
     return (
-      <div className="min-h-screen bg-[#060D1A] flex items-center justify-center p-5">
+      <div className="h-full w-full bg-[#060D1A] flex items-center justify-center p-5">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -372,7 +372,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const progressPercent = currentTotalSeconds > 0 ? (currentElapsedSeconds / currentTotalSeconds) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-[#060D1A] text-foreground font-sans flex flex-col relative overflow-hidden select-none">
+    <div className="h-full w-full bg-[#060D1A] text-foreground font-sans flex flex-col relative overflow-hidden select-none">
       
       {/* Hidden Audio Element */}
       {chapter?.audio_url && (
