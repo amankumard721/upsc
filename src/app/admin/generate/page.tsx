@@ -44,6 +44,25 @@ export default function AdminGeneratePage() {
     // Load books
     db.getBooks().then(data => {
       setBooks(data);
+      
+      // Check query parameter first
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const chapterId = params.get('chapterId');
+        if (chapterId) {
+          db.getChapter(chapterId).then(ch => {
+            if (ch) {
+              setSelectedBookId(ch.book_id);
+              setSelectedChapterId(ch.id);
+              if (ch.content_text) {
+                setChapterText(ch.content_text);
+              }
+            }
+          });
+          return;
+        }
+      }
+
       if (data.length > 0) {
         setSelectedBookId(data[0].id);
       }
@@ -54,6 +73,17 @@ export default function AdminGeneratePage() {
     if (selectedBookId) {
       db.getChapters(selectedBookId).then(data => {
         setChapters(data);
+        
+        // Check query parameter matching this book
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search);
+          const chapterId = params.get('chapterId');
+          if (chapterId && data.some(c => c.id === chapterId)) {
+            setSelectedChapterId(chapterId);
+            return;
+          }
+        }
+
         if (data.length > 0) {
           setSelectedChapterId(data[0].id);
         } else {

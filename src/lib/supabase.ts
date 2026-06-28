@@ -295,5 +295,87 @@ export const db = {
       { id: '3', name: 'Rahul Varma', total_points: 850, streak: 5, rank: 3, avatar_url: '' },
       { id: 'mock-user-123', name: 'UPSC Aspirant (You)', total_points: 350, streak: 3, rank: 4, avatar_url: '' }
     ];
+  },
+
+  // 14. Create Book
+  async createBook(book: Omit<Book, 'id' | 'created_at'>): Promise<Book> {
+    const id = `book-${Math.random().toString(36).substr(2, 9)}`;
+    const newBook: Book = {
+      id,
+      created_at: new Date().toISOString(),
+      ...book
+    };
+    if (supabase) {
+      const { data, error } = await supabase.from('books').insert(newBook).select().single();
+      if (!error && data) return data as Book;
+      if (error) console.error("Error creating book in Supabase:", error);
+    }
+    return newBook;
+  },
+
+  // 15. Delete Book
+  async deleteBook(bookId: string): Promise<boolean> {
+    if (supabase) {
+      const { error } = await supabase.from('books').delete().eq('id', bookId);
+      return !error;
+    }
+    return true;
+  },
+
+  // 16. Create Chapter
+  async createChapter(chapter: Omit<Chapter, 'id' | 'created_at'>): Promise<Chapter> {
+    const id = `chapter-${Math.random().toString(36).substr(2, 9)}`;
+    const newChapter: Chapter = {
+      id,
+      created_at: new Date().toISOString(),
+      ...chapter
+    };
+    if (supabase) {
+      const { data, error } = await supabase.from('chapters').insert(newChapter).select().single();
+      if (!error && data) return data as Chapter;
+      if (error) console.error("Error creating chapter in Supabase:", error);
+    }
+    return newChapter;
+  },
+
+  // 17. Delete Chapter
+  async deleteChapter(chapterId: string): Promise<boolean> {
+    if (supabase) {
+      const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
+      return !error;
+    }
+    return true;
+  },
+
+  // 18. Create MCQ
+  async createMCQ(mcq: Omit<MCQ, 'id' | 'created_at'>): Promise<MCQ> {
+    const id = `mcq-${Math.random().toString(36).substr(2, 9)}`;
+    const newMCQ: MCQ = {
+      id,
+      created_at: new Date().toISOString(),
+      ...mcq
+    };
+    if (supabase) {
+      const { data, error } = await supabase.from('mcqs').insert(newMCQ).select().single();
+      if (!error && data) return data as MCQ;
+      if (error) console.error("Error creating MCQ in Supabase:", error);
+    }
+    return newMCQ;
+  },
+
+  // 19. Create Flashcard
+  async createFlashcard(fc: Omit<Flashcard, 'id' | 'created_at'>): Promise<Flashcard> {
+    const id = `flashcard-${Math.random().toString(36).substr(2, 9)}`;
+    const newFC: Flashcard = {
+      id,
+      created_at: new Date().toISOString(),
+      ...fc
+    };
+    if (supabase) {
+      const { data, error } = await supabase.from('flashcards').insert(newFC).select().single();
+      if (!error && data) return data as Flashcard;
+      if (error) console.error("Error creating Flashcard in Supabase:", error);
+    }
+    return newFC;
   }
 };
