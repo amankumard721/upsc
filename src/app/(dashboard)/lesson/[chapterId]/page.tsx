@@ -127,7 +127,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     });
 
     return () => {
-      if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+      if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [chapterId]);
@@ -136,7 +136,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   useEffect(() => {
     if (!isPlaying || ended || flatLines.length === 0) {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+      if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
       if (audioRef.current) audioRef.current.pause();
       return;
     }
@@ -174,7 +174,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
       }, 50);
 
     } else {
-      if (elapsedMsRef.current === 0 && typeof window !== 'undefined') {
+      if (elapsedMsRef.current === 0 && typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
         utterance.rate = playbackSpeed * 1.1; 
@@ -269,7 +269,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     setCursor(newCursor);
     setWordIdx(0);
     elapsedMsRef.current = 0;
-    if (typeof window !== 'undefined') window.speechSynthesis.cancel();
+    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
   };
 
   const jumpToScene = (sceneIdx: number) => {
