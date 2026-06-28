@@ -7,6 +7,17 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://upsc-roan-pi.vercel.app',
     cleartext: true
+  },
+  plugins: {
+    Keyboard: {
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true
+    }
+  },
+  android: {
+    allowMixedContent: true,
+    backgroundColor: '#0B1325'
   }
 };
 

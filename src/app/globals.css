@@ -82,7 +82,7 @@ body {
 
 /* ─── Native App Optimizations ─────────────────────────── */
 html, body {
-  overscroll-behavior-y: contain;
+  overscroll-behavior: none !important;
   scroll-behavior: smooth;
   touch-action: manipulation;
 }

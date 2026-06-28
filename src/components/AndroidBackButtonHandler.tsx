@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 export default function AndroidBackButtonHandler() {
   const pathname = usePathname();
@@ -13,6 +14,10 @@ export default function AndroidBackButtonHandler() {
   useEffect(() => {
     // Only run on native platforms (Android / iOS)
     if (!Capacitor.isNativePlatform()) return;
+
+    // Apply native status bar styling
+    StatusBar.setBackgroundColor({ color: '#0B1325' }).catch(() => {});
+    StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
 
     const backButtonListener = App.addListener('backButton', () => {
       // Define root level pages where back button should trigger exit confirm modal
