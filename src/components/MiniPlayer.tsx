@@ -28,7 +28,7 @@ export default function MiniPlayer() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:bottom-4 md:left-4 md:right-4 md:max-w-xl md:mx-auto">
+    <div className="fixed bottom-[60px] left-0 right-0 z-50 md:bottom-4 md:left-4 md:right-4 md:max-w-xl md:mx-auto">
       <Link
         href={`/lesson/${track.chapterId}`}
         className="block"
