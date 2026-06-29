@@ -7,9 +7,8 @@ import { db } from '@/lib/supabase';
 import { Book, Chapter, UserProfile, LeaderboardEntry } from '@/types';
 import {
   CheckCircle2, AlertCircle,
-  ChevronRight, Award, BookOpen,
-  Trophy, Target, TrendingUp, PlayCircle,
-  MoreVertical, Play, Flame, Music, Sparkles
+  Award, BookOpen, TrendingUp, PlayCircle,
+  MoreVertical, Play, Flame, Target
 } from 'lucide-react';
 import { t } from '@/lib/translations';
 
@@ -82,6 +81,16 @@ export default function DashboardPage() {
     return parentBook?.subject === selectedSubject;
   });
 
+  // Chunk chapters into groups of 3 for vertical stacking in horizontal carousel
+  const chunkChapters = (items: Chapter[], size: number) => {
+    const chunks: Chapter[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+      chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
+  };
+  const chapterChunks = chunkChapters(filteredChapters, 3);
+
   if (loading) {
     return (
       <div className="space-y-6 px-1 py-8">
@@ -100,10 +109,10 @@ export default function DashboardPage() {
   return (
     <div className="space-y-10 relative pb-16 font-sans">
       
-      {/* Dynamic atmospheric color glow overlay (YT Music theme) */}
+      {/* Dynamic teal atmosphere glow */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#10B981]/5 rounded-full blur-[100px] pointer-events-none" />
       
-      {/* ── 1. MOOD / SUBJECT FILTER PILLS (YouTube Music style) ── */}
+      {/* ── 1. SUBJECT SELECTION PILLS (Pehle jaisa placement - test your knowledge ke upar) ── */}
       <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
         {SUBJECT_CHIPS.map(chip => (
           <button
@@ -111,11 +120,11 @@ export default function DashboardPage() {
             onClick={() => setSelectedSubject(chip.label)}
             className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
               selectedSubject === chip.label
-                ? 'bg-[#10B981] text-slate-950 border-[#10B981] font-bold shadow-md shadow-[#10B981]/10'
-                : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10 hover:border-white/20'
+                ? 'bg-[#10B981] text-slate-950 border-[#10B981] font-bold shadow-md'
+                : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10'
             }`}
           >
-            <span className="mr-1">{chip.emoji}</span>
+            <span className="mr-1.5">{chip.emoji}</span>
             <span>{chip.label === 'All' ? t('all') : chip.label}</span>
           </button>
         ))}
@@ -127,7 +136,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── 2. DAILY CHALLENGE / RECOMMENDATION HERO BANNER ── */}
+      {/* ── 2. DAILY CHALLENGE BANNER (Test your knowledge) ── */}
       <div className="premium-card p-5 bg-gradient-to-r from-emerald-950/20 via-slate-950/40 to-transparent border-[#10B981]/15 relative overflow-hidden rounded-3xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#10B981]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex items-center gap-2 mb-2">
@@ -150,11 +159,11 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* ── 3. RECOMMENDED SHELF: "MIXED FOR YOU / STUDY MATERIAL" ── */}
+      {/* ── 3. RECOMMENDED SHELF (Book size is restored to original portrait size, not square) ── */}
       <div className="space-y-4">
         <div>
-          <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
-            FOR FEELING FOCUS
+          <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
+            STUDY PLAYLISTS
           </p>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
@@ -168,32 +177,32 @@ export default function DashboardPage() {
 
         {filteredBooks.length === 0 ? (
           <div className="text-center py-12 bg-white/5 border border-dashed border-white/5 rounded-3xl">
-            <p className="text-xs text-foreground/45">No playlists found. Select another subject pill.</p>
+            <p className="text-xs text-foreground/45">No books found. Select another subject pill.</p>
           </div>
         ) : (
-          <div className="flex gap-5 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
             {filteredBooks.map(book => {
-              // Mock progress calculation
               const progress = book.id === '00000000-0000-0000-0000-000000000001' ? 33 : 0;
               return (
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="shrink-0 w-36 md:w-40 flex flex-col group space-y-2.5"
+                  // Restored original portrait layout (w-36 and h-48 image size, not square)
+                  className="shrink-0 w-36 flex flex-col group space-y-2"
                 >
-                  {/* Square Album Cover */}
-                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900 border border-white/5 shadow-md shadow-black/40">
+                  {/* Portrait Book Cover image */}
+                  <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-slate-900 border border-white/5 shadow-md shadow-black/40">
                     <img
                       src={book.cover_image || ''}
                       alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-95"
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-700 opacity-95"
                       onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
                     />
                     {/* Linear thin progress line inside cover */}
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 overflow-hidden">
                       <div className="h-full bg-[#10B981] rounded-r" style={{ width: `${Math.max(progress, 2)}%` }} />
                     </div>
-                    {/* Overlay play button on hover */}
+                    {/* Play button overlay on hover */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <div className="bg-[#10B981] p-3 rounded-full text-slate-950 shadow-lg scale-90 group-hover:scale-100 transition-transform">
                         <Play className="w-4 h-4 fill-current ml-0.5" />
@@ -201,12 +210,12 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Album Info Text */}
+                  {/* Info text below book */}
                   <div className="space-y-0.5 px-0.5">
                     <h4 className="text-xs font-bold text-white leading-tight truncate group-hover:text-[#10B981] transition-colors">
                       {book.title}
                     </h4>
-                    <p className="text-[10px] text-foreground/45 leading-normal truncate font-medium">
+                    <p className="text-[10px] text-foreground/50 leading-normal truncate font-medium">
                       By {book.author}
                     </p>
                   </div>
@@ -217,12 +226,12 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 4. TRACKLIST SHELF: "QUICK PICKS / ALL CHAPTERS" ── */}
+      {/* ── 4. QUICK PICKS (3 list series scroll: stacks 3 tracks vertically, swiping horizontally) ── */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
-              START LISTENING INSTANTLY
+            <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
+              SWIPE TO LISTEN
             </p>
             <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
               Quick picks
@@ -245,73 +254,77 @@ export default function DashboardPage() {
             <p className="text-xs text-foreground/45">No chapters found for this subject.</p>
           </div>
         ) : (
-          /* YT Music styled grid layout of track rows */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-            {filteredChapters.slice(0, 8).map(ch => {
-              const parentBook = books.find(b => b.id === ch.book_id);
-              const coverImg = parentBook?.cover_image || '';
-              const isHovered = hoveredItemId === ch.id;
+          /* YT Music dynamic track container: stacks exactly 3 tracks, swiping horizontally */
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1 snap-x">
+            {chapterChunks.map((chunk, chunkIdx) => (
+              <div 
+                key={chunkIdx} 
+                className="flex flex-col gap-3 shrink-0 w-[290px] sm:w-[350px] snap-start"
+              >
+                {chunk.map(ch => {
+                  const parentBook = books.find(b => b.id === ch.book_id);
+                  const coverImg = parentBook?.cover_image || '';
 
-              return (
-                <div 
-                  key={ch.id}
-                  className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition duration-150 group cursor-pointer"
-                  onMouseEnter={() => setHoveredItemId(ch.id)}
-                  onMouseLeave={() => setHoveredItemId(null)}
-                  onClick={() => router.push(`/lesson/${ch.id}`)}
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {/* Chapter/Book Cover Thumbnail image */}
-                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-900 border border-white/5 shrink-0 shadow-md">
-                      <img 
-                        src={coverImg} 
-                        alt={ch.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'; }}
-                      />
-                      {/* Play overlay */}
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Play className="w-3.5 h-3.5 text-[#10B981] fill-current" />
+                  return (
+                    <div 
+                      key={ch.id}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition duration-150 group cursor-pointer"
+                      onClick={() => router.push(`/lesson/${ch.id}`)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {/* Book Cover Thumbnail image */}
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-900 border border-white/5 shrink-0 shadow-md">
+                          <img 
+                            src={coverImg} 
+                            alt={ch.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'; }}
+                          />
+                          {/* Play icon overlay */}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="w-3.5 h-3.5 text-[#10B981] fill-current" />
+                          </div>
+                        </div>
+
+                        {/* Metadata details */}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-xs font-bold text-white leading-snug truncate group-hover:text-[#10B981] transition-colors">
+                            {ch.title}
+                          </h4>
+                          <p className="text-[10px] text-foreground/50 leading-normal mt-0.5 truncate font-medium">
+                            {parentBook?.title || 'Study Book'} • By {parentBook?.author || 'PrepAI'} • {Math.round(ch.duration_seconds / 60)} Mins
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right side check status / options */}
+                      <div className="flex items-center gap-2 shrink-0 pl-3">
+                        <span className="text-[9px] font-bold font-mono text-foreground/35 hidden sm:inline">
+                          {ch.is_free ? 'FREE' : 'GOLD'}
+                        </span>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/lesson/${ch.id}`);
+                          }}
+                          className="p-1.5 text-foreground/40 hover:text-foreground hover:bg-white/5 rounded-full transition"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-
-                    {/* Metadata details */}
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-white leading-snug truncate group-hover:text-[#10B981] transition-colors">
-                        {ch.title}
-                      </h4>
-                      <p className="text-[10px] text-foreground/50 leading-normal mt-0.5 truncate font-medium">
-                        {parentBook?.title || 'Study Book'} • {parentBook?.author || 'PrepAI'} • {Math.round(ch.duration_seconds / 60)} Mins
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Playcount / Right icon */}
-                  <div className="flex items-center gap-2 shrink-0 pl-3">
-                    <span className="text-[10px] text-foreground/35 font-mono hidden sm:inline">
-                      {ch.is_free ? 'FREE' : 'GOLD'}
-                    </span>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/lesson/${ch.id}`);
-                      }}
-                      className="p-1.5 text-foreground/40 hover:text-foreground hover:bg-white/5 rounded-full transition"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* ── 5. FORGOTTEN FAVOURITES: "TEST SERIES & MOCKS" ── */}
+      {/* ── 5. MOCK TEST SERIES ── */}
       <div className="space-y-4">
         <div>
-          <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
+          <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
             TEST YOUR CAPACITY
           </p>
           <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
@@ -320,7 +333,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Mock Test 1 */}
           <div className="p-4 rounded-2xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/50 transition flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
@@ -337,7 +349,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Mock Test 2 */}
           <div className="p-4 rounded-2xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/50 transition flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <span className="text-[8px] bg-indigo-500/10 text-indigo-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
@@ -354,7 +365,6 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Mock Test 3 */}
           <div className="p-4 rounded-2xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/50 transition flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
