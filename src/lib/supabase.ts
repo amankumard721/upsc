@@ -506,30 +506,45 @@ export const db = {
     }
   },
 
-  // 23. Get Subjects (Dynamic Admin Configurable)
+  // 23. Get Subjects (Dynamic Admin Configurable with Ranking)
   async getSubjects(): Promise<any[]> {
     if (supabase) {
       try {
         const { data, error } = await supabase
           .from('subjects')
           .select('*')
-          .order('name', { ascending: true });
-        if (!error && data) return data;
+          .order('rank_order', { ascending: true });
+        if (!error && data) {
+          // If table exists but is empty, seed defaults
+          if (data.length === 0) {
+            const defaults = [
+              { id: 'all', name: 'All', emoji: '📚', rank_order: 1 },
+              { id: 'polity', name: 'Polity', emoji: '📜', rank_order: 2 },
+              { id: 'history', name: 'History', emoji: '🏛️', rank_order: 3 },
+              { id: 'geography', name: 'Geography', emoji: '🌍', rank_order: 4 },
+              { id: 'economy', name: 'Economy', emoji: '💰', rank_order: 5 },
+            ];
+            await supabase.from('subjects').insert(defaults);
+            return defaults;
+          }
+          return data;
+        }
       } catch (err) {
-        console.warn('Subjects table might not exist in Supabase yet. Using static fallback:', err);
+        console.warn('Subjects table might not exist in Supabase yet. Using local fallback:', err);
       }
     }
-    return getLocalData<any[]>('prepai_subjects', [
-      { id: 'all', name: 'All', emoji: '📚' },
-      { id: 'polity', name: 'Polity', emoji: '📜' },
-      { id: 'history', name: 'History', emoji: '🏛️' },
-      { id: 'geography', name: 'Geography', emoji: '🌍' },
-      { id: 'economy', name: 'Economy', emoji: '💰' },
+    const localList = getLocalData<any[]>('prepai_subjects', [
+      { id: 'all', name: 'All', emoji: '📚', rank_order: 1 },
+      { id: 'polity', name: 'Polity', emoji: '📜', rank_order: 2 },
+      { id: 'history', name: 'History', emoji: '🏛️', rank_order: 3 },
+      { id: 'geography', name: 'Geography', emoji: '🌍', rank_order: 4 },
+      { id: 'economy', name: 'Economy', emoji: '💰', rank_order: 5 },
     ]);
+    return localList.sort((a, b) => (a.rank_order ?? 0) - (b.rank_order ?? 0));
   },
 
-  // 24. Create Subject
-  async createSubject(subject: { name: string; emoji: string }): Promise<any> {
+  // 24. Create Subject (supports rank_order)
+  async createSubject(subject: { name: string; emoji: string; rank_order: number }): Promise<any> {
     const id = generateUUID();
     const newSub = { id, created_at: new Date().toISOString(), ...subject };
     if (supabase) {
@@ -545,7 +560,6 @@ export const db = {
       }
     }
     const list = await this.getSubjects();
-    // Don't add duplicate
     if (!list.some(s => s.name.toLowerCase() === subject.name.toLowerCase())) {
       list.push(newSub);
       setLocalData('prepai_subjects', list);
@@ -553,7 +567,28 @@ export const db = {
     return newSub;
   },
 
-  // 25. Delete Subject
+  // 25. Update Subject (Edit Feature)
+  async updateSubject(id: string, updates: { name: string; emoji: string; rank_order: number }): Promise<any> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Subjects table update failed. Updating locally:', err);
+      }
+    }
+    const list = await this.getSubjects();
+    const updatedList = list.map(s => s.id === id ? { ...s, ...updates } : s);
+    setLocalData('prepai_subjects', updatedList);
+    return { id, ...updates };
+  },
+
+  // 26. Delete Subject
   async deleteSubject(id: string): Promise<boolean> {
     if (supabase) {
       try {

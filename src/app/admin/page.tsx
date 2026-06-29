@@ -49,6 +49,8 @@ export default function AdminDashboardPage() {
   // Subject Form States
   const [subjectName, setSubjectName] = useState('');
   const [subjectEmoji, setSubjectEmoji] = useState('📚');
+  const [subjectRank, setSubjectRank] = useState(1);
+  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<any[]>([]);
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,29 +163,42 @@ export default function AdminDashboardPage() {
     setError('');
     setSuccess('');
     try {
-      const result = await db.createSubject({
-        name: subjectName.trim(),
-        emoji: subjectEmoji
-      });
-      setSubjects(prev => {
-        if (prev.some(s => s.name.toLowerCase() === result.name.toLowerCase())) return prev;
-        return [...prev, result];
-      });
-      setSuccess(`Subject "${subjectName}" created successfully!`);
+      if (editingSubjectId) {
+        // Edit mode
+        const result = await db.updateSubject(editingSubjectId, {
+          name: subjectName.trim(),
+          emoji: subjectEmoji,
+          rank_order: Number(subjectRank)
+        });
+        setSubjects(prev => prev.map(s => s.id === editingSubjectId ? result : s));
+        setSuccess(`Subject "${subjectName}" updated successfully!`);
+        setEditingSubjectId(null);
+      } else {
+        // Create mode
+        const result = await db.createSubject({
+          name: subjectName.trim(),
+          emoji: subjectEmoji,
+          rank_order: Number(subjectRank)
+        });
+        setSubjects(prev => {
+          if (prev.some(s => s.id === result.id)) return prev;
+          return [...prev, result];
+        });
+        setSuccess(`Subject "${subjectName}" created successfully!`);
+      }
       setSubjectName('');
+      setSubjectRank(1);
     } catch (err: any) {
-      setError(err.message || 'Failed to create subject.');
+      setError(err.message || 'Failed to save subject.');
     } finally {
       setLoading(false);
+      // Reload subjects to ensure correct rank ordering
+      loadSubjects();
     }
   };
 
   const handleDeleteSubject = async (id: string) => {
-    if (id === 'all' || id === 'polity' || id === 'history' || id === 'geography' || id === 'economy') {
-      alert("System default subjects cannot be deleted.");
-      return;
-    }
-    if (!confirm('Are you sure you want to delete this subject? This might affect existing books associated with it.')) return;
+    if (!confirm('Are you sure you want to delete this subject? Books and chapters mapped to this category may no longer display correctly.')) return;
     setLoading(true);
     setError('');
     setSuccess('');
@@ -191,6 +206,11 @@ export default function AdminDashboardPage() {
       await db.deleteSubject(id);
       setSubjects(prev => prev.filter(s => s.id !== id));
       setSuccess('Subject deleted successfully.');
+      if (editingSubjectId === id) {
+        setEditingSubjectId(null);
+        setSubjectName('');
+        setSubjectRank(1);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to delete subject.');
     } finally {
@@ -971,10 +991,11 @@ create policy "Allow insert update for everyone" on popups for all using (true);
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               
-              {/* Create Subject Form */}
+              {/* Create / Edit Subject Form */}
               <form onSubmit={handleCreateSubject} className="premium-card p-6 bg-slate-950/40 border border-white/5 space-y-4">
                 <h2 className="text-sm font-bold text-accent uppercase tracking-wider flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" /> Add Dynamic Subject Category
+                  <BookOpen className="w-4 h-4" /> 
+                  {editingSubjectId ? 'Edit Subject Category' : 'Add Dynamic Subject Category'}
                 </h2>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -985,7 +1006,7 @@ create policy "Allow insert update for everyone" on popups for all using (true);
                       placeholder="e.g. Science & Tech"
                       value={subjectName}
                       onChange={e => setSubjectName(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-medium"
                       required
                     />
                   </div>
@@ -994,7 +1015,7 @@ create policy "Allow insert update for everyone" on popups for all using (true);
                     <select
                       value={subjectEmoji}
                       onChange={e => setSubjectEmoji(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-medium"
                     >
                       <option value="📚">📚 Books</option>
                       <option value="📜">📜 Scroll</option>
@@ -1011,13 +1032,47 @@ create policy "Allow insert update for everyone" on popups for all using (true);
                   </div>
                 </div>
 
-                <button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <Plus className="w-4 h-4" /> Save Subject
-                </button>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground/50 uppercase">Rank Order (Sort sequence) *</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    placeholder="e.g. 1, 2, 3..."
+                    value={subjectRank}
+                    onChange={e => setSubjectRank(Number(e.target.value))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
+                    required
+                  />
+                  <p className="text-[9px] text-foreground/40 leading-normal">
+                    Subjects will be sorted on the home dashboard by this rank number in ascending order.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Plus className="w-4 h-4" /> 
+                    {editingSubjectId ? 'Update Subject' : 'Save Subject'}
+                  </button>
+                  
+                  {editingSubjectId && (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setEditingSubjectId(null);
+                        setSubjectName('');
+                        setSubjectEmoji('📚');
+                        setSubjectRank(1);
+                      }}
+                      className="px-4 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition text-xs border border-white/10"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
 
               {/* Subjects List & SQL Box */}
@@ -1026,17 +1081,34 @@ create policy "Allow insert update for everyone" on popups for all using (true);
                   <span>Current Subjects ({subjects.length})</span>
                 </h3>
 
-                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                  {subjects.map(sub => {
-                    const isSystem = sub.id === 'all' || sub.id === 'polity' || sub.id === 'history' || sub.id === 'geography' || sub.id === 'economy';
-                    return (
+                <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                  {subjects.length === 0 ? (
+                    <div className="text-center py-8 text-foreground/35 text-xs">No subjects loaded.</div>
+                  ) : (
+                    subjects.map(sub => (
                       <div key={sub.id} className="premium-card p-3 bg-white/5 border border-white/5 flex justify-between items-center text-xs">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3 min-w-0">
                           <span className="text-base shrink-0">{sub.emoji}</span>
-                          <span className="font-bold text-white">{sub.name}</span>
-                          {isSystem && <span className="text-[8px] bg-white/5 text-foreground/45 px-1.5 py-0.5 rounded font-mono">System</span>}
+                          <div className="min-w-0">
+                            <span className="font-bold text-white block truncate">{sub.name}</span>
+                            <span className="text-[9px] text-[#10B981] font-mono font-medium">Rank {sub.rank_order ?? 0}</span>
+                          </div>
                         </div>
-                        {!isSystem && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button 
+                            onClick={() => {
+                              setEditingSubjectId(sub.id);
+                              setSubjectName(sub.name);
+                              setSubjectEmoji(sub.emoji);
+                              setSubjectRank(sub.rank_order ?? 1);
+                              setSuccess('');
+                              setError('');
+                            }}
+                            className="p-1.5 text-accent/80 hover:text-accent hover:bg-white/5 rounded-lg transition"
+                            title="Edit Subject"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </button>
                           <button 
                             onClick={() => handleDeleteSubject(sub.id)}
                             className="p-1.5 text-error-red/60 hover:text-error-red hover:bg-error-red/10 rounded-lg transition"
@@ -1044,10 +1116,10 @@ create policy "Allow insert update for everyone" on popups for all using (true);
                           >
                             <Trash className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                        </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  )}
                 </div>
 
                 {/* Database Table SQL Helper */}
@@ -1058,12 +1130,13 @@ create policy "Allow insert update for everyone" on popups for all using (true);
                   <p className="text-[9px] text-foreground/50 leading-relaxed">
                     Make sure to run this SQL in your Supabase SQL Editor if you want to store subjects dynamically:
                   </p>
-                  <pre className="bg-[#070B16] border border-white/5 rounded-lg p-2.5 text-[8px] text-[#10B981] font-mono overflow-x-auto select-all max-h-[120px]">
+                  <pre className="bg-[#070B16] border border-white/5 rounded-lg p-2.5 text-[8px] text-[#10B981] font-mono overflow-x-auto select-all max-h-[140px]">
 {`create table subjects (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   name text not null,
-  emoji text not null
+  emoji text not null,
+  rank_order integer default 0
 );
 alter table subjects enable row level security;
 create policy "Allow public read access to subjects" on subjects for select using (true);
