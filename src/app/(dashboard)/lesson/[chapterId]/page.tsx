@@ -454,30 +454,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
 
       </div>
 
-      {/* --- Post-Lesson CTA Card --- */}
-      <AnimatePresence>
-        {audio.ended && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className="absolute inset-x-6 bottom-56 premium-card p-6 bg-slate-900 border border-accent/25 text-center z-30 shadow-2xl"
-          >
-            <CheckCircle className="w-10 h-10 text-success-green mx-auto mb-3" />
-            <h3 className="text-sm font-bold text-foreground font-display">Lesson Completed! 🎉</h3>
-            <p className="text-[11px] text-foreground/60 mt-1 mb-4">You&apos;ve mastered this chapter. What&apos;s next?</p>
-            
-            <div className="flex gap-3">
-              <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs shadow-md">
-                <CheckCircle className="w-3.5 h-3.5" /> Start Quiz
-              </Link>
-              <Link href={`/flashcards/${chapterId}`} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-foreground font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs">
-                <FileText className="w-3.5 h-3.5" /> Flashcards
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }
