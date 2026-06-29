@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/app_state.dart';
 import 'providers/audio_provider.dart';
+import 'screens/splash_screen.dart';
 import 'screens/main_navigation.dart';
 
 void main() async {
@@ -88,7 +89,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainNavigation(),
+      home: const SplashScreen(),
     );
   }
 }

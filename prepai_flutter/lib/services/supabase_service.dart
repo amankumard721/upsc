@@ -29,6 +29,45 @@ class SupabaseService {
     return 'mock-user-123'; // offline/mock fallback ID
   }
 
+  // Email Sign In
+  Future<AuthResponse?> signIn({required String email, required String password}) async {
+    try {
+      final response = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      return response;
+    } catch (e) {
+      print('Supabase signIn error: $e');
+      rethrow;
+    }
+  }
+
+  // Email Sign Up
+  Future<AuthResponse?> signUp({required String email, required String password}) async {
+    try {
+      final response = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      return response;
+    } catch (e) {
+      print('Supabase signUp error: $e');
+      rethrow;
+    }
+  }
+
+  // Sign Out
+  Future<void> signOut() async {
+    try {
+      await _client.auth.signOut();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_profileKey);
+    } catch (e) {
+      print('Supabase signOut error: $e');
+    }
+  }
+
   // 1. Fetch Books
   Future<List<Book>> getBooks() async {
     try {

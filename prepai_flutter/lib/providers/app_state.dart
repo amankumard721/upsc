@@ -58,6 +58,90 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Sign In with Email
+  Future<bool> signInWithEmail(String email, String password) async {
+    _loading = true;
+    notifyListeners();
+    try {
+      final res = await _db.signIn(email: email, password: password);
+      if (res != null && res.user != null) {
+        _userId = res.user!.id;
+        _profile = await _db.getUserProfile(_userId);
+        
+        // Reload all data for the new user
+        _books = await _db.getBooks();
+        _progressList = await _db.getUserProgressList(_userId);
+        _attempts = await _db.getQuizAttempts(_userId);
+        
+        _loading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      print('AppState signInWithEmail error: $e');
+    }
+    _loading = false;
+    notifyListeners();
+    return false;
+  }
+
+  // Sign Up with Email
+  Future<bool> signUpWithEmail({
+    required String email,
+    required String password,
+    required String fullName,
+    required String examType,
+    required String inviteCode,
+  }) async {
+    _loading = true;
+    notifyListeners();
+    try {
+      final res = await _db.signUp(email: email, password: password);
+      if (res != null && res.user != null) {
+        _userId = res.user!.id;
+        
+        // Create user profile
+        final isPremium = inviteCode.trim().toUpperCase() == 'JTETSATHI99';
+        final newProfile = UserProfile(
+          id: _userId,
+          fullName: fullName,
+          email: email,
+          preferredLanguage: 'en',
+          totalPoints: isPremium ? 500 : 100,
+          streak: 0,
+          isPremium: isPremium,
+          lastActiveDate: DateTime.now(),
+        );
+        _profile = await _db.updateUserProfile(newProfile);
+        
+        // Reload data
+        _books = await _db.getBooks();
+        _progressList = await _db.getUserProgressList(_userId);
+        _attempts = await _db.getQuizAttempts(_userId);
+        
+        _loading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      print('AppState signUpWithEmail error: $e');
+    }
+    _loading = false;
+    notifyListeners();
+    return false;
+  }
+
+  // Sign Out
+  Future<void> signOut() async {
+    _loading = true;
+    notifyListeners();
+    await _db.signOut();
+    _profile = null;
+    
+    // Refresh to anonymous or mock session
+    await initialize();
+  }
+
   // Select a book
   Future<void> selectBook(String bookId) async {
     _activeBookId = bookId;
