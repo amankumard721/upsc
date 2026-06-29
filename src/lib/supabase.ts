@@ -506,8 +506,10 @@ export const db = {
     }
   },
 
-  // 23. Get Subjects (Dynamic Admin Configurable with Ranking)
+  // 23. Get Subjects (Dynamic Admin Configurable with Database and Local Storage Merging)
   async getSubjects(): Promise<any[]> {
+    let dbSubjects: any[] = [];
+    
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -515,8 +517,9 @@ export const db = {
           .select('*')
           .order('rank_order', { ascending: true });
         if (!error && data) {
-          // If table exists but is empty, seed defaults
-          if (data.length === 0) {
+          dbSubjects = data;
+          // Seed defaults if empty
+          if (dbSubjects.length === 0) {
             const defaults = [
               { id: '00000000-0000-0000-0000-000000000000', name: 'All', emoji: '📚', rank_order: 1 },
               { id: '11111111-1111-1111-1111-111111111111', name: 'Polity', emoji: '📜', rank_order: 2 },
@@ -525,17 +528,18 @@ export const db = {
               { id: '44444444-4444-4444-4444-444444444444', name: 'Economy', emoji: '💰', rank_order: 5 },
             ];
             await supabase.from('subjects').insert(defaults);
-            return defaults;
+            dbSubjects = defaults;
           }
-          return data;
-        }
-        if (error) {
+        } else if (error) {
           console.warn('Supabase error loading subjects:', error.message);
         }
       } catch (err) {
-        console.warn('Subjects table might not exist in Supabase yet. Using local fallback:', err);
+        console.warn('Subjects table query failed:', err);
       }
     }
+
+    // Always merge with local storage fallbacks to ensure admin added items are visible 
+    // even if RLS/DB insert policies are partially configured or restricted.
     const localList = getLocalData<any[]>('prepai_subjects', [
       { id: '00000000-0000-0000-0000-000000000000', name: 'All', emoji: '📚', rank_order: 1 },
       { id: '11111111-1111-1111-1111-111111111111', name: 'Polity', emoji: '📜', rank_order: 2 },
@@ -543,7 +547,15 @@ export const db = {
       { id: '33333333-3333-3333-3333-333333333333', name: 'Geography', emoji: '🌍', rank_order: 4 },
       { id: '44444444-4444-4444-4444-444444444444', name: 'Economy', emoji: '💰', rank_order: 5 },
     ]);
-    return localList.sort((a, b) => (a.rank_order ?? 0) - (b.rank_order ?? 0));
+
+    const mergedList = [...dbSubjects];
+    for (const localSub of localList) {
+      if (!mergedList.some(s => s.name.toLowerCase() === localSub.name.toLowerCase())) {
+        mergedList.push(localSub);
+      }
+    }
+
+    return mergedList.sort((a, b) => (a.rank_order ?? 0) - (b.rank_order ?? 0));
   },
 
   // 24. Create Subject (supports rank_order)
