@@ -9,11 +9,16 @@ import {
   ArrowLeft, 
   Search, 
   Lock, 
-  PlayCircle, 
+  Play, 
+  Pause,
   CheckCircle2, 
   Clock, 
   Sparkles,
-  Award
+  Award,
+  MoreVertical,
+  Share2,
+  ListPlus,
+  PlayCircle
 } from 'lucide-react';
 
 interface BookPageProps {
@@ -33,6 +38,9 @@ export default function BookDetailsPage({ params }: BookPageProps) {
   const [statusFilter, setStatusFilter] = useState<'All' | 'Completed' | 'Incomplete'>('All');
   const [loading, setLoading] = useState(true);
 
+  // Hover states for track index
+  const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -44,6 +52,8 @@ export default function BookDetailsPage({ params }: BookPageProps) {
         setBook(bookData);
 
         const chs = await db.getChapters(bookId);
+        // Sort chapters by chapter number
+        chs.sort((a, b) => a.chapter_number - b.chapter_number);
         setChapters(chs);
 
         const prof = await db.getUserProfile();
@@ -65,24 +75,28 @@ export default function BookDetailsPage({ params }: BookPageProps) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-foreground/50 font-light">Loading UPSC study material...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="w-12 h-12 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-foreground/45 font-medium font-mono">Loading playlists & tracks...</p>
       </div>
     );
   }
 
   if (!book) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-foreground/60">Book not found in PrepAI database.</p>
-        <Link href="/dashboard" className="text-accent underline inline-flex items-center space-x-1">
+      <div className="text-center py-24 space-y-6">
+        <p className="text-foreground/50 text-sm">Book not found in PrepAI database.</p>
+        <Link href="/dashboard" className="text-[#10B981] hover:underline inline-flex items-center space-x-1 text-xs font-bold">
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Dashboard</span>
         </Link>
       </div>
     );
   }
+
+  // Stats calculation
+  const completedChaptersCount = progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length;
+  const progressPercent = chapters.length > 0 ? Math.round((completedChaptersCount / chapters.length) * 100) : 0;
 
   // Filter logic
   const filteredChapters = chapters.filter(ch => {
@@ -99,158 +113,287 @@ export default function BookDetailsPage({ params }: BookPageProps) {
     return matchesSearch && matchesStatus;
   });
 
-  return (
-    <div className="space-y-8 font-sans">
-      {/* Compact Book Card */}
-      <div className="premium-card p-4 md:p-5 bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex flex-row gap-5 items-center relative overflow-hidden border border-white/5 shadow-xl">
-        <div className="absolute -top-10 -right-10 w-[150px] h-[150px] bg-accent/10 rounded-full blur-[40px] pointer-events-none" />
-        
-        <img 
-          src={book.cover_image} 
-          alt={book.title} 
-          className="w-20 h-28 md:w-24 md:h-32 rounded-lg object-cover bg-slate-800 shadow-md border border-white/10 flex-shrink-0"
-        />
+  const handlePlayFirst = () => {
+    if (chapters.length > 0) {
+      router.push(`/lesson/${chapters[0].id}`);
+    }
+  };
 
-        <div className="flex-1 space-y-1.5">
-          <div>
-            <span className="text-[9px] bg-accent/15 text-accent border border-accent/25 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider font-mono">
+  return (
+    <div className="space-y-10 font-sans pb-16">
+      
+      {/* Back navigation & Header label */}
+      <div className="flex items-center justify-between">
+        <Link 
+          href="/dashboard" 
+          className="inline-flex items-center gap-2 text-xs font-bold text-foreground/60 hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Library</span>
+        </Link>
+        <span className="text-[10px] uppercase font-bold text-foreground/45 tracking-widest font-mono">
+          PLAYLIST DETAIL
+        </span>
+      </div>
+
+      {/* ========================================================
+          YOUTUBE MUSIC ALBUM HEADER LAYOUT
+         ======================================================== */}
+      <div className="flex flex-col md:flex-row gap-8 items-start relative">
+        {/* Soft atmospheric blurred background glow matching the cover art */}
+        <div className="absolute -top-16 -left-16 w-80 h-80 bg-[#10B981]/5 rounded-full blur-[80px] pointer-events-none" />
+        
+        {/* Cover Art Image Box */}
+        <div className="relative w-48 h-64 md:w-56 md:h-76 flex-shrink-0 rounded-2xl overflow-hidden group shadow-[0_15px_35px_rgba(0,0,0,0.5)] border border-white/10 self-center md:self-start">
+          <img 
+            src={book.cover_image} 
+            alt={book.title} 
+            className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <button 
+              onClick={handlePlayFirst}
+              className="bg-[#10B981] text-slate-950 p-4 rounded-full shadow-lg active:scale-90 transition-transform"
+            >
+              <Play className="w-6 h-6 fill-current" />
+            </button>
+          </div>
+        </div>
+
+        {/* Playlist metadata details */}
+        <div className="flex-1 space-y-5 text-center md:text-left">
+          <div className="space-y-2">
+            <span className="text-[9px] bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
               {book.subject}
             </span>
+            <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-tight font-display tracking-tight mt-2">
+              {book.title}
+            </h1>
+            <p className="text-sm font-semibold text-[#10B981] hover:underline cursor-pointer">
+              By {book.author}
+            </p>
+            <p className="text-xs text-foreground/45 mt-1 font-mono">
+              Playlist • {chapters.length} chapters • {Math.round(chapters.reduce((acc, c) => acc + c.duration_seconds, 0) / 60)} mins total
+            </p>
           </div>
-          <h1 className="font-display text-lg md:text-xl font-extrabold text-foreground leading-tight mt-1">{book.title}</h1>
-          <p className="text-foreground/50 text-xs font-light">By {book.author}</p>
 
-          <div className="flex flex-wrap gap-4 text-[10px] font-mono pt-1">
-            <div className="flex items-center text-foreground/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent/80 mr-1.5 shadow-[0_0_5px_rgba(216,155,60,0.5)]" /> 
-              {chapters.length} Chapters
+          <div className="text-xs text-foreground/60 leading-relaxed font-light max-w-xl">
+            Syllabus chapter lectures compiled into custom playlists with auto-reader highlights, key summaries, and mock test compilers.
+          </div>
+
+          {/* Progress Indicators */}
+          <div className="space-y-1.5 max-w-sm mx-auto md:mx-0">
+            <div className="flex justify-between text-[10px] font-bold text-foreground/50 font-mono">
+              <span>PLAYBACK PROGRESS</span>
+              <span>{progressPercent}% ({completedChaptersCount}/{chapters.length} completed)</span>
             </div>
-            <div className="flex items-center text-foreground/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 mr-1.5 shadow-[0_0_5px_rgba(16,185,129,0.5)]" /> 
-              {chapters.filter(c => c.is_free).length} Free
+            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="h-full bg-gradient-to-r from-[#10B981] to-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
-            <div className="flex items-center text-foreground/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/80 mr-1.5 shadow-[0_0_5px_rgba(99,102,241,0.5)]" /> 
-              {progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length} Done
-            </div>
+          </div>
+
+          {/* Action buttons (YouTube Music styled buttons) */}
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
+            <button 
+              onClick={handlePlayFirst}
+              className="bg-white text-black hover:bg-white/95 font-bold text-xs px-6 py-3 rounded-full flex items-center gap-2 active:scale-95 transition-all shadow-md"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Listen Now</span>
+            </button>
+            
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Playlist link copied to clipboard!");
+              }}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs px-5 py-3 rounded-full flex items-center gap-2 active:scale-95 transition-all"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share</span>
+            </button>
+
+            <button 
+              onClick={() => alert("Added book playlist to your custom dashboard shortcut.")}
+              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs p-3 rounded-full flex items-center justify-center active:scale-95 transition-all"
+              title="Add to Library"
+            >
+              <ListPlus className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Filter and Search controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-foreground/40" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search chapters by keyword..."
-            className="w-full bg-slate-950 border border-white/10 focus:border-accent text-sm rounded-2xl pl-11 pr-4 py-3 outline-none transition-all placeholder:text-foreground/30"
-          />
-        </div>
+      <hr className="border-white/5" />
 
-        {/* Completion status Filter */}
-        <div className="flex items-center space-x-2">
+      {/* ========================================================
+          FILTER CHIPS & SEARCH SECTION
+         ======================================================== */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        {/* Mood/Status Filter pills (YouTube Music mood filters style) */}
+        <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
           {(['All', 'Completed', 'Incomplete'] as const).map(filter => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`text-xs px-3.5 py-2 rounded-xl transition-all border ${
+              className={`text-xs px-4 py-2 rounded-full transition-all border font-semibold ${
                 statusFilter === filter
-                  ? 'bg-accent border-accent text-slate-950 font-semibold shadow-sm'
-                  : 'bg-slate-900/40 border-white/10 text-foreground/70 hover:border-white/20'
+                  ? 'bg-[#10B981] border-[#10B981] text-slate-950 font-bold shadow-md'
+                  : 'bg-white/5 border-white/10 text-foreground/75 hover:bg-white/10 hover:border-white/20'
               }`}
             >
               {filter}
             </button>
           ))}
         </div>
+
+        {/* Search Input bar */}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3.5 top-3.5 w-3.5 h-3.5 text-foreground/45" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tracks..."
+            className="w-full bg-white/5 border border-white/10 focus:border-[#10B981] text-xs rounded-full pl-10 pr-4 py-3 outline-none transition-all placeholder:text-foreground/35"
+          />
+        </div>
       </div>
 
-      {/* Chapter List */}
-      <div className="space-y-4">
+      {/* ========================================================
+          YOUTUBE MUSIC TRACKLIST ROWS
+         ======================================================== */}
+      <div className="space-y-0.5">
         {filteredChapters.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-            <p className="text-xs text-foreground/40">No chapters match your search filter criteria.</p>
+          <div className="text-center py-16 border border-dashed border-white/5 rounded-3xl bg-slate-950/20">
+            <p className="text-xs text-foreground/35">No tracks match your search filters.</p>
           </div>
         ) : (
-          filteredChapters.map(ch => {
+          filteredChapters.map((ch, index) => {
             const progObj = progressList.find(p => p.chapter_id === ch.id);
             const isCompleted = progObj?.is_completed || false;
-            
-            // Check access: user has access if chapter is free OR user has premium active
             const hasAccess = ch.is_free || profile?.is_premium;
+            
+            // Format index number (e.g. 01, 02)
+            const trackIndexStr = (index + 1).toString().padStart(2, '0');
+            const isHovered = hoveredTrackId === ch.id;
 
             return (
               <div 
                 key={ch.id} 
-                className={`premium-card p-5 bg-slate-900/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
-                  !hasAccess ? 'opacity-75 hover:border-white/10 hover:shadow-none' : ''
-                }`}
+                className={`flex items-center justify-between py-3.5 px-4 rounded-xl transition-all duration-150 ${
+                  isHovered ? 'bg-white/5' : 'bg-transparent'
+                } ${!hasAccess ? 'opacity-65' : ''}`}
+                onMouseEnter={() => setHoveredTrackId(ch.id)}
+                onMouseLeave={() => setHoveredTrackId(null)}
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex flex-col items-center justify-center text-accent font-mono flex-shrink-0">
-                    <span className="text-[10px] uppercase font-bold leading-none text-accent/50">CH</span>
-                    <span className="text-sm font-bold mt-0.5 leading-none">{ch.chapter_number}</span>
-                  </div>
+                {/* Left Section: Index / Play Icon & Track Meta */}
+                <div className="flex items-center gap-4 min-w-0 flex-1">
                   
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold text-foreground text-sm leading-snug">{ch.title}</h3>
+                  {/* Track Index or Play Action Indicator */}
+                  <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-xs font-mono font-bold text-foreground/40">
+                    {isHovered && hasAccess ? (
+                      <Link href={`/lesson/${ch.id}`}>
+                        <PlayCircle className="w-5 h-5 text-[#10B981] cursor-pointer hover:scale-115 transition-transform" />
+                      </Link>
+                    ) : isHovered && !hasAccess ? (
+                      <Link href="/profile">
+                        <Lock className="w-4 h-4 text-indigo-400" />
+                      </Link>
+                    ) : (
+                      <span>{trackIndexStr}</span>
+                    )}
+                  </div>
+
+                  {/* Title & details row */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-semibold text-white leading-snug truncate">
+                        {ch.title}
+                      </h4>
+                      
+                      {/* Completed badge */}
                       {isCompleted && (
-                        <span className="flex items-center text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">
-                          <CheckCircle2 className="w-3 h-3 mr-0.5 fill-emerald-500/10" />
-                          <span>Done</span>
-                        </span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 fill-emerald-500/10 shrink-0" />
                       )}
+                      
+                      {/* Premium/Free badge */}
                       {ch.is_free ? (
-                        <span className="text-[9px] text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
+                        <span className="text-[8px] text-[#10B981] bg-[#10B981]/15 border border-[#10B981]/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                           Free
                         </span>
                       ) : (
-                        <span className="flex items-center text-[9px] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
-                          <Award className="w-3 h-3 mr-0.5" />
-                          <span>Premium</span>
+                        <span className="text-[8px] text-indigo-400 bg-indigo-500/15 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-0.5">
+                          <Award className="w-2.5 h-2.5" />
+                          <span>Gold</span>
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-foreground/50 font-light mt-1 line-clamp-2 leading-relaxed max-w-2xl">{ch.description}</p>
                     
-                    <div className="flex items-center space-x-3 text-[10px] text-foreground/40 font-mono mt-2">
-                      <span className="flex items-center">
-                        <Clock className="w-3.5 h-3.5 mr-1" />
-                        <span>{Math.round(ch.duration_seconds / 60)} Mins</span>
-                      </span>
-                    </div>
+                    {/* Chapter description & duration */}
+                    <p className="text-xs text-foreground/50 font-light truncate mt-1 max-w-xl">
+                      {ch.description}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end w-full sm:w-auto">
-                  {hasAccess ? (
-                    <Link
-                      href={`/lesson/${ch.id}`}
-                      className="w-full sm:w-auto bg-accent hover:bg-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1 shadow-sm"
-                    >
-                      <PlayCircle className="w-4 h-4 fill-slate-950/20" />
-                      <span>Start Lesson</span>
-                    </Link>
-                  ) : (
-                    <Link
-                      href="/profile"
-                      className="w-full sm:w-auto bg-white/5 border border-white/10 hover:border-accent hover:bg-accent/5 text-foreground/80 hover:text-accent font-semibold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1.5"
-                    >
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Unlock Gold</span>
-                    </Link>
-                  )}
+                {/* Right Section: Time, CTA Button, Options menu */}
+                <div className="flex items-center gap-4 shrink-0 pl-4">
+                  {/* Track Duration */}
+                  <span className="text-[11px] text-foreground/40 font-mono flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{Math.round(ch.duration_seconds / 60)}:00</span>
+                  </span>
+
+                  {/* CTA button (Pill or lock) */}
+                  <div className="hidden sm:block">
+                    {hasAccess ? (
+                      <Link
+                        href={`/lesson/${ch.id}`}
+                        className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-all ${
+                          isHovered 
+                            ? 'bg-[#10B981] text-slate-950' 
+                            : 'bg-white/5 border border-white/10 text-white/90 hover:bg-white/10'
+                        }`}
+                      >
+                        Listen
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/profile"
+                        className="text-[10px] font-bold bg-indigo-950/40 border border-indigo-500/35 hover:border-indigo-400 text-indigo-400 px-3 py-1.5 rounded-full transition-all flex items-center gap-1"
+                      >
+                        <Lock className="w-3 h-3" />
+                        <span>Unlock</span>
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* Options Menu button */}
+                  <button 
+                    onClick={() => {
+                      if (hasAccess) {
+                        router.push(`/lesson/${ch.id}`);
+                      } else {
+                        router.push('/profile');
+                      }
+                    }}
+                    className="p-1.5 text-foreground/40 hover:text-foreground hover:bg-white/5 rounded-full transition"
+                    title="Actions"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
                 </div>
+
               </div>
             );
           })
         )}
       </div>
+
     </div>
   );
 }
