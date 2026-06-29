@@ -80,6 +80,42 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const [uploadingImg, setUploadingImg] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImg(true);
+    setError('');
+    setSuccess('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'popups');
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setPopupImgUrl(data.url);
+        setSuccess(`Image "${file.name}" uploaded to Cloudflare R2 and linked successfully!`);
+      } else {
+        throw new Error(data.error || 'Failed to upload.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Error uploading image.');
+    } finally {
+      setUploadingImg(false);
+      e.target.value = '';
+    }
+  };
+
   useEffect(() => {
     loadBooks();
   }, []);
@@ -698,14 +734,26 @@ export default function AdminDashboardPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-bold text-foreground/50 uppercase">Image URL * (Required)</label>
-                  <input 
-                    type="url" 
-                    placeholder="e.g. https://images.unsplash.com/photo-... or your banner link"
-                    value={popupImgUrl}
-                    onChange={e => setPopupImgUrl(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <input 
+                      type="url" 
+                      placeholder="e.g. https://images.unsplash.com/photo-... or upload file →"
+                      value={popupImgUrl}
+                      onChange={e => setPopupImgUrl(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
+                      required
+                    />
+                    <label className={`cursor-pointer shrink-0 bg-white/5 border border-white/10 hover:border-accent hover:text-accent font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 ${uploadingImg ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <UploadCloud className="w-4 h-4" />
+                      <span>{uploadingImg ? 'Uploading...' : 'Upload Image'}</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                        className="hidden" 
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
