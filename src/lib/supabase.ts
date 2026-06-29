@@ -518,27 +518,30 @@ export const db = {
           // If table exists but is empty, seed defaults
           if (data.length === 0) {
             const defaults = [
-              { id: 'all', name: 'All', emoji: '📚', rank_order: 1 },
-              { id: 'polity', name: 'Polity', emoji: '📜', rank_order: 2 },
-              { id: 'history', name: 'History', emoji: '🏛️', rank_order: 3 },
-              { id: 'geography', name: 'Geography', emoji: '🌍', rank_order: 4 },
-              { id: 'economy', name: 'Economy', emoji: '💰', rank_order: 5 },
+              { id: '00000000-0000-0000-0000-000000000000', name: 'All', emoji: '📚', rank_order: 1 },
+              { id: '11111111-1111-1111-1111-111111111111', name: 'Polity', emoji: '📜', rank_order: 2 },
+              { id: '22222222-2222-2222-2222-222222222222', name: 'History', emoji: '🏛️', rank_order: 3 },
+              { id: '33333333-3333-3333-3333-333333333333', name: 'Geography', emoji: '🌍', rank_order: 4 },
+              { id: '44444444-4444-4444-4444-444444444444', name: 'Economy', emoji: '💰', rank_order: 5 },
             ];
             await supabase.from('subjects').insert(defaults);
             return defaults;
           }
           return data;
         }
+        if (error) {
+          console.warn('Supabase error loading subjects:', error.message);
+        }
       } catch (err) {
         console.warn('Subjects table might not exist in Supabase yet. Using local fallback:', err);
       }
     }
     const localList = getLocalData<any[]>('prepai_subjects', [
-      { id: 'all', name: 'All', emoji: '📚', rank_order: 1 },
-      { id: 'polity', name: 'Polity', emoji: '📜', rank_order: 2 },
-      { id: 'history', name: 'History', emoji: '🏛️', rank_order: 3 },
-      { id: 'geography', name: 'Geography', emoji: '🌍', rank_order: 4 },
-      { id: 'economy', name: 'Economy', emoji: '💰', rank_order: 5 },
+      { id: '00000000-0000-0000-0000-000000000000', name: 'All', emoji: '📚', rank_order: 1 },
+      { id: '11111111-1111-1111-1111-111111111111', name: 'Polity', emoji: '📜', rank_order: 2 },
+      { id: '22222222-2222-2222-2222-222222222222', name: 'History', emoji: '🏛️', rank_order: 3 },
+      { id: '33333333-3333-3333-3333-333333333333', name: 'Geography', emoji: '🌍', rank_order: 4 },
+      { id: '44444444-4444-4444-4444-444444444444', name: 'Economy', emoji: '💰', rank_order: 5 },
     ]);
     return localList.sort((a, b) => (a.rank_order ?? 0) - (b.rank_order ?? 0));
   },
@@ -555,6 +558,9 @@ export const db = {
           .select()
           .single();
         if (!error && data) return data;
+        if (error) {
+          console.error('Supabase error inserting subject:', error.message);
+        }
       } catch (err) {
         console.warn('Subjects table insert failed. Storing locally:', err);
       }
@@ -578,6 +584,9 @@ export const db = {
           .select()
           .single();
         if (!error && data) return data;
+        if (error) {
+          console.error('Supabase error updating subject:', error.message);
+        }
       } catch (err) {
         console.warn('Subjects table update failed. Updating locally:', err);
       }
@@ -597,6 +606,9 @@ export const db = {
           .delete()
           .eq('id', id);
         if (!error) return true;
+        if (error) {
+          console.error('Supabase error deleting subject:', error.message);
+        }
       } catch (err) {
         console.warn('Subjects table delete failed:', err);
       }
