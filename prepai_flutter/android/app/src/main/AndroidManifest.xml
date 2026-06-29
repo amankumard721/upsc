@@ -33,7 +33,7 @@
             android:value="2" />
         <meta-data 
             android:name="com.truecaller.android.sdk.PartnerKey" 
-            android:value="Ae0iMNdtyPYzkht751S5h6_4OxmuGKSFZFzHI49H5ObS4R_y-_fpO5V86PNaTCzzmizv0aBlVP7FLr75aXc3b5hXjQXCdb6TkchbygS8kcx_H6t2ZlPHZghq8ZLeCQLt1OHRyQdVF-AG2lWPUrD1RHldBw"/>
+            android:value="tq0pskefnrd0sf-ytsfhr54lhljtroh2uprneoephyq"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
