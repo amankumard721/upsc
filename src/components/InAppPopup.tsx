@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { X, ExternalLink } from 'lucide-react';
 
@@ -9,24 +9,37 @@ export default function InAppPopup() {
   const [popup, setPopup] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Fetch active popup from database/local storage config
-    db.getActivePopup().then(active => {
-      if (active && active.is_active) {
-        const closedId = localStorage.getItem('jtet_last_closed_popup_id');
-        // Only show if user hasn't closed this specific popup ID yet
-        if (closedId !== active.id) {
-          setPopup(active);
-          // Small delay for clean entrance
-          const t = setTimeout(() => setIsOpen(true), 2000);
-          return () => clearTimeout(t);
+    let activeTimeout: any;
+    
+    const checkPopup = async () => {
+      try {
+        const active = await db.getActivePopup();
+        if (active && active.is_active) {
+          const closedId = localStorage.getItem('jtet_last_closed_popup_id');
+          // Only show if user hasn't closed this specific popup ID yet
+          if (closedId !== active.id) {
+            setPopup(active);
+            activeTimeout = setTimeout(() => setIsOpen(true), 1500);
+          } else {
+            setIsOpen(false);
+          }
+        } else {
+          setIsOpen(false);
         }
+      } catch (err) {
+        console.warn('Error fetching active popup:', err);
       }
-    }).catch(err => {
-      console.warn('Error fetching active popup:', err);
-    });
-  }, []);
+    };
+
+    checkPopup();
+
+    return () => {
+      if (activeTimeout) clearTimeout(activeTimeout);
+    };
+  }, [pathname]);
 
   const handleClose = () => {
     setIsOpen(false);
