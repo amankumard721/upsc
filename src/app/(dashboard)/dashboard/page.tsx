@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
-import { sfx } from '@/lib/sounds';
-import { Book, MCQ, UserProfile, LeaderboardEntry, Chapter } from '@/types';
+import { Book, Chapter, UserProfile, LeaderboardEntry } from '@/types';
 import {
   CheckCircle2, AlertCircle,
   ChevronRight, Award, BookOpen,
-  Trophy, Target, TrendingUp, PlayCircle
+  Trophy, Target, TrendingUp, PlayCircle,
+  MoreVertical, Play, Flame, Music, Sparkles
 } from 'lucide-react';
 import { t } from '@/lib/translations';
 
@@ -21,27 +22,31 @@ const SUBJECT_CHIPS = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [allChapters, setAllChapters] = useState<Chapter[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
   const [continueChapter, setContinueChapter] = useState<Chapter | null>(null);
-  const [langTick, setLangTick] = useState(0);
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [profileData, booksData, leaderboardData] = await Promise.all([
+        const [profileData, booksData, leaderboardData, chaptersData] = await Promise.all([
           db.getUserProfile(),
           db.getBooks(),
           db.getLeaderboard(),
+          db.getAllChapters(40)
         ]);
         
         setProfile(profileData);
         setBooks(booksData);
         setLeaderboard(leaderboardData.slice(0, 3));
+        setAllChapters(chaptersData);
 
         if (typeof window !== 'undefined') {
           const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
@@ -64,138 +69,146 @@ export default function DashboardPage() {
       }
     };
     loadData();
-
-    const handleLangChange = () => setLangTick(t => t + 1);
-    window.addEventListener('languageChange', handleLangChange);
-    return () => window.removeEventListener('languageChange', handleLangChange);
   }, []);
-
 
   const filteredBooks = books.filter(b =>
     selectedSubject === 'All' || b.subject === selectedSubject
   );
 
-  // ── Skeleton ────────────────────────────────────────────
+  // Filter chapters based on subject (by finding parent book's subject)
+  const filteredChapters = allChapters.filter(ch => {
+    if (selectedSubject === 'All') return true;
+    const parentBook = books.find(b => b.id === ch.book_id);
+    return parentBook?.subject === selectedSubject;
+  });
+
   if (loading) {
     return (
-      <div className="space-y-5 page-enter px-1">
-        <div className="skeleton h-10 w-full rounded-2xl" />
-        <div className="flex gap-4 overflow-hidden">
-          {[1,2,3].map(i => <div key={i} className="skeleton h-52 w-48 shrink-0 rounded-2xl" />)}
+      <div className="space-y-6 px-1 py-8">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {[1,2,3,4].map(i => <div key={i} className="skeleton h-8 w-20 shrink-0 rounded-full" />)}
         </div>
         <div className="skeleton h-56 w-full rounded-3xl" />
+        <div className="skeleton h-8 w-40 rounded-xl" />
+        <div className="flex gap-4 overflow-hidden">
+          {[1,2,3].map(i => <div key={i} className="skeleton h-52 w-40 shrink-0 rounded-2xl" />)}
+        </div>
       </div>
     );
   }
 
-  // ── Render ───────────────────────────────────────────────
   return (
-    <div className="space-y-6 page-enter">
+    <div className="space-y-10 relative pb-16 font-sans">
+      
+      {/* Dynamic atmospheric color glow overlay (YT Music theme) */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#10B981]/5 rounded-full blur-[100px] pointer-events-none" />
+      
+      {/* ── 1. MOOD / SUBJECT FILTER PILLS (YouTube Music style) ── */}
+      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+        {SUBJECT_CHIPS.map(chip => (
+          <button
+            key={chip.label}
+            onClick={() => setSelectedSubject(chip.label)}
+            className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+              selectedSubject === chip.label
+                ? 'bg-[#10B981] text-slate-950 border-[#10B981] font-bold shadow-md shadow-[#10B981]/10'
+                : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10 hover:border-white/20'
+            }`}
+          >
+            <span className="mr-1">{chip.emoji}</span>
+            <span>{chip.label === 'All' ? t('all') : chip.label}</span>
+          </button>
+        ))}
+      </div>
 
-      {/* DB error */}
       {dbError && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-error-red text-xs font-mono">
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-error-red text-xs font-mono">
           <p className="font-bold">⚠️ {dbError}</p>
         </div>
       )}
 
-
-      {/* ── Daily Challenge Banner (Always Visible) ────────────────────────────── */}
-      <div className="premium-card p-4 bg-gradient-to-r from-accent/15 via-accent/5 to-transparent border-accent/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
-        <p className="text-[10px] font-bold text-accent uppercase tracking-widest font-mono mb-1">
-          {t('dailyChallenge')} 🔥
-        </p>
-        <h3 className="text-sm md:text-base font-bold text-foreground font-display mb-2">
+      {/* ── 2. DAILY CHALLENGE / RECOMMENDATION HERO BANNER ── */}
+      <div className="premium-card p-5 bg-gradient-to-r from-emerald-950/20 via-slate-950/40 to-transparent border-[#10B981]/15 relative overflow-hidden rounded-3xl">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#10B981]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center gap-2 mb-2">
+          <Flame className="w-4 h-4 text-[#10B981] animate-pulse" />
+          <p className="text-[10px] font-bold text-[#10B981] uppercase tracking-widest font-mono">
+            {t('dailyChallenge')} Live
+          </p>
+        </div>
+        <h3 className="text-base md:text-lg font-bold text-white font-display mb-3 max-w-lg leading-snug">
           {continueChapter 
-            ? `${t('testKnowledge')} ${continueChapter.title}`
-            : t('syllabusReview')}
+            ? `${t('testKnowledge')} "${continueChapter.title}"`
+            : "Review the daily high-yield syllabus podcast playlist."}
         </h3>
         <Link 
           href="/challenge" 
-          className="inline-flex items-center text-xs font-semibold text-slate-950 bg-accent hover:bg-amber-500 px-4 py-2 rounded-xl shadow-md transition-all duration-200"
+          className="inline-flex items-center text-xs font-bold text-slate-950 bg-[#10B981] hover:bg-emerald-400 px-5 py-2.5 rounded-full shadow-lg transition active:scale-95"
         >
-          <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20 animate-pulse" /> {t('playChallenge')}
+          <Target className="w-3.5 h-3.5 mr-1.5 fill-slate-950/20" /> 
+          <span>Start Daily Session</span>
         </Link>
       </div>
 
-      {/* ── Books Section ─────────────────────────────── */}
-      <div>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-foreground font-display flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-accent" />
-            {t('studyMaterial')}
-          </h2>
-          <span className="text-xs text-foreground/40 font-mono">{books.length} {t('booksCount')}</span>
+      {/* ── 3. RECOMMENDED SHELF: "MIXED FOR YOU / STUDY MATERIAL" ── */}
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
+            FOR FEELING FOCUS
+          </p>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
+              Mixed for you
+            </h2>
+            <span className="text-xs text-foreground/40 font-mono font-medium">
+              {filteredBooks.length} items
+            </span>
+          </div>
         </div>
 
-        {/* Subject Chips */}
-        <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-4">
-          {SUBJECT_CHIPS.map(chip => (
-            <button
-              key={chip.label}
-              onClick={() => setSelectedSubject(chip.label)}
-              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200 border ${
-                selectedSubject === chip.label
-                  ? 'bg-accent text-slate-950 border-accent shadow-md shadow-accent/20'
-                  : 'bg-white/5 border-white/10 text-foreground/60 hover:border-white/20'
-              }`}
-            >
-              <span>{chip.emoji}</span>
-              <span>{chip.label === 'All' ? t('all') : chip.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Books — horizontal scroll on mobile */}
         {filteredBooks.length === 0 ? (
-          <div className="premium-card p-8 text-center">
-            <p className="text-foreground/40 text-sm">No books found. Add data in Supabase.</p>
+          <div className="text-center py-12 bg-white/5 border border-dashed border-white/5 rounded-3xl">
+            <p className="text-xs text-foreground/45">No playlists found. Select another subject pill.</p>
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
+          <div className="flex gap-5 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
             {filteredBooks.map(book => {
+              // Mock progress calculation
               const progress = book.id === '00000000-0000-0000-0000-000000000001' ? 33 : 0;
-              const circumference = 2 * Math.PI * 16;
               return (
                 <Link
                   key={book.id}
                   href={`/books/${book.id}`}
-                  className="shrink-0 w-36 premium-card overflow-hidden flex flex-col group border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition-all rounded-[1.25rem] shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
+                  className="shrink-0 w-36 md:w-40 flex flex-col group space-y-2.5"
                 >
-                  {/* Cover */}
-                  <div className="relative h-44 overflow-hidden bg-primary/20">
+                  {/* Square Album Cover */}
+                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900 border border-white/5 shadow-md shadow-black/40">
                     <img
                       src={book.cover_image || ''}
                       alt={book.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-95"
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent opacity-100" />
-                    
-                    <span className="absolute top-2.5 left-2.5 text-[8px] bg-slate-950/40 backdrop-blur-md border border-white/20 text-foreground px-2 py-1 rounded-md font-bold uppercase tracking-widest shadow-sm">
-                      {book.subject}
-                    </span>
-                    
-                    {/* Floating Title inside Cover for premium feel */}
-                    <div className="absolute bottom-2.5 left-2.5 right-2.5">
-                       <h4 className="text-xs font-bold text-foreground leading-snug line-clamp-2 drop-shadow-md">{book.title}</h4>
+                    {/* Linear thin progress line inside cover */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 overflow-hidden">
+                      <div className="h-full bg-[#10B981] rounded-r" style={{ width: `${Math.max(progress, 2)}%` }} />
+                    </div>
+                    {/* Overlay play button on hover */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="bg-[#10B981] p-3 rounded-full text-slate-950 shadow-lg scale-90 group-hover:scale-100 transition-transform">
+                        <Play className="w-4 h-4 fill-current ml-0.5" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Info Panel */}
-                  <div className="p-3 flex-1 flex flex-col justify-between">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <p className="text-[9px] text-foreground/50 font-mono truncate mr-2">{book.author}</p>
-                      <span className="text-[9px] text-foreground/30 font-mono shrink-0 font-medium bg-white/5 px-1.5 py-0.5 rounded-sm">{book.total_chapters} CH</span>
-                    </div>
-
-                    {/* Clean Linear Progress */}
-                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent rounded-full transition-all duration-700 shadow-[0_0_8px_rgba(216,155,60,0.8)]" style={{ width: `${Math.max(progress, 2)}%` }} />
-                    </div>
-                    <div className="text-right text-[9px] font-mono text-accent font-bold mt-1 tracking-wide">{progress}% DONE</div>
+                  {/* Album Info Text */}
+                  <div className="space-y-0.5 px-0.5">
+                    <h4 className="text-xs font-bold text-white leading-tight truncate group-hover:text-[#10B981] transition-colors">
+                      {book.title}
+                    </h4>
+                    <p className="text-[10px] text-foreground/45 leading-normal truncate font-medium">
+                      By {book.author}
+                    </p>
                   </div>
                 </Link>
               );
@@ -204,143 +217,191 @@ export default function DashboardPage() {
         )}
       </div>
 
-
-
-      {/* ── 6. JTET Test Series Section ─────────────────────── */}
-      <div className="premium-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-accent/15 rounded-xl flex items-center justify-center">
-              <Award className="w-4 h-4 text-accent" />
-            </div>
-            <p className="text-xs font-bold text-foreground">{t('testSeries')}</p>
+      {/* ── 4. TRACKLIST SHELF: "QUICK PICKS / ALL CHAPTERS" ── */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
+              START LISTENING INSTANTLY
+            </p>
+            <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
+              Quick picks
+            </h2>
           </div>
-          <span className="text-[9px] bg-accent/10 text-accent font-extrabold uppercase px-2 py-0.5 rounded-md border border-accent/20 tracking-wider">
-            Premium Pack
-          </span>
+          <button 
+            onClick={() => {
+              if (filteredChapters.length > 0) {
+                router.push(`/lesson/${filteredChapters[0].id}`);
+              }
+            }}
+            className="text-xs border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white font-bold px-4 py-1.5 rounded-full transition active:scale-95"
+          >
+            Play all
+          </button>
         </div>
 
-        <div className="space-y-3.5">
-          {/* Test 1: Full Length Mock */}
-          <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="text-xs font-bold text-foreground leading-snug">JTET Full-Length Mock Test 1</h4>
-                <p className="text-[10px] text-foreground/45 mt-0.5">Paper I (Class 1-5)</p>
-              </div>
-              <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded-md">FREE</span>
-            </div>
-            
-            <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
-              <span>📝 150 {t('questions')}</span>
-              <span>⏱️ 150 {t('minutes')}</span>
-              <span>🎯 150 {t('marks')}</span>
-            </div>
+        {filteredChapters.length === 0 ? (
+          <div className="text-center py-16 bg-white/5 border border-dashed border-white/5 rounded-3xl">
+            <p className="text-xs text-foreground/45">No chapters found for this subject.</p>
+          </div>
+        ) : (
+          /* YT Music styled grid layout of track rows */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+            {filteredChapters.slice(0, 8).map(ch => {
+              const parentBook = books.find(b => b.id === ch.book_id);
+              const coverImg = parentBook?.cover_image || '';
+              const isHovered = hoveredItemId === ch.id;
 
-            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/5">
-              <div className="flex-1 bg-white/5 h-1 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '45%' }} />
-              </div>
-              <span className="text-[8px] font-mono font-bold text-emerald-400">45% Attempted</span>
-              <Link 
-                href="/test-series/mock-1"
-                className="bg-accent text-slate-950 text-[10px] font-extrabold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95 shadow-sm uppercase tracking-wider"
-              >
-                <PlayCircle className="w-3.5 h-3.5 fill-slate-950/20" /> {t('startTest')}
-              </Link>
+              return (
+                <div 
+                  key={ch.id}
+                  className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition duration-150 group cursor-pointer"
+                  onMouseEnter={() => setHoveredItemId(ch.id)}
+                  onMouseLeave={() => setHoveredItemId(null)}
+                  onClick={() => router.push(`/lesson/${ch.id}`)}
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {/* Chapter/Book Cover Thumbnail image */}
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-900 border border-white/5 shrink-0 shadow-md">
+                      <img 
+                        src={coverImg} 
+                        alt={ch.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'; }}
+                      />
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Play className="w-3.5 h-3.5 text-[#10B981] fill-current" />
+                      </div>
+                    </div>
+
+                    {/* Metadata details */}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-bold text-white leading-snug truncate group-hover:text-[#10B981] transition-colors">
+                        {ch.title}
+                      </h4>
+                      <p className="text-[10px] text-foreground/50 leading-normal mt-0.5 truncate font-medium">
+                        {parentBook?.title || 'Study Book'} • {parentBook?.author || 'PrepAI'} • {Math.round(ch.duration_seconds / 60)} Mins
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Playcount / Right icon */}
+                  <div className="flex items-center gap-2 shrink-0 pl-3">
+                    <span className="text-[10px] text-foreground/35 font-mono hidden sm:inline">
+                      {ch.is_free ? 'FREE' : 'GOLD'}
+                    </span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/lesson/${ch.id}`);
+                      }}
+                      className="p-1.5 text-foreground/40 hover:text-foreground hover:bg-white/5 rounded-full transition"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── 5. FORGOTTEN FAVOURITES: "TEST SERIES & MOCKS" ── */}
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] font-bold text-foreground/40 uppercase tracking-widest font-mono">
+            TEST YOUR CAPACITY
+          </p>
+          <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
+            Mock Test Series
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Mock Test 1 */}
+          <div className="p-4 rounded-2xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/50 transition flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Free
+              </span>
+              <h4 className="text-xs font-bold text-white mt-1.5 truncate">JTET Mock Paper I</h4>
+              <p className="text-[10px] text-foreground/45 mt-0.5 font-mono">150 Questions • 150 Mins</p>
             </div>
+            <Link 
+              href="/test-series/mock-1"
+              className="bg-[#10B981] hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold px-4 py-2 rounded-full shrink-0 transition active:scale-95 shadow"
+            >
+              Start
+            </Link>
           </div>
 
-          {/* Test 2: CSAT */}
-          <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="text-xs font-bold text-foreground leading-snug">JTET Paper II Mock Test 1</h4>
-                <p className="text-[10px] text-foreground/45 mt-0.5">Paper II (Class 6-8)</p>
-              </div>
-              <span className="text-[8px] bg-accent/15 text-accent font-bold px-2 py-0.5 rounded-md">PRO</span>
+          {/* Mock Test 2 */}
+          <div className="p-4 rounded-2xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/50 transition flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <span className="text-[8px] bg-indigo-500/10 text-indigo-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Gold
+              </span>
+              <h4 className="text-xs font-bold text-white mt-1.5 truncate">JTET Mock Paper II</h4>
+              <p className="text-[10px] text-foreground/45 mt-0.5 font-mono">150 Questions • 150 Mins</p>
             </div>
-            
-            <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
-              <span>📝 150 {t('questions')}</span>
-              <span>⏱️ 150 {t('minutes')}</span>
-              <span>🎯 150 {t('marks')}</span>
-            </div>
-
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/5">
-              <span className="text-[8px] font-mono text-foreground/30">Never Attempted</span>
-              <Link 
-                href="/test-series/mock-2"
-                className="bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
-              >
-                <PlayCircle className="w-3.5 h-3.5" /> {t('startTest')}
-              </Link>
-            </div>
+            <Link 
+              href="/test-series/mock-2"
+              className="bg-white/5 border border-white/10 hover:border-white/20 text-white text-[10px] font-extrabold px-4 py-2 rounded-full shrink-0 transition active:scale-95"
+            >
+              Start
+            </Link>
           </div>
 
-          {/* Test 3: Sectional Test */}
-          <div className="p-3.5 rounded-2xl border border-white/5 bg-slate-900/40 hover:bg-slate-900/60 transition duration-200">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="text-xs font-bold text-foreground leading-snug">Daily Mini Test (Polity)</h4>
-                <p className="text-[10px] text-foreground/45 mt-0.5">Syllabus-wise Sectional Test</p>
-              </div>
-              <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded-md">FREE</span>
+          {/* Mock Test 3 */}
+          <div className="p-4 rounded-2xl border border-white/5 bg-slate-900/30 hover:bg-slate-900/50 transition flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <span className="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Free
+              </span>
+              <h4 className="text-xs font-bold text-white mt-1.5 truncate">Daily Sectional Test</h4>
+              <p className="text-[10px] text-foreground/45 mt-0.5 font-mono">20 Questions • 20 Mins</p>
             </div>
-            
-            <div className="flex items-center gap-4 text-[9px] text-foreground/40 font-mono mt-3">
-              <span>📝 20 {t('questions')}</span>
-              <span>⏱️ 20 {t('minutes')}</span>
-              <span>🎯 40 {t('marks')}</span>
-            </div>
-
-            <div className="flex items-center gap-3 mt-4 pt-3 border-t border-white/5">
-              <div className="flex-1 bg-white/5 h-1 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '100%' }} />
-              </div>
-              <span className="text-[8px] font-mono font-bold text-emerald-400">100% Score: 36/40</span>
-              <Link 
-                href="/test-series/mock-1"
-                className="bg-white/5 border border-white/10 hover:border-accent hover:text-accent text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition active:scale-95"
-              >
-                Re-take
-              </Link>
-            </div>
+            <Link 
+              href="/test-series/mock-1"
+              className="bg-white/5 border border-white/10 hover:border-white/20 text-white text-[10px] font-extrabold px-4 py-2 rounded-full shrink-0 transition active:scale-95"
+            >
+              Start
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* ── 7. Weekly Activity ─────────────────────────── */}
-      <div className="premium-card p-5">
+      {/* ── 6. WEEKLY ANALYTICS CHART ── */}
+      <div className="premium-card p-5 bg-slate-950/40 border border-white/5 rounded-3xl">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 bg-indigo-500/15 rounded-xl flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-indigo-400" />
+          <div className="w-8 h-8 bg-[#10B981]/15 rounded-xl flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-[#10B981]" />
           </div>
           <div>
-            <p className="text-xs font-bold text-foreground">Weekly Activity</p>
-            <p className="text-[10px] text-foreground/40 font-mono">Minutes studied per day</p>
+            <p className="text-xs font-bold text-white">Syllabus Listening Activity</p>
+            <p className="text-[9px] text-foreground/40 font-mono uppercase">Minutes studied per day</p>
           </div>
         </div>
 
-        <div className="w-full h-24 relative">
+        <div className="w-full h-20 relative">
           <svg className="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
             <defs>
               <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#D89B3C" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#D89B3C" stopOpacity="0" />
+                <stop offset="0%" stopColor="#10B981" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path d="M0 70 L43 55 L86 63 L129 30 L172 47 L215 12 L258 22 L300 18 L300 80 L0 80Z" fill="url(#grad)" />
-            <path d="M0 70 L43 55 L86 63 L129 30 L172 47 L215 12 L258 22 L300 18" fill="none" stroke="#D89B3C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M0 70 L43 55 L86 63 L129 30 L172 47 L215 12 L258 22 L300 18" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <div className="flex justify-between text-[9px] text-foreground/35 font-mono uppercase mt-1">
+        <div className="flex justify-between text-[9px] text-foreground/35 font-mono uppercase mt-2 px-1">
           {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => <span key={d}>{d}</span>)}
         </div>
       </div>
 
-      {/* Bottom padding for tab bar */}
-      <div className="h-4" />
     </div>
   );
 }

@@ -130,6 +130,23 @@ export const db = {
     return [];
   },
 
+  // 5.5 Get All Chapters (for dashboard Quick picks)
+  async getAllChapters(limitNum: number = 30): Promise<Chapter[]> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('chapters')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limitNum);
+        if (!error && data) return data as Chapter[];
+      } catch (err) {
+        console.error('Error fetching all chapters:', err);
+      }
+    }
+    return [];
+  },
+
   // 6. Get Chapter Details
   async getChapter(chapterId: string): Promise<Chapter | undefined> {
     if (supabase) {
