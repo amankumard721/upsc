@@ -563,19 +563,15 @@ export const db = {
     const id = generateUUID();
     const newSub = { id, created_at: new Date().toISOString(), ...subject };
     if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('subjects')
-          .insert(newSub)
-          .select()
-          .single();
-        if (!error && data) return data;
-        if (error) {
-          console.error('Supabase error inserting subject:', error.message);
-        }
-      } catch (err) {
-        console.warn('Subjects table insert failed. Storing locally:', err);
+      const { data, error } = await supabase
+        .from('subjects')
+        .insert(newSub)
+        .select()
+        .single();
+      if (error) {
+        throw new Error(`Database Error: ${error.message}. Please run the SQL in Supabase to create the 'subjects' table.`);
       }
+      if (data) return data;
     }
     const list = await this.getSubjects();
     if (!list.some(s => s.name.toLowerCase() === subject.name.toLowerCase())) {
@@ -588,20 +584,16 @@ export const db = {
   // 25. Update Subject (Edit Feature)
   async updateSubject(id: string, updates: { name: string; emoji: string; rank_order: number }): Promise<any> {
     if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('subjects')
-          .update(updates)
-          .eq('id', id)
-          .select()
-          .single();
-        if (!error && data) return data;
-        if (error) {
-          console.error('Supabase error updating subject:', error.message);
-        }
-      } catch (err) {
-        console.warn('Subjects table update failed. Updating locally:', err);
+      const { data, error } = await supabase
+        .from('subjects')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) {
+        throw new Error(`Database Error: ${error.message}. Please verify table permissions/RLS.`);
       }
+      if (data) return data;
     }
     const list = await this.getSubjects();
     const updatedList = list.map(s => s.id === id ? { ...s, ...updates } : s);
@@ -612,18 +604,14 @@ export const db = {
   // 26. Delete Subject
   async deleteSubject(id: string): Promise<boolean> {
     if (supabase) {
-      try {
-        const { error } = await supabase
-          .from('subjects')
-          .delete()
-          .eq('id', id);
-        if (!error) return true;
-        if (error) {
-          console.error('Supabase error deleting subject:', error.message);
-        }
-      } catch (err) {
-        console.warn('Subjects table delete failed:', err);
+      const { error } = await supabase
+        .from('subjects')
+        .delete()
+        .eq('id', id);
+      if (error) {
+        throw new Error(`Database Error: ${error.message}. Please verify table permissions/RLS.`);
       }
+      return true;
     }
     const list = await this.getSubjects();
     const filtered = list.filter(s => s.id !== id);
