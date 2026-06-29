@@ -10,10 +10,8 @@ import {
   Search, 
   Lock, 
   Play, 
-  Pause,
   CheckCircle2, 
   Clock, 
-  Sparkles,
   Award,
   MoreVertical,
   Share2,
@@ -31,14 +29,13 @@ export default function BookDetailsPage({ params }: BookPageProps) {
   
   const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [progressList, setProgressList] = useState<UserProgress[]>([]);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Completed' | 'Incomplete'>('All');
   const [loading, setLoading] = useState(true);
-
-  // Hover states for track index
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,12 +49,16 @@ export default function BookDetailsPage({ params }: BookPageProps) {
         setBook(bookData);
 
         const chs = await db.getChapters(bookId);
-        // Sort chapters by chapter number
         chs.sort((a, b) => a.chapter_number - b.chapter_number);
         setChapters(chs);
 
         const prof = await db.getUserProfile();
         setProfile(prof);
+
+        // Fetch related books in the same subject
+        const booksData = await db.getBooks();
+        const related = booksData.filter(b => b.subject === bookData.subject && b.id !== bookData.id);
+        setRelatedBooks(related);
 
         // Load progress
         if (typeof window !== 'undefined') {
@@ -77,7 +78,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="w-12 h-12 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-foreground/45 font-medium font-mono">Loading playlists & tracks...</p>
+        <p className="text-xs text-foreground/45 font-medium font-mono">Loading subject materials...</p>
       </div>
     );
   }
@@ -85,7 +86,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
   if (!book) {
     return (
       <div className="text-center py-24 space-y-6">
-        <p className="text-foreground/50 text-sm">Book not found in PrepAI database.</p>
+        <p className="text-foreground/50 text-sm">Subject material not found.</p>
         <Link href="/dashboard" className="text-[#10B981] hover:underline inline-flex items-center space-x-1 text-xs font-bold">
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Dashboard</span>
@@ -93,10 +94,6 @@ export default function BookDetailsPage({ params }: BookPageProps) {
       </div>
     );
   }
-
-  // Stats calculation
-  const completedChaptersCount = progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length;
-  const progressPercent = chapters.length > 0 ? Math.round((completedChaptersCount / chapters.length) * 100) : 0;
 
   // Filter logic
   const filteredChapters = chapters.filter(ch => {
@@ -113,16 +110,12 @@ export default function BookDetailsPage({ params }: BookPageProps) {
     return matchesSearch && matchesStatus;
   });
 
-  const handlePlayFirst = () => {
-    if (chapters.length > 0) {
-      router.push(`/lesson/${chapters[0].id}`);
-    }
-  };
-
   return (
-    <div className="space-y-10 font-sans pb-16">
-      
-      {/* Back navigation & Header label */}
+    <div className="space-y-8 font-sans pb-16 relative">
+      {/* Background soft teal glow */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#10B981]/5 rounded-full blur-[100px] pointer-events-none" />
+
+      {/* --- Top Navigation & Page Title --- */}
       <div className="flex items-center justify-between">
         <Link 
           href="/dashboard" 
@@ -131,266 +124,238 @@ export default function BookDetailsPage({ params }: BookPageProps) {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Library</span>
         </Link>
-        <span className="text-[10px] uppercase font-bold text-foreground/45 tracking-widest font-mono">
-          PLAYLIST DETAIL
+        <span className="text-[10px] uppercase font-bold text-[#10B981] tracking-widest font-mono">
+          {book.subject} PORTAL
         </span>
       </div>
 
+      {/* --- YouTube Music Style Category / Mood Header --- */}
+      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+        {(['All', 'Completed', 'Incomplete'] as const).map(filter => (
+          <button
+            key={filter}
+            onClick={() => setStatusFilter(filter)}
+            className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
+              statusFilter === filter
+                ? 'bg-[#10B981] border-[#10B981] text-slate-950 font-bold shadow-md shadow-[#10B981]/15'
+                : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10'
+            }`}
+          >
+            {filter}
+          </button>
+        ))}
+      </div>
+
       {/* ========================================================
-          YOUTUBE MUSIC ALBUM HEADER LAYOUT
+          1. TOP HORIZONTAL SHELF: "BOOK AND BOOK TITLED AUTHOR"
          ======================================================== */}
-      <div className="flex flex-col md:flex-row gap-8 items-start relative">
-        {/* Soft atmospheric blurred background glow matching the cover art */}
-        <div className="absolute -top-16 -left-16 w-80 h-80 bg-[#10B981]/5 rounded-full blur-[80px] pointer-events-none" />
-        
-        {/* Cover Art Image Box */}
-        <div className="relative w-48 h-64 md:w-56 md:h-76 flex-shrink-0 rounded-2xl overflow-hidden group shadow-[0_15px_35px_rgba(0,0,0,0.5)] border border-white/10 self-center md:self-start">
-          <img 
-            src={book.cover_image} 
-            alt={book.title} 
-            className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-            <button 
-              onClick={handlePlayFirst}
-              className="bg-[#10B981] text-slate-950 p-4 rounded-full shadow-lg active:scale-90 transition-transform"
-            >
-              <Play className="w-6 h-6 fill-current" />
-            </button>
-          </div>
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
+            {book.subject} CATALOG
+          </p>
+          <h2 className="text-lg font-extrabold text-white font-display tracking-tight">
+            Featured Playlists & Books
+          </h2>
         </div>
 
-        {/* Playlist metadata details */}
-        <div className="flex-1 space-y-5 text-center md:text-left">
-          <div className="space-y-2">
-            <span className="text-[9px] bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
-              {book.subject}
-            </span>
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-tight font-display tracking-tight mt-2">
-              {book.title}
-            </h1>
-            <p className="text-sm font-semibold text-[#10B981] hover:underline cursor-pointer">
-              By {book.author}
-            </p>
-            <p className="text-xs text-foreground/45 mt-1 font-mono">
-              Playlist • {chapters.length} chapters • {Math.round(chapters.reduce((acc, c) => acc + c.duration_seconds, 0) / 60)} mins total
-            </p>
-          </div>
-
-          <div className="text-xs text-foreground/60 leading-relaxed font-light max-w-xl">
-            Syllabus chapter lectures compiled into custom playlists with auto-reader highlights, key summaries, and mock test compilers.
-          </div>
-
-          {/* Progress Indicators */}
-          <div className="space-y-1.5 max-w-sm mx-auto md:mx-0">
-            <div className="flex justify-between text-[10px] font-bold text-foreground/50 font-mono">
-              <span>PLAYBACK PROGRESS</span>
-              <span>{progressPercent}% ({completedChaptersCount}/{chapters.length} completed)</span>
-            </div>
-            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-              <div 
-                className="h-full bg-gradient-to-r from-[#10B981] to-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
-                style={{ width: `${progressPercent}%` }}
+        <div className="flex gap-5 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
+          {/* Active Book Card (Always first) */}
+          <div className="shrink-0 w-36 md:w-40 flex flex-col space-y-2.5">
+            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900 border-2 border-[#10B981] shadow-lg shadow-[#10B981]/10">
+              <img
+                src={book.cover_image}
+                alt={book.title}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
               />
+              <div className="absolute top-2.5 right-2.5 bg-[#10B981] text-slate-950 text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Active
+              </div>
+            </div>
+            <div className="space-y-0.5 px-0.5">
+              <h4 className="text-xs font-bold text-[#10B981] leading-tight truncate">
+                {book.title}
+              </h4>
+              <p className="text-[10px] text-foreground/50 leading-normal truncate font-medium">
+                By {book.author}
+              </p>
             </div>
           </div>
 
-          {/* Action buttons (YouTube Music styled buttons) */}
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2">
-            <button 
-              onClick={handlePlayFirst}
-              className="bg-white text-black hover:bg-white/95 font-bold text-xs px-6 py-3 rounded-full flex items-center gap-2 active:scale-95 transition-all shadow-md"
+          {/* Related books in subject */}
+          {relatedBooks.map(rel => (
+            <Link
+              key={rel.id}
+              href={`/books/${rel.id}`}
+              className="shrink-0 w-36 md:w-40 flex flex-col group space-y-2.5"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Listen Now</span>
-            </button>
-            
-            <button 
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert("Playlist link copied to clipboard!");
-              }}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs px-5 py-3 rounded-full flex items-center gap-2 active:scale-95 transition-all"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share</span>
-            </button>
+              <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900 border border-white/5 shadow-md hover:border-white/20 transition-all">
+                <img
+                  src={rel.cover_image}
+                  alt={rel.title}
+                  className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                  onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="bg-[#10B981] p-3 rounded-full text-slate-950 shadow-lg">
+                    <Play className="w-4 h-4 fill-current ml-0.5" />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-0.5 px-0.5">
+                <h4 className="text-xs font-bold text-white leading-tight truncate group-hover:text-[#10B981] transition-colors">
+                  {rel.title}
+                </h4>
+                <p className="text-[10px] text-foreground/50 leading-normal truncate font-medium">
+                  By {rel.author}
+                </p>
+              </div>
+            </Link>
+          ))}
 
-            <button 
-              onClick={() => alert("Added book playlist to your custom dashboard shortcut.")}
-              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs p-3 rounded-full flex items-center justify-center active:scale-95 transition-all"
-              title="Add to Library"
-            >
-              <ListPlus className="w-4 h-4" />
-            </button>
-          </div>
+          {relatedBooks.length === 0 && (
+            <div className="shrink-0 w-36 md:w-40 flex flex-col items-center justify-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01] h-36">
+              <span className="text-[9px] text-foreground/35 text-center px-4 font-mono">No other books in this subject.</span>
+            </div>
+          )}
         </div>
       </div>
 
       <hr className="border-white/5" />
 
       {/* ========================================================
-          FILTER CHIPS & SEARCH SECTION
+          2. MIDDLE SECTION: "QUICK PICKS / CHAPTERS LIST"
          ======================================================== */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Mood/Status Filter pills (YouTube Music mood filters style) */}
-        <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
-          {(['All', 'Completed', 'Incomplete'] as const).map(filter => (
-            <button
-              key={filter}
-              onClick={() => setStatusFilter(filter)}
-              className={`text-xs px-4 py-2 rounded-full transition-all border font-semibold ${
-                statusFilter === filter
-                  ? 'bg-[#10B981] border-[#10B981] text-slate-950 font-bold shadow-md'
-                  : 'bg-white/5 border-white/10 text-foreground/75 hover:bg-white/10 hover:border-white/20'
-              }`}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
+              CHAPTER LIST WITH PLAY BUTTON
+            </p>
+            <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
+              Quick picks
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Search Input bar */}
+            <div className="relative w-44 sm:w-56">
+              <Search className="absolute left-3 top-3 w-3 h-3 text-foreground/40" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tracks..."
+                className="w-full bg-white/5 border border-white/10 focus:border-[#10B981] text-[10px] rounded-full pl-8 pr-3 py-2 outline-none transition-all placeholder:text-foreground/30"
+              />
+            </div>
+            
+            <button 
+              onClick={() => {
+                if (filteredChapters.length > 0) {
+                  router.push(`/lesson/${filteredChapters[0].id}`);
+                }
+              }}
+              className="text-[10px] border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white font-bold px-4 py-2 rounded-full transition active:scale-95 shrink-0"
             >
-              {filter}
+              Play all
             </button>
-          ))}
+          </div>
         </div>
 
-        {/* Search Input bar */}
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3.5 top-3.5 w-3.5 h-3.5 text-foreground/45" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tracks..."
-            className="w-full bg-white/5 border border-white/10 focus:border-[#10B981] text-xs rounded-full pl-10 pr-4 py-3 outline-none transition-all placeholder:text-foreground/35"
-          />
-        </div>
-      </div>
-
-      {/* ========================================================
-          YOUTUBE MUSIC TRACKLIST ROWS
-         ======================================================== */}
-      <div className="space-y-0.5">
         {filteredChapters.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-white/5 rounded-3xl bg-slate-950/20">
-            <p className="text-xs text-foreground/35">No tracks match your search filters.</p>
+            <p className="text-xs text-foreground/35">No tracks match your filter criteria.</p>
           </div>
         ) : (
-          filteredChapters.map((ch, index) => {
-            const progObj = progressList.find(p => p.chapter_id === ch.id);
-            const isCompleted = progObj?.is_completed || false;
-            const hasAccess = ch.is_free || profile?.is_premium;
-            
-            // Format index number (e.g. 01, 02)
-            const trackIndexStr = (index + 1).toString().padStart(2, '0');
-            const isHovered = hoveredTrackId === ch.id;
+          /* YT Music styled grid layout of track rows. Displays parent book cover for all tracks. */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+            {filteredChapters.map(ch => {
+              const progObj = progressList.find(p => p.chapter_id === ch.id);
+              const isCompleted = progObj?.is_completed || false;
+              const hasAccess = ch.is_free || profile?.is_premium;
+              const isHovered = hoveredTrackId === ch.id;
 
-            return (
-              <div 
-                key={ch.id} 
-                className={`flex items-center justify-between py-3.5 px-4 rounded-xl transition-all duration-150 ${
-                  isHovered ? 'bg-white/5' : 'bg-transparent'
-                } ${!hasAccess ? 'opacity-65' : ''}`}
-                onMouseEnter={() => setHoveredTrackId(ch.id)}
-                onMouseLeave={() => setHoveredTrackId(null)}
-              >
-                {/* Left Section: Index / Play Icon & Track Meta */}
-                <div className="flex items-center gap-4 min-w-0 flex-1">
-                  
-                  {/* Track Index or Play Action Indicator */}
-                  <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-xs font-mono font-bold text-foreground/40">
-                    {isHovered && hasAccess ? (
-                      <Link href={`/lesson/${ch.id}`}>
-                        <PlayCircle className="w-5 h-5 text-[#10B981] cursor-pointer hover:scale-115 transition-transform" />
-                      </Link>
-                    ) : isHovered && !hasAccess ? (
-                      <Link href="/profile">
-                        <Lock className="w-4 h-4 text-indigo-400" />
-                      </Link>
-                    ) : (
-                      <span>{trackIndexStr}</span>
-                    )}
-                  </div>
-
-                  {/* Title & details row */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-semibold text-white leading-snug truncate">
-                        {ch.title}
-                      </h4>
-                      
-                      {/* Completed badge */}
-                      {isCompleted && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 fill-emerald-500/10 shrink-0" />
-                      )}
-                      
-                      {/* Premium/Free badge */}
-                      {ch.is_free ? (
-                        <span className="text-[8px] text-[#10B981] bg-[#10B981]/15 border border-[#10B981]/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          Free
-                        </span>
-                      ) : (
-                        <span className="text-[8px] text-indigo-400 bg-indigo-500/15 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-0.5">
-                          <Award className="w-2.5 h-2.5" />
-                          <span>Gold</span>
-                        </span>
-                      )}
+              return (
+                <div 
+                  key={ch.id}
+                  className={`flex items-center justify-between p-2.5 rounded-xl hover:bg-white/5 transition duration-150 group cursor-pointer ${
+                    !hasAccess ? 'opacity-65' : ''
+                  }`}
+                  onMouseEnter={() => setHoveredTrackId(ch.id)}
+                  onMouseLeave={() => setHoveredTrackId(null)}
+                  onClick={() => {
+                    if (hasAccess) {
+                      router.push(`/lesson/${ch.id}`);
+                    } else {
+                      router.push('/profile');
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    {/* Chapter Thumbnail Image (Using the book's cover art) */}
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-900 border border-white/5 shrink-0 shadow-md">
+                      <img 
+                        src={book.cover_image} 
+                        alt={ch.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'; }}
+                      />
+                      {/* Play or Lock overlay icon */}
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {hasAccess ? (
+                          <Play className="w-3.5 h-3.5 text-[#10B981] fill-current" />
+                        ) : (
+                          <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                        )}
+                      </div>
                     </div>
-                    
-                    {/* Chapter description & duration */}
-                    <p className="text-xs text-foreground/50 font-light truncate mt-1 max-w-xl">
-                      {ch.description}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Right Section: Time, CTA Button, Options menu */}
-                <div className="flex items-center gap-4 shrink-0 pl-4">
-                  {/* Track Duration */}
-                  <span className="text-[11px] text-foreground/40 font-mono flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{Math.round(ch.duration_seconds / 60)}:00</span>
-                  </span>
-
-                  {/* CTA button (Pill or lock) */}
-                  <div className="hidden sm:block">
-                    {hasAccess ? (
-                      <Link
-                        href={`/lesson/${ch.id}`}
-                        className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-all ${
-                          isHovered 
-                            ? 'bg-[#10B981] text-slate-950' 
-                            : 'bg-white/5 border border-white/10 text-white/90 hover:bg-white/10'
-                        }`}
-                      >
-                        Listen
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/profile"
-                        className="text-[10px] font-bold bg-indigo-950/40 border border-indigo-500/35 hover:border-indigo-400 text-indigo-400 px-3 py-1.5 rounded-full transition-all flex items-center gap-1"
-                      >
-                        <Lock className="w-3 h-3" />
-                        <span>Unlock</span>
-                      </Link>
-                    )}
+                    {/* Metadata details */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-xs font-bold text-white leading-snug truncate group-hover:text-[#10B981] transition-colors">
+                          {ch.title}
+                        </h4>
+                        {isCompleted && (
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 fill-emerald-500/10 shrink-0" />
+                        )}
+                      </div>
+                      
+                      <p className="text-[10px] text-foreground/50 leading-normal mt-0.5 truncate font-medium">
+                        {book.title} • By {book.author} • {Math.round(ch.duration_seconds / 60)} Mins play
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Options Menu button */}
-                  <button 
-                    onClick={() => {
-                      if (hasAccess) {
-                        router.push(`/lesson/${ch.id}`);
-                      } else {
-                        router.push('/profile');
-                      }
-                    }}
-                    className="p-1.5 text-foreground/40 hover:text-foreground hover:bg-white/5 rounded-full transition"
-                    title="Actions"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </div>
+                  {/* Play count / Status badge / Option trigger */}
+                  <div className="flex items-center gap-3 shrink-0 pl-3">
+                    <span className="text-[9px] font-bold font-mono text-foreground/35">
+                      {ch.is_free ? (
+                        <span className="text-[#10B981] bg-[#10B981]/10 px-1.5 py-0.5 rounded">FREE</span>
+                      ) : (
+                        <span className="text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">GOLD</span>
+                      )}
+                    </span>
 
-              </div>
-            );
-          })
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (hasAccess) {
+                          router.push(`/lesson/${ch.id}`);
+                        } else {
+                          router.push('/profile');
+                        }
+                      }}
+                      className="p-1.5 text-foreground/45 hover:text-foreground hover:bg-white/5 rounded-full transition"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
