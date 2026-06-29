@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useRef, use } from 'react';
+import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { Chapter, Book } from '@/types';
+import { useAudio } from '@/contexts/AudioContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Pause, SkipBack, SkipForward, ArrowLeft,
@@ -13,24 +14,7 @@ import {
   RotateCcw, RotateCw, Shuffle, Volume2, ListMusic, ListCollapse
 } from 'lucide-react';
 
-// --- Types ---
-interface Scene {
-  title: string;
-  icon: string;
-  theme: string;
-  lines: string[];
-}
-
-interface Lesson {
-  title: string;
-  scenes: Scene[];
-}
-
-interface FlatLine {
-  sceneIdx: number;
-  lineText: string;
-  words: string[];
-}
+const BASE_LINE_MS = 4000;
 
 function getYoutubeId(url: string | undefined | null) {
   if (!url) return null;
@@ -39,196 +23,80 @@ function getYoutubeId(url: string | undefined | null) {
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// --- Mock Data Generator ---
-function generateMockLesson(chapter: Chapter): Lesson {
-  const defaultScenes: Scene[] = [
-    { title: "Introduction", icon: "📖", theme: "bg-indigo-900", lines: ["Welcome to this lesson.", "Today we are going to explore some fascinating concepts.", "Let's dive right in."] },
-    { title: "Core Concepts", icon: "🧠", theme: "bg-emerald-900", lines: ["The primary idea revolves around foundational principles.", "Understanding these is crucial for mastery.", "Take your time to absorb the details."] },
-    { title: "Summary", icon: "✨", theme: "bg-amber-900", lines: ["We have covered a lot of ground today.", "Review the notes if you need a refresher.", "Great job completing the lesson!"] }
-  ];
-
-  if (chapter.content_text && chapter.content_text.length > 50) {
-    const rawSentences = chapter.content_text.match(/[^.!?]+[.!?]+(\s|$)/g)?.map(s => s.trim()).filter(Boolean) || [chapter.content_text];
-    const chunk = Math.ceil(rawSentences.length / 3);
-    return {
-      title: chapter.title,
-      scenes: [
-        { title: "Introduction", icon: "📖", theme: "bg-indigo-950", lines: rawSentences.slice(0, chunk).length ? rawSentences.slice(0, chunk) : ["Welcome to this chapter."] },
-        { title: "Deep Dive", icon: "⚖️", theme: "bg-slate-900", lines: rawSentences.slice(chunk, chunk * 2).length ? rawSentences.slice(chunk, chunk * 2) : ["Let's explore further."] },
-        { title: "Conclusion", icon: "✨", theme: "bg-stone-900", lines: rawSentences.slice(chunk * 2).length ? rawSentences.slice(chunk * 2) : ["That concludes our topic."] }
-      ].filter(s => s.lines.length > 0)
-    };
-  }
-
-  return { title: chapter.title, scenes: defaultScenes };
+function formatTime(seconds: number) {
+  if (isNaN(seconds)) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
-
-const BASE_LINE_MS = 4000; // 4 seconds per line at 1x speed
 
 export default function LessonPlayerPage({ params }: { params: Promise<{ chapterId: string }> }) {
   const router = useRouter();
   const { chapterId } = use(params);
+  const audio = useAudio();
 
-  // Data
+  // Local UI state
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [book, setBook] = useState<Book | null>(null);
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [flatLines, setFlatLines] = useState<FlatLine[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Playback State
-  const [mode, setMode] = useState<'video' | 'podcast'>('podcast'); // default to podcast to match playing now
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [cursor, setCursor] = useState(0);       // Index into flatLines
-  const [wordIdx, setWordIdx] = useState(0);     // Index into current line's words
-  const [ended, setEnded] = useState(false);
+  const [mode, setMode] = useState<'video' | 'podcast'>('podcast');
   const [isTheater, setIsTheater] = useState(false);
-
-  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
-
-  // Interaction State
   const [liked, setLiked] = useState<'up' | 'down' | null>(null);
   const [likeCount, setLikeCount] = useState(66);
 
-  // Refs for timer and speech
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const lastTimeRef = useRef<number>(0);
-  const elapsedMsRef = useRef<number>(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Load Data
+  // Load data & start track
   useEffect(() => {
     db.getChapter(chapterId).then(ch => {
       if (ch) {
         setChapter(ch);
-        const l = generateMockLesson(ch);
-        setLesson(l);
-        
-        // Fetch book cover
         db.getBook(ch.book_id).then(b => setBook(b || null));
 
-        // Flatten scenes
-        const flat: FlatLine[] = [];
-        l.scenes.forEach((scene, sIdx) => {
-          scene.lines.forEach(line => {
-            flat.push({
-              sceneIdx: sIdx,
-              lineText: line,
-              words: line.split(' ')
-            });
-          });
+        // Start track in global audio context (if already same track, resumes)
+        audio.startTrack({
+          chapterId: ch.id,
+          chapterTitle: ch.title,
+          chapterNumber: ch.chapter_number,
+          bookTitle: '',
+          bookCover: '',
+          bookAuthor: '',
+          contentText: ch.content_text,
+          audioUrl: ch.audio_url || undefined,
+          videoUrl: ch.video_url || undefined,
         });
-        setFlatLines(flat);
       }
       setLoading(false);
     });
-
-    return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterId]);
 
-  // Playback Engine
+  // Update track with book info when available
   useEffect(() => {
-    if (!isPlaying || ended || flatLines.length === 0) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-      if (audioRef.current) audioRef.current.pause();
-      return;
+    if (book && audio.track?.chapterId === chapterId) {
+      audio.startTrack({
+        ...audio.track,
+        bookTitle: book.title,
+        bookCover: book.cover_image,
+        bookAuthor: book.author,
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book]);
 
-    const currentLine = flatLines[cursor];
-    const totalLineMs = BASE_LINE_MS / playbackSpeed;
-    const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100);
-
-    if (chapter?.audio_url) {
-      if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().catch(console.error);
-      }
-      
-      lastTimeRef.current = performance.now();
-      timerRef.current = setInterval(() => {
-        const now = performance.now();
-        const delta = now - lastTimeRef.current;
-        lastTimeRef.current = now;
-        elapsedMsRef.current += delta;
-
-        // Roughly match word tracking
-        const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
-        setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
-
-        if (elapsedMsRef.current >= totalLineMs) {
-          elapsedMsRef.current = 0;
-          setWordIdx(0);
-          if (cursor + 1 < flatLines.length) {
-            setCursor(c => c + 1);
-          } else {
-            setEnded(true);
-            setIsPlaying(false);
-          }
-        }
-      }, 50);
-
-    } else {
-      if (elapsedMsRef.current === 0 && typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
-        utterance.rate = playbackSpeed * 1.1; 
-        const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find(v => v.lang.startsWith('en-IN') || v.name.includes('Google') || v.lang.startsWith('hi-IN'));
-        if (preferred) utterance.voice = preferred;
-        synthRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
-      }
-
-      lastTimeRef.current = performance.now();
-      
-      timerRef.current = setInterval(() => {
-        const now = performance.now();
-        const delta = now - lastTimeRef.current;
-        lastTimeRef.current = now;
-        elapsedMsRef.current += delta;
-
-        if (elapsedMsRef.current >= totalLineMs) {
-          elapsedMsRef.current = 0;
-          setWordIdx(0);
-          if (cursor + 1 >= flatLines.length) {
-            setIsPlaying(false);
-            setEnded(true);
-          } else {
-            setCursor(c => c + 1);
-          }
-        } else {
-          const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
-          setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
-        }
-      }, 50);
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isPlaying, cursor, playbackSpeed, ended, flatLines, chapter]);
-
-  // Save Progress
+  // Save progress
   useEffect(() => {
     if (typeof window !== 'undefined' && chapter) {
       try {
         const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
         const existingIdx = list.findIndex((p: any) => p.chapter_id === chapterId);
         
-        const isCompleted = ended || (existingIdx !== -1 && list[existingIdx].is_completed);
+        const isCompleted = audio.ended || (existingIdx !== -1 && list[existingIdx].is_completed);
         
         const newProg = {
           id: existingIdx !== -1 ? list[existingIdx].id : Math.random().toString(36).substr(2, 9),
           user_id: 'default-user',
           chapter_id: chapterId,
           is_completed: isCompleted,
-          last_position_seconds: (cursor * BASE_LINE_MS) / 1000,
+          last_position_seconds: (audio.cursor * BASE_LINE_MS) / 1000,
           score: existingIdx !== -1 ? list[existingIdx].score : 0,
           completed_at: isCompleted ? new Date().toISOString() : (existingIdx !== -1 ? list[existingIdx].completed_at : undefined)
         };
@@ -243,88 +111,9 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         console.error("Failed to save progress", err);
       }
     }
-  }, [cursor, ended, chapter, chapterId]);
+  }, [audio.cursor, audio.ended, chapter, chapterId]);
 
-  // Controls
-  const togglePlay = () => {
-    if (ended) {
-      setCursor(0);
-      setWordIdx(0);
-      elapsedMsRef.current = 0;
-      setEnded(false);
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const seekBy = (linesDelta: number) => {
-    let newCursor = cursor + linesDelta;
-    if (newCursor < 0) newCursor = 0;
-    if (newCursor >= flatLines.length) {
-      newCursor = flatLines.length - 1;
-      setEnded(true);
-      setIsPlaying(false);
-    } else {
-      setEnded(false);
-    }
-    setCursor(newCursor);
-    setWordIdx(0);
-    elapsedMsRef.current = 0;
-    if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-  };
-
-  const jumpToScene = (sceneIdx: number) => {
-    const idx = flatLines.findIndex(f => f.sceneIdx === sceneIdx);
-    if (idx !== -1) {
-      setCursor(idx);
-      setWordIdx(0);
-      elapsedMsRef.current = 0;
-      setEnded(false);
-      setIsPlaying(true);
-    }
-  };
-
-  const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percentage = clickX / rect.width;
-    
-    if (chapter?.audio_url && audioRef.current) {
-      const newTime = percentage * audioDuration;
-      audioRef.current.currentTime = newTime;
-      setAudioCurrentTime(newTime);
-      
-      const totalLines = flatLines.length;
-      const newCursor = Math.min(Math.floor(percentage * totalLines), totalLines - 1);
-      setCursor(newCursor);
-      setWordIdx(0);
-    } else {
-      const totalLines = flatLines.length;
-      const newCursor = Math.min(Math.floor(percentage * totalLines), totalLines - 1);
-      setCursor(newCursor);
-      setWordIdx(0);
-      elapsedMsRef.current = 0;
-    }
-  };
-
-  const handleSkipTime = (direction: 'forward' | 'backward') => {
-    if (chapter?.audio_url && audioRef.current) {
-      const delta = direction === 'forward' ? 10 : -10;
-      let newTime = audioRef.current.currentTime + delta;
-      if (newTime < 0) newTime = 0;
-      if (newTime > audioDuration) newTime = audioDuration;
-      audioRef.current.currentTime = newTime;
-      setAudioCurrentTime(newTime);
-
-      const percentage = newTime / audioDuration;
-      const totalLines = flatLines.length;
-      const newCursor = Math.min(Math.floor(percentage * totalLines), totalLines - 1);
-      setCursor(newCursor);
-      setWordIdx(0);
-    } else {
-      seekBy(direction === 'forward' ? 2 : -2);
-    }
-  };
-
+  // Interaction handlers
   const handleLike = (type: 'up' | 'down') => {
     if (liked === type) {
       setLiked(null);
@@ -339,7 +128,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: chapter?.title || 'PrepAI Lesson',
+        title: chapter?.title || 'JTET Sathi Lesson',
         text: `Listen to this narration of ${chapter?.title}`,
         url: window.location.href,
       }).catch(console.error);
@@ -349,7 +138,14 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     }
   };
 
-  if (loading || !lesson || flatLines.length === 0) {
+  const handleScrubClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    audio.handleScrub(percentage);
+  };
+
+  if (loading || audio.flatLines.length === 0) {
     return (
       <div className="h-full w-full bg-[#060D1A] flex items-center justify-center p-5">
         <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
@@ -357,15 +153,14 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
     );
   }
 
-  const currentFlatLine = flatLines[cursor] || flatLines[0];
-  const prevFlatLine = cursor > 0 ? flatLines[cursor - 1] : null;
-  const nextFlatLine = cursor + 1 < flatLines.length ? flatLines[cursor + 1] : null;
-
-  const currentScene = lesson.scenes[currentFlatLine.sceneIdx];
+  const currentFlatLine = audio.flatLines[audio.cursor] || audio.flatLines[0];
+  const prevFlatLine = audio.cursor > 0 ? audio.flatLines[audio.cursor - 1] : null;
+  const nextFlatLine = audio.cursor + 1 < audio.flatLines.length ? audio.flatLines[audio.cursor + 1] : null;
+  const currentScene = audio.scenes[currentFlatLine.sceneIdx];
   
   const isCustomAudio = !!chapter?.audio_url;
-  const currentTotalSeconds = isCustomAudio ? audioDuration : (flatLines.length * BASE_LINE_MS / 1000);
-  const currentElapsedSeconds = isCustomAudio ? audioCurrentTime : ((cursor * BASE_LINE_MS + elapsedMsRef.current) / 1000);
+  const currentTotalSeconds = isCustomAudio ? audio.audioDuration : (audio.flatLines.length * BASE_LINE_MS / 1000);
+  const currentElapsedSeconds = isCustomAudio ? audio.audioCurrentTime : ((audio.cursor * BASE_LINE_MS + audio.elapsedMsRef.current) / 1000);
   
   const totalDurationStr = formatTime(currentTotalSeconds);
   const elapsedStr = formatTime(currentElapsedSeconds);
@@ -374,20 +169,6 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
   return (
     <div className="h-full w-full bg-[#060D1A] text-foreground font-sans flex flex-col relative overflow-hidden select-none">
       
-      {/* Hidden Audio Element */}
-      {chapter?.audio_url && (
-        <audio 
-          ref={audioRef} 
-          src={chapter.audio_url} 
-          onEnded={() => {
-            setEnded(true);
-            setIsPlaying(false);
-          }}
-          onTimeUpdate={() => setAudioCurrentTime(audioRef.current?.currentTime || 0)}
-          onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
-        />
-      )}
-
       {/* --- Blurred Cover Background for Premium Feel --- */}
       {mode === 'podcast' && (
         <div 
@@ -405,7 +186,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         
         <div className="text-center">
           <p className="text-[10px] font-bold tracking-[0.2em] text-foreground/40 uppercase font-mono mb-0.5">Playing Now</p>
-          <span className="text-xs font-semibold text-accent">{book?.title || 'PrepAI Academy'}</span>
+          <span className="text-xs font-semibold text-accent">{book?.title || 'JTET Sathi Academy'}</span>
         </div>
         
         <button className="p-2 -mr-2 text-foreground/80 hover:text-foreground transition rounded-full hover:bg-white/5">
@@ -413,7 +194,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         </button>
       </header>
 
-      {/* --- Mode switcher (Integrated into Header area) --- */}
+      {/* --- Mode switcher --- */}
       <div className="flex justify-center my-2 z-10 relative">
         <div className="flex bg-white/5 border border-white/10 rounded-full p-0.5 shadow-inner">
           <button
@@ -431,10 +212,9 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         </div>
       </div>
 
-      {/* --- Scrollable Content Area (Middle) --- */}
+      {/* --- Scrollable Content Area --- */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar w-full max-w-xl mx-auto px-6 py-4 flex flex-col justify-center z-10 relative">
         {mode === 'video' ? (
-          /* VIDEO MODE */
           chapter?.video_url && getYoutubeId(chapter.video_url) ? (
             <div className="w-full my-auto aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative flex-shrink-0">
               <iframe
@@ -449,7 +229,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-zoom" />
               
               <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20">
-                <div className={`w-2 h-2 rounded-full bg-accent ${isPlaying ? 'animate-pulse' : ''}`} />
+                <div className={`w-2 h-2 rounded-full bg-accent ${audio.isPlaying ? 'animate-pulse' : ''}`} />
                 <span className="text-[9px] font-bold tracking-widest text-foreground uppercase font-mono">AI Teacher</span>
               </div>
               
@@ -466,13 +246,12 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                 </div>
               </div>
 
-              {/* Karaoke lines in Video mode */}
               <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-black/90 to-transparent z-20">
                 <p className="text-center font-display text-base leading-relaxed">
                   {currentFlatLine.words.map((word, idx) => (
                     <span 
                       key={idx} 
-                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= wordIdx ? 'text-accent font-bold' : 'text-white/40'}`}
+                      className={`inline-block mx-[2px] transition-colors duration-150 ${idx <= audio.wordIdx ? 'text-accent font-bold' : 'text-white/40'}`}
                     >
                       {word}
                     </span>
@@ -482,12 +261,9 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             </div>
           )
         ) : (
-          /* PODCAST MODE (Spotify lyrics/audio style) */
+          /* PODCAST MODE */
           <div className="flex-1 flex flex-col justify-center py-4 my-auto">
-            
-            {/* Center Lyrics Layout */}
             <div className="flex flex-col justify-center text-center space-y-6 my-auto px-4">
-              {/* Previous line (faded) */}
               <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
                 {prevFlatLine && (
                   <p className="text-foreground/30 text-sm font-medium line-clamp-1 truncate max-w-md">
@@ -496,11 +272,10 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                 )}
               </div>
 
-              {/* Current highlighted line */}
               <div className="min-h-[120px] flex items-center justify-center flex-shrink-0">
                 <h2 className="text-xl md:text-2xl font-bold font-sans text-foreground leading-relaxed max-w-lg">
                   {currentFlatLine.words.map((word, idx) => {
-                    const isActive = idx <= wordIdx;
+                    const isActive = idx <= audio.wordIdx;
                     return (
                       <span 
                         key={idx} 
@@ -517,7 +292,6 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                 </h2>
               </div>
 
-              {/* Next line (faded) */}
               <div className="h-10 overflow-hidden flex items-center justify-center flex-shrink-0">
                 {nextFlatLine && (
                   <p className="text-foreground/20 text-sm font-medium line-clamp-1 truncate max-w-md">
@@ -527,7 +301,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
               </div>
             </div>
 
-            {/* Action Bar (Thumbs Up/Down Pill and Share Pill) */}
+            {/* Action Bar */}
             <div className="flex items-center justify-between px-4 mt-6 flex-shrink-0">
               <div className="flex items-center bg-white/5 border border-white/10 rounded-full p-1 shadow-md">
                 <button 
@@ -562,7 +336,6 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
                 <span>Share</span>
               </button>
             </div>
-            
           </div>
         )}
       </main>
@@ -579,35 +352,30 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           />
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-bold text-foreground truncate">{chapter?.title}</h3>
-            <p className="text-xs text-foreground/50 truncate font-medium">By {book?.author || 'PrepAI Engine'}</p>
+            <p className="text-xs text-foreground/50 truncate font-medium">By {book?.author || 'JTET Sathi Engine'}</p>
           </div>
         </div>
 
         {/* Timeline and Scrubber */}
         <div className="space-y-2">
           <div 
-            onClick={handleScrub}
+            onClick={handleScrubClick}
             className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer relative group flex items-center"
           >
             <div 
               className="h-full bg-accent rounded-full relative transition-all duration-100"
               style={{ width: `${Math.max(progressPercent, 1)}%` }}
             >
-              {/* Drag Handle knob */}
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-150" />
             </div>
           </div>
           
-          {/* Timeline info row */}
           <div className="flex justify-between items-center text-[10px] font-mono text-foreground/45">
             <span>{elapsedStr}</span>
-            
-            {/* Scene/Section current marker */}
             <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-0.5 rounded text-[9px] font-semibold text-accent max-w-[180px] truncate">
               <ListCollapse className="w-3 h-3 text-accent/70 shrink-0" />
               <span className="truncate">{currentScene.title}</span>
             </div>
-            
             <span>-{formatTime(Math.max(currentTotalSeconds - currentElapsedSeconds, 0))}</span>
           </div>
         </div>
@@ -615,38 +383,38 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
         {/* Playback Controls Row */}
         <div className="flex items-center justify-center gap-6 pt-2">
           <button 
-            onClick={() => seekBy(-1)} 
+            onClick={() => audio.seekBy(-1)} 
             className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
-            disabled={cursor === 0}
+            disabled={audio.cursor === 0}
           >
             <SkipBack className="w-5 h-5 fill-current" />
           </button>
 
           <button 
-            onClick={() => handleSkipTime('backward')}
+            onClick={() => audio.handleSkipTime('backward')}
             className="p-2 text-foreground/65 hover:text-foreground transition"
           >
             <RotateCcw className="w-5 h-5" />
           </button>
 
           <button 
-            onClick={togglePlay}
+            onClick={() => audio.togglePlay()}
             className="w-14 h-14 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
           >
-            {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
+            {audio.isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
           </button>
 
           <button 
-            onClick={() => handleSkipTime('forward')}
+            onClick={() => audio.handleSkipTime('forward')}
             className="p-2 text-foreground/65 hover:text-foreground transition"
           >
             <RotateCw className="w-5 h-5" />
           </button>
 
           <button 
-            onClick={() => seekBy(1)}
+            onClick={() => audio.seekBy(1)}
             className="p-2 text-foreground/65 hover:text-foreground transition disabled:opacity-30"
-            disabled={cursor === flatLines.length - 1}
+            disabled={audio.cursor === audio.flatLines.length - 1}
           >
             <SkipForward className="w-5 h-5 fill-current" />
           </button>
@@ -654,15 +422,13 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
 
         {/* Bottom Toolbar Row */}
         <div className="flex items-center justify-between px-4 pt-2 border-t border-white/5">
-          {/* Speed Option */}
           <button 
-            onClick={() => setPlaybackSpeed(s => s === 1 ? 1.25 : s === 1.25 ? 1.5 : s === 1.5 ? 2 : 1)}
+            onClick={() => audio.setPlaybackSpeed(audio.playbackSpeed === 1 ? 1.25 : audio.playbackSpeed === 1.25 ? 1.5 : audio.playbackSpeed === 1.5 ? 2 : 1)}
             className="text-xs font-mono font-bold text-foreground/60 hover:text-accent transition px-2 py-1 rounded hover:bg-white/5"
           >
-            {playbackSpeed}x
+            {audio.playbackSpeed}x
           </button>
 
-          {/* Shuffle Toggle */}
           <button 
             onClick={() => alert("Shuffle is active")}
             className="p-2 text-foreground/60 hover:text-accent transition"
@@ -670,7 +436,6 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             <Shuffle className="w-4.5 h-4.5" />
           </button>
 
-          {/* Share Toggle */}
           <button 
             onClick={handleShare}
             className="p-2 text-foreground/60 hover:text-accent transition"
@@ -678,9 +443,8 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
             <Share2 className="w-4.5 h-4.5" />
           </button>
 
-          {/* Playlist Queue Toggle */}
           <button 
-            onClick={() => alert(`Syllabus Structure: ${lesson.scenes.map(s => s.title).join(' → ')}`)}
+            onClick={() => alert(`Syllabus Structure: ${audio.scenes.map(s => s.title).join(' → ')}`)}
             className="p-2 text-foreground/60 hover:text-accent transition"
             title="Scene Queue"
           >
@@ -692,7 +456,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
 
       {/* --- Post-Lesson CTA Card --- */}
       <AnimatePresence>
-        {ended && (
+        {audio.ended && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -701,7 +465,7 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
           >
             <CheckCircle className="w-10 h-10 text-success-green mx-auto mb-3" />
             <h3 className="text-sm font-bold text-foreground font-display">Lesson Completed! 🎉</h3>
-            <p className="text-[11px] text-foreground/60 mt-1 mb-4">You've mastered this chapter. What's next?</p>
+            <p className="text-[11px] text-foreground/60 mt-1 mb-4">You&apos;ve mastered this chapter. What&apos;s next?</p>
             
             <div className="flex gap-3">
               <Link href={`/quiz/${chapterId}`} className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition flex justify-center items-center gap-1.5 text-xs shadow-md">
@@ -716,11 +480,4 @@ export default function LessonPlayerPage({ params }: { params: Promise<{ chapter
       </AnimatePresence>
     </div>
   );
-}
-
-function formatTime(seconds: number) {
-  if (isNaN(seconds)) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
 }

@@ -3,6 +3,8 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import MiniPlayer from '@/components/MiniPlayer';
+import { AudioProvider } from '@/contexts/AudioContext';
 
 export default function DashboardLayout({
   children,
@@ -17,20 +19,22 @@ export default function DashboardLayout({
     pathname.startsWith('/flashcards') || 
     pathname.startsWith('/challenge');
 
-  if (isImmersive) {
-    return (
-      <div className="h-[100dvh] w-screen overflow-hidden bg-[#060D1A]">
-        {children}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
-        {children}
-      </main>
-    </div>
+    <AudioProvider>
+      {isImmersive ? (
+        <div className="h-[100dvh] w-screen overflow-hidden bg-[#060D1A]">
+          {children}
+        </div>
+      ) : (
+        <div className="flex flex-col min-h-screen">
+          <Navbar />
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
+            {children}
+          </main>
+        </div>
+      )}
+      {/* Mini player shows on all pages except when lesson is fully open */}
+      {!pathname.startsWith('/lesson') && <MiniPlayer />}
+    </AudioProvider>
   );
 }
