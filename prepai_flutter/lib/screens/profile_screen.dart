@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_state.dart';
 import '../models/models.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -103,67 +105,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  // Gateway detail list
                   Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Upgrade Price:', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
-                            const Text('₹199.00 INR', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            Text('Plan Price:', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                            const Text('₹199.00 INR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Welcome Bonus:', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
-                            Text('+300 XP Points', style: TextStyle(color: goldColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                            Text('XP Welcome Bonus:', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                            const Text('+300 XP', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                           ],
                         ),
-                        const Divider(color: Colors.white10, height: 24),
+                        const SizedBox(height: 24),
 
-                        Text(
-                          'Secure payment gateway encryption enabled',
-                          style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 9),
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Action button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: ElevatedButton(
-                            onPressed: gatewayLoading ? null : () async {
-                              setModalState(() {
-                                gatewayLoading = true;
-                              });
-                              // Simulate bank gateway delay
-                              await Future.delayed(const Duration(seconds: 2));
-                              
-                              await state.upgradeToPremium();
-                              
-                              if (context.mounted) {
-                                Navigator.pop(context); // Close gateway modal
-                                _showUpgradeSuccessDialog(goldColor);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.indigo,
-                              disabledBackgroundColor: Colors.indigo.withOpacity(0.3),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        if (gatewayLoading)
+                          const Column(
+                            children: [
+                              CircularProgressIndicator(color: Colors.indigo),
+                              SizedBox(height: 12),
+                              Text('Processing payment gateway simulator...', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                            ],
+                          )
+                        else
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  gatewayLoading = true;
+                                });
+                                Timer(const Duration(seconds: 2), () async {
+                                  await state.upgradeToPremium();
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    _showSuccessUpgradeDialog();
+                                  }
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.indigo,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Simulate Successful Upgrade', style: TextStyle(fontWeight: FontWeight.bold)),
                             ),
-                            child: gatewayLoading 
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                  )
-                                : const Text('Pay ₹199 via Card/UPI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                           ),
-                        )
                       ],
                     ),
                   )
@@ -176,30 +171,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showUpgradeSuccessDialog(Color goldColor) {
+  void _showSuccessUpgradeDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF070B16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: goldColor, width: 1.5),
+          side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
         ),
-        title: Row(
+        title: const Row(
           children: [
-            Icon(Icons.stars, color: goldColor),
-            const SizedBox(width: 8),
-            const Text('Gold Upgraded!', style: TextStyle(color: Colors.white, fontFamily: 'Outfit')),
+            Icon(Icons.stars, color: Color(0xFF10B981)),
+            SizedBox(width: 8),
+            Text('Upgrade Complete!', style: TextStyle(color: Colors.white, fontFamily: 'Outfit')),
           ],
         ),
         content: const Text(
-          'Welcome to JTET Sathi Premium! All study materials and mock tests are now unlocked. +300 XP welcome bonus points have been added to your dashboard.',
+          'Premium benefits active! You have been awarded 300 XP and unlimited access to JTET Sathi mock tests.',
           style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: const Color(0xFF0B1325)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: const Color(0xFF0B1325)),
             child: const Text('Launch Course', style: TextStyle(fontWeight: FontWeight.bold)),
           )
         ],
@@ -239,9 +234,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _handleSignOut(AppState state) async {
+    // Show confirmation dialog first
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF070B16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withOpacity(0.1)),
+        ),
+        title: const Text('Sign Out', style: TextStyle(color: Colors.white, fontFamily: 'Outfit')),
+        content: const Text('Are you sure you want to sign out from JTET Sathi?', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await state.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  void _shareApp(String inviteCode) {
+    final text = 'Hey! Prepare for JTET with me on JTET Sathi. Use my code "$inviteCode" to unlock 7 days of Premium Gold mock series for free! Download the app now.';
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Color(0xFF0B1325)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Share text with referral code copied to clipboard!',
+                style: TextStyle(color: Color(0xFF0B1325), fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext StateContext) {
-    final state = Provider.of<AppState>(StateContext);
+  Widget build(BuildContext context) {
+    final state = Provider.of<AppState>(context);
     final profile = state.profile;
     final goldColor = const Color(0xFF10B981);
 
@@ -255,6 +312,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final hasFlame = (profile?.streak ?? 0) >= 5;
     final hasTarget = averageAccuracy >= 75 && totalSolved >= 5;
 
+    final inviteCode = 'JTETSATHI99';
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B1325),
       body: SafeArea(
@@ -263,6 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header
               const Text(
                 'Aspirant Portfolio',
                 style: TextStyle(
@@ -280,17 +340,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.02),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      radius: 30,
+                      radius: 32,
                       backgroundColor: goldColor.withOpacity(0.12),
                       child: Text(
-                        (profile?.fullName ?? 'U').substring(0, 1),
-                        style: TextStyle(color: goldColor, fontSize: 24, fontWeight: FontWeight.bold),
+                        (profile?.fullName ?? 'U').substring(0, 1).toUpperCase(),
+                        style: TextStyle(color: goldColor, fontSize: 26, fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -310,7 +370,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 8),
                           profile?.isPremium == true
                               ? Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: goldColor.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(10),
@@ -329,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 )
                               : Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(10),
@@ -346,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // 2. Academic Metrics Grid
               const Text('Academic Metrics', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Outfit')),
@@ -375,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   gradient: LinearGradient(
                     colors: [
                       const Color(0xFF0F172A),
-                      Colors.indigo.withOpacity(0.1),
+                      Colors.indigo.withOpacity(0.12),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -427,7 +487,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 4. Invite & Referral code
+              // 4. Invite & Referral code & Share Controls
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -435,41 +495,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withOpacity(0.05)),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Referral Invite Code', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 2),
-                          Text('Share code with peers. Both get 7 days of gold.', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
-                        ],
-                      ),
-                    ),
+                    const Text('Referral Invite Code', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text('Share code with peers. Both get 7 days of Premium Gold.', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 10)),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF070B16),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            'JTETSATHI99',
-                            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF070B16),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            ),
+                            child: Text(
+                              inviteCode,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontFamily: 'monospace'),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         IconButton(
                           onPressed: () {
-                            // Mock clipboard copy action
+                            Clipboard.setData(ClipboardData(text: inviteCode));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Referral code copied to clipboard!')),
                             );
                           },
-                          icon: const Icon(Icons.copy, color: Colors.white60, size: 18),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white.withOpacity(0.05),
+                            padding: const EdgeInsets.all(12),
+                          ),
+                          icon: const Icon(Icons.copy, color: Colors.white70, size: 18),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () => _shareApp(inviteCode),
+                          style: IconButton.styleFrom(
+                            backgroundColor: goldColor.withOpacity(0.1),
+                            padding: const EdgeInsets.all(12),
+                          ),
+                          icon: Icon(Icons.share, color: goldColor, size: 18),
                         )
                       ],
                     )
@@ -515,7 +586,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: const Text('Settings saved successfully.', style: TextStyle(color: Colors.greenAccent, fontSize: 11)),
                         ),
 
-                      // Aspirant Name Input
+                      // Name Input
                       const Text('Aspirant Name', style: TextStyle(color: Colors.white30, fontSize: 9, fontWeight: FontWeight.bold)),
                       TextFormField(
                         controller: _nameController,
@@ -534,7 +605,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Divider(color: Colors.white10),
                       const SizedBox(height: 12),
 
-                      // Syllabus Select Dropdown
+                      // Syllabus Selection Dropdown
                       const Text('Target Exam', style: TextStyle(color: Colors.white30, fontSize: 9, fontWeight: FontWeight.bold)),
                       DropdownButton<String>(
                         value: _examSyllabus,
@@ -560,7 +631,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Divider(color: Colors.white10),
                       const SizedBox(height: 12),
 
-                      // Language Preference Select Dropdown
+                      // Language Dropdown
                       const Text('Language preference', style: TextStyle(color: Colors.white30, fontSize: 9, fontWeight: FontWeight.bold)),
                       DropdownButton<String>(
                         value: _languagePref,
@@ -584,14 +655,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Divider(color: Colors.white10),
                       const SizedBox(height: 16),
 
-                      ElevatedButton(
-                        onPressed: _saveSettings,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: goldColor,
-                          foregroundColor: const Color(0xFF0B1325),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saveSettings,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: goldColor,
+                            foregroundColor: const Color(0xFF0B1325),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Save Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                         ),
-                        child: const Text('Save Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                       ),
                     ],
                   ),
@@ -599,7 +674,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 7. System alerts testing
+              // 7. Push alerts testing
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -619,11 +694,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _simulateLocalNotification,
-                        icon: Icon(Icons.add_alert_rounded, size: 14, color: const Color(0xFF0B1325)),
+                        icon: const Icon(Icons.add_alert_rounded, size: 14, color: Color(0xFF0B1325)),
                         label: const Text('Send Test Push Reminder'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: goldColor,
                           foregroundColor: const Color(0xFF0B1325),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
@@ -631,7 +707,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              // 8. Sign Out Control (Beautiful red outlined block)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _handleSignOut(state),
+                  icon: const Icon(Icons.logout_rounded, size: 16, color: Colors.redAccent),
+                  label: const Text(
+                    'Sign Out Account',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: BorderSide(color: Colors.redAccent.withOpacity(0.35)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 48),
             ],
           ),
         ),
