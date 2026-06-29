@@ -126,67 +126,40 @@ export default function BookDetailsPage({ params }: BookPageProps) {
       </div>
 
       {/* ========================================================
-          1. TOP PORTION: SINGLE BOOK LAYOUT CARD
+          1. TOP PORTION: SINGLE BOOK LAYOUT CARD (Restored original layout and size)
          ======================================================== */}
-      <div className="premium-card p-6 bg-slate-950/40 border border-[#10B981]/15 rounded-3xl relative overflow-hidden shadow-xl">
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#10B981]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="premium-card p-4 md:p-5 bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex flex-row gap-5 items-center relative overflow-hidden border border-white/5 shadow-xl">
+        <div className="absolute -top-10 -right-10 w-[150px] h-[150px] bg-[#10B981]/10 rounded-full blur-[40px] pointer-events-none" />
         
-        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-          {/* Square Book Cover */}
-          <div className="relative aspect-square w-28 md:w-32 rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shrink-0 shadow-md">
-            <img 
-              src={book.cover_image} 
-              alt={book.title} 
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
-            />
+        <img 
+          src={book.cover_image} 
+          alt={book.title} 
+          className="w-20 h-28 md:w-24 md:h-32 rounded-lg object-cover bg-slate-800 shadow-md border border-white/10 flex-shrink-0"
+        />
+
+        <div className="flex-1 space-y-1.5 min-w-0">
+          <div>
+            <span className="text-[9px] bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider font-mono">
+              {book.subject}
+            </span>
           </div>
+          <h1 className="font-display text-lg md:text-xl font-extrabold text-foreground leading-tight mt-1 truncate">{book.title}</h1>
+          <p className="text-foreground/50 text-xs font-light">By {book.author}</p>
 
-          {/* Book Info Metadata */}
-          <div className="flex-1 space-y-3 min-w-0">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[9px] bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
-                  {book.subject}
-                </span>
-                <span className="text-[9px] bg-white/5 text-foreground/50 border border-white/5 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
-                  {chapters.length} Chapters
-                </span>
-              </div>
-              
-              <h1 className="text-xl md:text-2xl font-extrabold text-white leading-tight font-display tracking-tight mt-1 truncate">
-                {book.title}
-              </h1>
-              
-              <p className="text-xs text-foreground/50 font-medium">
-                By <span className="text-[#10B981]">{book.author}</span>
-              </p>
+          <div className="flex flex-wrap gap-4 text-[10px] font-mono pt-1">
+            <div className="flex items-center text-foreground/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]/80 mr-1.5 shadow-[0_0_5px_rgba(16,185,129,0.5)]" /> 
+              {chapters.length} Chapters
             </div>
-
-            {/* Description or details */}
-            <p className="text-xs text-foreground/60 leading-relaxed font-light line-clamp-2">
-              Syllabus lectures compiled for custom high-yield exam preparation. Play chapter audio podcasts with highlighted sync and MCQs.
-            </p>
-
-            {/* Completion stats */}
-            <div className="flex items-center gap-4 text-[10px] font-bold text-foreground/45 font-mono pt-1">
-              <span className="flex items-center text-emerald-400">
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                <span>{completedChaptersCount} / {chapters.length} Completed</span>
-              </span>
+            <div className="flex items-center text-foreground/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 mr-1.5 shadow-[0_0_5px_rgba(16,185,129,0.5)]" /> 
+              {chapters.filter(c => c.is_free).length} Free
+            </div>
+            <div className="flex items-center text-foreground/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500/80 mr-1.5 shadow-[0_0_5px_rgba(99,102,241,0.5)]" /> 
+              {completedChaptersCount} Done
             </div>
           </div>
-
-          {/* Playlist Quick Action button */}
-          {chapters.length > 0 && (
-            <button 
-              onClick={() => router.push(`/lesson/${chapters[0].id}`)}
-              className="w-full md:w-auto bg-[#10B981] hover:bg-emerald-400 text-slate-950 font-bold text-xs px-6 py-3 rounded-full flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shrink-0"
-            >
-              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-              <span>Start Playlist</span>
-            </button>
-          )}
         </div>
       </div>
 
