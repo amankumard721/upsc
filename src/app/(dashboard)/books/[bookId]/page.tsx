@@ -14,7 +14,8 @@ import {
   Clock, 
   Award,
   MoreVertical,
-  PlayCircle
+  Share2,
+  BookOpen
 } from 'lucide-react';
 
 interface BookPageProps {
@@ -23,13 +24,9 @@ interface BookPageProps {
 
 export default function BookDetailsPage({ params }: BookPageProps) {
   const router = useRouter();
-  const { bookId: initialBookId } = use(params);
+  const { bookId } = use(params);
   
-  // Dynamic State for active book selection
-  const [activeBookId, setActiveBookId] = useState<string>(initialBookId);
-  const [activeBook, setActiveBook] = useState<Book | null>(null);
-  
-  const [booksInSubject, setBooksInSubject] = useState<Book[]>([]);
+  const [book, setBook] = useState<Book | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [progressList, setProgressList] = useState<UserProgress[]>([]);
@@ -39,69 +36,50 @@ export default function BookDetailsPage({ params }: BookPageProps) {
   const [loading, setLoading] = useState(true);
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
 
-  // 1. Initial Load: Load profile, all books in subject, and progress list
   useEffect(() => {
-    async function loadInitialData() {
+    async function loadData() {
       try {
-        const initialBook = await db.getBook(initialBookId);
-        if (!initialBook) {
+        const bookData = await db.getBook(bookId);
+        if (!bookData) {
           setLoading(false);
           return;
         }
+        setBook(bookData);
+
+        const chs = await db.getChapters(bookId);
+        chs.sort((a, b) => a.chapter_number - b.chapter_number);
+        setChapters(chs);
 
         const prof = await db.getUserProfile();
         setProfile(prof);
 
-        // Fetch all books belonging to the same subject category
-        const allBooks = await db.getBooks();
-        const subjectBooks = allBooks.filter(b => b.subject === initialBook.subject);
-        setBooksInSubject(subjectBooks);
-
-        // Load progress
+        // Load progress list
         if (typeof window !== 'undefined') {
           const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
           setProgressList(list);
         }
       } catch (err) {
-        console.error('Error loading initial page data:', err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     }
-    loadInitialData();
-  }, [initialBookId]);
-
-  // 2. Dynamic loading: whenever activeBookId changes, update activeBook and fetch its chapters
-  useEffect(() => {
-    async function loadActiveBookChapters() {
-      const selectedBook = booksInSubject.find(b => b.id === activeBookId) || await db.getBook(activeBookId);
-      if (selectedBook) {
-        setActiveBook(selectedBook);
-        const chs = await db.getChapters(activeBookId);
-        chs.sort((a, b) => a.chapter_number - b.chapter_number);
-        setChapters(chs);
-      }
-    }
-    if (activeBookId) {
-      loadActiveBookChapters();
-    }
-  }, [activeBookId, booksInSubject]);
+    loadData();
+  }, [bookId]);
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="w-12 h-12 border-4 border-[#10B981] border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-foreground/45 font-medium font-mono">Loading subject materials...</p>
+        <p className="text-xs text-foreground/45 font-medium font-mono">Loading book details...</p>
       </div>
     );
   }
 
-  // Fallback if activeBook isn't loaded yet
-  const displayBook = activeBook || booksInSubject.find(b => b.id === initialBookId);
-  if (!displayBook) {
+  if (!book) {
     return (
       <div className="text-center py-24 space-y-6">
-        <p className="text-foreground/50 text-sm">Subject material not found.</p>
+        <p className="text-foreground/50 text-sm">Book not found in PrepAI.</p>
         <Link href="/dashboard" className="text-[#10B981] hover:underline inline-flex items-center space-x-1 text-xs font-bold">
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Dashboard</span>
@@ -109,6 +87,9 @@ export default function BookDetailsPage({ params }: BookPageProps) {
       </div>
     );
   }
+
+  // Calculate completed chapters count for this book
+  const completedChaptersCount = progressList.filter(p => chapters.some(c => c.id === p.chapter_id) && p.is_completed).length;
 
   // Filter chapters list based on search and completion chips
   const filteredChapters = chapters.filter(ch => {
@@ -127,7 +108,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
 
   return (
     <div className="space-y-8 font-sans pb-16 relative">
-      {/* Background atmospheric glowing overlay */}
+      {/* Background glow matching the branding */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#10B981]/5 rounded-full blur-[100px] pointer-events-none" />
 
       {/* --- Top Navigation Header --- */}
@@ -140,139 +121,119 @@ export default function BookDetailsPage({ params }: BookPageProps) {
           <span>Back to Library</span>
         </Link>
         <span className="text-[10px] uppercase font-bold text-[#10B981] tracking-widest font-mono">
-          {displayBook.subject} ARCHIVE
+          BOOK DETAIL
         </span>
       </div>
 
-      {/* --- Mood / Status Filter Chips --- */}
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-        {(['All', 'Completed', 'Incomplete'] as const).map(filter => (
-          <button
-            key={filter}
-            onClick={() => setStatusFilter(filter)}
-            className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
-              statusFilter === filter
-                ? 'bg-[#10B981] border-[#10B981] text-slate-950 font-bold shadow-md'
-                : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10'
-            }`}
-          >
-            {filter}
-          </button>
-        ))}
-      </div>
-
       {/* ========================================================
-          1. TOP HORIZONTAL SHELF: "book and book titled author"
+          1. TOP PORTION: SINGLE BOOK LAYOUT CARD
          ======================================================== */}
-      <div className="space-y-4">
-        <div>
-          <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
-            {displayBook.subject} PLAYLISTS
-          </p>
-          <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
-            Select Book to view Chapters
-          </h2>
-        </div>
+      <div className="premium-card p-6 bg-slate-950/40 border border-[#10B981]/15 rounded-3xl relative overflow-hidden shadow-xl">
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#10B981]/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+          {/* Square Book Cover */}
+          <div className="relative aspect-square w-28 md:w-32 rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shrink-0 shadow-md">
+            <img 
+              src={book.cover_image} 
+              alt={book.title} 
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
+            />
+          </div>
 
-        <div className="flex gap-5 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
-          {booksInSubject.map(b => {
-            const isActive = b.id === activeBookId;
-            return (
-              <div
-                key={b.id}
-                onClick={() => {
-                  setActiveBookId(b.id);
-                  // Update route without full reload
-                  window.history.pushState(null, '', `/books/${b.id}`);
-                }}
-                className="shrink-0 w-36 md:w-40 flex flex-col space-y-2.5 cursor-pointer group"
-              >
-                {/* Book cover art wrapper */}
-                <div 
-                  className={`relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900 transition-all duration-300 ${
-                    isActive 
-                      ? 'border-2 border-[#10B981] shadow-lg shadow-[#10B981]/15 scale-102' 
-                      : 'border border-white/5 shadow-md hover:border-white/20'
-                  }`}
-                >
-                  <img
-                    src={b.cover_image}
-                    alt={b.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
-                    onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'; }}
-                  />
-                  {isActive && (
-                    <div className="absolute top-2.5 right-2.5 bg-[#10B981] text-slate-950 text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      Selected
-                    </div>
-                  )}
-                </div>
-                
-                {/* Title & Author */}
-                <div className="space-y-0.5 px-0.5">
-                  <h4 className={`text-xs font-bold leading-tight truncate transition-colors ${
-                    isActive ? 'text-[#10B981]' : 'text-white group-hover:text-[#10B981]'
-                  }`}>
-                    {b.title}
-                  </h4>
-                  <p className="text-[10px] text-foreground/50 leading-normal truncate font-medium">
-                    By {b.author}
-                  </p>
-                </div>
+          {/* Book Info Metadata */}
+          <div className="flex-1 space-y-3 min-w-0">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
+                  {book.subject}
+                </span>
+                <span className="text-[9px] bg-white/5 text-foreground/50 border border-white/5 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono">
+                  {chapters.length} Chapters
+                </span>
               </div>
-            );
-          })}
+              
+              <h1 className="text-xl md:text-2xl font-extrabold text-white leading-tight font-display tracking-tight mt-1 truncate">
+                {book.title}
+              </h1>
+              
+              <p className="text-xs text-foreground/50 font-medium">
+                By <span className="text-[#10B981]">{book.author}</span>
+              </p>
+            </div>
+
+            {/* Description or details */}
+            <p className="text-xs text-foreground/60 leading-relaxed font-light line-clamp-2">
+              Syllabus lectures compiled for custom high-yield exam preparation. Play chapter audio podcasts with highlighted sync and MCQs.
+            </p>
+
+            {/* Completion stats */}
+            <div className="flex items-center gap-4 text-[10px] font-bold text-foreground/45 font-mono pt-1">
+              <span className="flex items-center text-emerald-400">
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                <span>{completedChaptersCount} / {chapters.length} Completed</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Playlist Quick Action button */}
+          {chapters.length > 0 && (
+            <button 
+              onClick={() => router.push(`/lesson/${chapters[0].id}`)}
+              className="w-full md:w-auto bg-[#10B981] hover:bg-emerald-400 text-slate-950 font-bold text-xs px-6 py-3 rounded-full flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shrink-0"
+            >
+              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+              <span>Start Playlist</span>
+            </button>
+          )}
         </div>
       </div>
 
-      <hr className="border-white/5" />
-
       {/* ========================================================
-          2. MIDDLE SECTION: "chapter list with play button" / "Quick picks"
+          2. FILTER AND SEARCH SECTION
          ======================================================== */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
-              QUICK PICKS • {displayBook.title}
-            </p>
-            <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
-              Chapter Tracks
-            </h2>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Search Input bar */}
-            <div className="relative w-40 sm:w-52">
-              <Search className="absolute left-3 top-3 w-3 h-3 text-foreground/40" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tracks..."
-                className="w-full bg-white/5 border border-white/10 focus:border-[#10B981] text-[10px] rounded-full pl-8 pr-3 py-2 outline-none transition-all placeholder:text-foreground/30"
-              />
-            </div>
-            
-            <button 
-              onClick={() => {
-                if (filteredChapters.length > 0) {
-                  router.push(`/lesson/${filteredChapters[0].id}`);
-                }
-              }}
-              className="text-[10px] border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white font-bold px-4 py-2 rounded-full transition active:scale-95 shrink-0"
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        {/* Chips filters */}
+        <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
+          {(['All', 'Completed', 'Incomplete'] as const).map(filter => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              className={`text-xs px-4 py-2 rounded-full transition-all border font-semibold ${
+                statusFilter === filter
+                  ? 'bg-[#10B981] border-[#10B981] text-slate-950 font-bold shadow-md shadow-[#10B981]/15'
+                  : 'bg-white/5 border-white/10 text-foreground/75 hover:bg-white/10 hover:border-white/20'
+              }`}
             >
-              Play all
+              {filter}
             </button>
-          </div>
+          ))}
         </div>
 
+        {/* Search Input bar */}
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3.5 top-3.5 w-3.5 h-3.5 text-foreground/40" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search chapters..."
+            className="w-full bg-white/5 border border-white/10 focus:border-[#10B981] text-xs rounded-full pl-10 pr-4 py-3 outline-none transition-all placeholder:text-foreground/30"
+          />
+        </div>
+      </div>
+
+      {/* ========================================================
+          3. BOTTOM SECTION: "chapter list with play button" / "Quick picks"
+         ======================================================== */}
+      <div className="space-y-3">
         {filteredChapters.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-white/5 rounded-3xl bg-slate-950/20">
-            <p className="text-xs text-foreground/35">No tracks available for this selection.</p>
+            <p className="text-xs text-foreground/35">No chapters match your criteria.</p>
           </div>
         ) : (
-          /* YT Music styled grid layout of track rows. Displays active book cover thumbnail for all tracks. */
+          /* YT Music styled grid layout of track rows. Displays book cover thumbnail for all tracks. */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
             {filteredChapters.map(ch => {
               const progObj = progressList.find(p => p.chapter_id === ch.id);
@@ -297,10 +258,10 @@ export default function BookDetailsPage({ params }: BookPageProps) {
                   }}
                 >
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {/* Chapter Thumbnail Image (Using the active book's cover art) */}
+                    {/* Chapter Thumbnail Image (Using the book's cover art) */}
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-900 border border-white/5 shrink-0 shadow-md">
                       <img 
-                        src={displayBook.cover_image} 
+                        src={book.cover_image} 
                         alt={ch.title}
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100'; }}
@@ -327,7 +288,7 @@ export default function BookDetailsPage({ params }: BookPageProps) {
                       </div>
                       
                       <p className="text-[10px] text-foreground/50 leading-normal mt-0.5 truncate font-medium">
-                        {displayBook.title} • By {displayBook.author} • {Math.round(ch.duration_seconds / 60)} Mins play
+                        {book.title} • By {book.author} • {Math.round(ch.duration_seconds / 60)} Mins play
                       </p>
                     </div>
                   </div>
