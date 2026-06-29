@@ -157,23 +157,39 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   // ── Seek by lines ──
   const seekBy = useCallback((linesDelta: number) => {
-    setFlatLines(current => {
+    if (track?.audioUrl && audioRef.current && audioDuration > 0) {
       let newCursor = cursor + linesDelta;
       if (newCursor < 0) newCursor = 0;
-      if (newCursor >= current.length) {
-        newCursor = current.length - 1;
+      if (newCursor >= flatLines.length) {
+        newCursor = flatLines.length - 1;
         setEnded(true);
         setIsPlaying(false);
-      } else {
-        setEnded(false);
       }
+      const targetTime = (newCursor / flatLines.length) * audioDuration;
+      audioRef.current.currentTime = targetTime;
+      setAudioCurrentTime(targetTime);
       setCursor(newCursor);
       setWordIdx(0);
-      elapsedMsRef.current = 0;
-      if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-      return current;
-    });
-  }, [cursor]);
+    } else {
+      // TTS fallback
+      setFlatLines(current => {
+        let newCursor = cursor + linesDelta;
+        if (newCursor < 0) newCursor = 0;
+        if (newCursor >= current.length) {
+          newCursor = current.length - 1;
+          setEnded(true);
+          setIsPlaying(false);
+        } else {
+          setEnded(false);
+        }
+        setCursor(newCursor);
+        setWordIdx(0);
+        elapsedMsRef.current = 0;
+        if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+        return current;
+      });
+    }
+  }, [cursor, track, audioDuration, flatLines]);
 
   // ── Jump to scene ──
   const jumpToScene = useCallback((sceneIdx: number) => {
@@ -184,8 +200,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       elapsedMsRef.current = 0;
       setEnded(false);
       setIsPlaying(true);
+      
+      if (track?.audioUrl && audioRef.current && audioDuration > 0) {
+        const targetTime = (idx / flatLines.length) * audioDuration;
+        audioRef.current.currentTime = targetTime;
+        setAudioCurrentTime(targetTime);
+      }
     }
-  }, [flatLines]);
+  }, [flatLines, track, audioDuration]);
 
   // ── Scrub by percentage ──
   const handleScrub = useCallback((percentage: number) => {
@@ -262,40 +284,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const currentLine = flatLines[cursor];
-    if (!currentLine) return;
-    const totalLineMs = BASE_LINE_MS / playbackSpeed;
-    const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100);
-
     if (track?.audioUrl) {
+      // Real Audio Mode: No timer! We let HTML5 audio tag update our cursor.
       if (audioRef.current && audioRef.current.paused) {
         audioRef.current.playbackRate = playbackSpeed;
         audioRef.current.play().catch(console.error);
       }
-
-      lastTimeRef.current = performance.now();
-      timerRef.current = setInterval(() => {
-        const now = performance.now();
-        const delta = now - lastTimeRef.current;
-        lastTimeRef.current = now;
-        elapsedMsRef.current += delta;
-
-        const expectedWord = Math.floor(elapsedMsRef.current / wordIntervalMs);
-        setWordIdx(Math.min(expectedWord, currentLine.words.length - 1));
-
-        if (elapsedMsRef.current >= totalLineMs) {
-          elapsedMsRef.current = 0;
-          setWordIdx(0);
-          if (cursor + 1 < flatLines.length) {
-            setCursor(c => c + 1);
-          } else {
-            setEnded(true);
-            setIsPlaying(false);
-          }
-        }
-      }, 50);
     } else {
-      // TTS fallback
+      // TTS fallback mode: Uses timer interval to simulate reader.
+      const currentLine = flatLines[cursor];
+      if (!currentLine) return;
+      const totalLineMs = BASE_LINE_MS / playbackSpeed;
+      const wordIntervalMs = Math.max(totalLineMs / currentLine.words.length, 100);
+
       if (elapsedMsRef.current === 0 && typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(currentLine.lineText);
@@ -353,8 +354,34 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           ref={audioRef}
           src={track.audioUrl}
           onEnded={() => { setEnded(true); setIsPlaying(false); }}
-          onTimeUpdate={() => setAudioCurrentTime(audioRef.current?.currentTime || 0)}
-          onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
+          onTimeUpdate={() => {
+            if (!audioRef.current) return;
+            const currentTime = audioRef.current.currentTime;
+            const duration = audioRef.current.duration || 0;
+            setAudioCurrentTime(currentTime);
+            setAudioDuration(duration);
+            
+            if (duration > 0 && flatLines.length > 0) {
+              const pct = currentTime / duration;
+              const newCursor = Math.min(Math.floor(pct * flatLines.length), flatLines.length - 1);
+              setCursor(newCursor);
+
+              // Sync word highlighting inside current line
+              const currentLine = flatLines[newCursor];
+              if (currentLine && currentLine.words.length > 0) {
+                const lineDuration = duration / flatLines.length;
+                const elapsedInLine = currentTime - (newCursor * lineDuration);
+                const wordInterval = lineDuration / currentLine.words.length;
+                const newWordIdx = Math.min(Math.floor(elapsedInLine / wordInterval), currentLine.words.length - 1);
+                setWordIdx(Math.max(0, newWordIdx));
+              }
+            }
+          }}
+          onLoadedMetadata={() => {
+            if (audioRef.current) {
+              setAudioDuration(audioRef.current.duration || 0);
+            }
+          }}
         />
       )}
       {children}
