@@ -12,20 +12,13 @@ import {
 } from 'lucide-react';
 import { t } from '@/lib/translations';
 
-const SUBJECT_CHIPS = [
-  { label: 'All', emoji: '📚' },
-  { label: 'Polity', emoji: '📜' },
-  { label: 'History', emoji: '🏛️' },
-  { label: 'Geography', emoji: '🌍' },
-  { label: 'Economy', emoji: '💰' },
-];
-
 export default function DashboardPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
+  const [subjectsList, setSubjectsList] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('All');
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
@@ -35,21 +28,30 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [profileData, booksData, leaderboardData, chaptersData] = await Promise.all([
+        const [profileData, booksData, leaderboardData, chaptersData, subjectsData] = await Promise.all([
           db.getUserProfile(),
           db.getBooks(),
           db.getLeaderboard(),
-          db.getAllChapters(40)
+          db.getAllChapters(40),
+          db.getSubjects()
         ]);
         
         setProfile(profileData);
         setBooks(booksData);
         setLeaderboard(leaderboardData.slice(0, 3));
         setAllChapters(chaptersData);
+        
+        // Ensure "All" option is added at the beginning if not already present
+        const list = subjectsData || [];
+        if (!list.some(s => s.name.toLowerCase() === 'all')) {
+          setSubjectsList([{ id: 'all', name: 'All', emoji: '📚' }, ...list]);
+        } else {
+          setSubjectsList(list);
+        }
 
         if (typeof window !== 'undefined') {
-          const list = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
-          const targetProgress = list.find((p: any) => !p.is_completed) || (list.length > 0 ? list[list.length - 1] : null);
+          const listProgress = JSON.parse(localStorage.getItem('prepai_user_progress') || '[]');
+          const targetProgress = listProgress.find((p: any) => !p.is_completed) || (listProgress.length > 0 ? listProgress[listProgress.length - 1] : null);
           
           if (targetProgress) {
             try {
@@ -71,14 +73,14 @@ export default function DashboardPage() {
   }, []);
 
   const filteredBooks = books.filter(b =>
-    selectedSubject === 'All' || b.subject === selectedSubject
+    selectedSubject === 'All' || b.subject.toLowerCase() === selectedSubject.toLowerCase()
   );
 
   // Filter chapters based on subject (by finding parent book's subject)
   const filteredChapters = allChapters.filter(ch => {
     if (selectedSubject === 'All') return true;
     const parentBook = books.find(b => b.id === ch.book_id);
-    return parentBook?.subject === selectedSubject;
+    return parentBook?.subject.toLowerCase() === selectedSubject.toLowerCase();
   });
 
   // Chunk chapters into groups of 3 for vertical stacking in horizontal carousel
@@ -94,9 +96,6 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6 px-1 py-8">
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {[1,2,3,4].map(i => <div key={i} className="skeleton h-8 w-20 shrink-0 rounded-full" />)}
-        </div>
         <div className="skeleton h-56 w-full rounded-3xl" />
         <div className="skeleton h-8 w-40 rounded-xl" />
         <div className="flex gap-4 overflow-hidden">
@@ -111,24 +110,6 @@ export default function DashboardPage() {
       
       {/* Dynamic teal atmosphere glow */}
       <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#10B981]/5 rounded-full blur-[100px] pointer-events-none" />
-      
-      {/* ── 1. SUBJECT SELECTION PILLS (Pehle jaisa placement - test your knowledge ke upar) ── */}
-      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
-        {SUBJECT_CHIPS.map(chip => (
-          <button
-            key={chip.label}
-            onClick={() => setSelectedSubject(chip.label)}
-            className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all border ${
-              selectedSubject === chip.label
-                ? 'bg-[#10B981] text-slate-950 border-[#10B981] font-bold shadow-md'
-                : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10'
-            }`}
-          >
-            <span className="mr-1.5">{chip.emoji}</span>
-            <span>{chip.label === 'All' ? t('all') : chip.label}</span>
-          </button>
-        ))}
-      </div>
 
       {dbError && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-error-red text-xs font-mono">
@@ -136,7 +117,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── 2. DAILY CHALLENGE BANNER (Test your knowledge) ── */}
+      {/* ── 1. DAILY CHALLENGE BANNER (Test your knowledge) ── */}
       <div className="premium-card p-5 bg-gradient-to-r from-emerald-950/20 via-slate-950/40 to-transparent border-[#10B981]/15 relative overflow-hidden rounded-3xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#10B981]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex items-center gap-2 mb-2">
@@ -159,25 +140,45 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* ── 3. RECOMMENDED SHELF (Book size is restored to original portrait size, not square) ── */}
+      {/* ── 2. RECOMMENDED SHELF ("Learning Material" / Book selector placed directly above list) ── */}
       <div className="space-y-4">
         <div>
-          <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
-            STUDY PLAYLISTS
+          <p className="text-[9px] font-bold text-[#10B981] uppercase tracking-widest font-mono">
+            LEARNING MATERIAL
           </p>
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-extrabold text-white font-display tracking-tight mt-0.5">
-              Mixed for you
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-extrabold text-white font-display tracking-tight">
+              Learning Material
             </h2>
             <span className="text-xs text-foreground/40 font-mono font-medium">
               {filteredBooks.length} items
             </span>
           </div>
+
+          {/* Dynamic Subject selector chips placed directly above book carousel */}
+          {subjectsList.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar scroll-smooth">
+              {subjectsList.map(chip => (
+                <button
+                  key={chip.id}
+                  onClick={() => setSelectedSubject(chip.name)}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all border ${
+                    selectedSubject.toLowerCase() === chip.name.toLowerCase()
+                      ? 'bg-[#10B981] text-slate-950 border-[#10B981] font-bold shadow-md'
+                      : 'bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10'
+                  }`}
+                >
+                  <span className="mr-1.5">{chip.emoji}</span>
+                  <span>{chip.name === 'All' ? t('all') : chip.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {filteredBooks.length === 0 ? (
           <div className="text-center py-12 bg-white/5 border border-dashed border-white/5 rounded-3xl">
-            <p className="text-xs text-foreground/45">No books found. Select another subject pill.</p>
+            <p className="text-xs text-foreground/45">No books found in this category.</p>
           </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
@@ -226,7 +227,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 4. QUICK PICKS (3 list series scroll: stacks 3 tracks vertically, swiping horizontally) ── */}
+      {/* ── 3. QUICK PICKS (3 list series scroll: stacks 3 tracks vertically, swiping horizontally) ── */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -254,7 +255,7 @@ export default function DashboardPage() {
             <p className="text-xs text-foreground/45">No chapters found for this subject.</p>
           </div>
         ) : (
-          /* YT Music dynamic track container: stacks exactly 3 tracks, swiping horizontally */
+          /* YT Music dynamic track container: stacks exactly 3 chapters vertically, swiping horizontally */
           <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1 snap-x">
             {chapterChunks.map((chunk, chunkIdx) => (
               <div 
@@ -321,7 +322,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 5. MOCK TEST SERIES ── */}
+      {/* ── 4. MOCK TEST SERIES ── */}
       <div className="space-y-4">
         <div>
           <p className="text-[9px] font-bold text-foreground/45 uppercase tracking-widest font-mono">
@@ -343,7 +344,7 @@ export default function DashboardPage() {
             </div>
             <Link 
               href="/test-series/mock-1"
-              className="bg-[#10B981] hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold px-4 py-2 rounded-full shrink-0 transition active:scale-95 shadow"
+              className="bg-[#10B981] hover:bg-emerald-400 text-slate-950 text-[10px] font-extrabold px-4 py-2 rounded-full shrink-0 transition active:scale-95 shadow animate-pulse"
             >
               Start
             </Link>
@@ -383,7 +384,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 6. WEEKLY ANALYTICS CHART ── */}
+      {/* ── 5. WEEKLY ANALYTICS CHART ── */}
       <div className="premium-card p-5 bg-slate-950/40 border border-white/5 rounded-3xl">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 bg-[#10B981]/15 rounded-xl flex items-center justify-center">

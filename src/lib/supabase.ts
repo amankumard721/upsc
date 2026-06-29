@@ -504,5 +504,71 @@ export const db = {
       current.is_active = false;
       setLocalData('prepai_active_popup', current);
     }
+  },
+
+  // 23. Get Subjects (Dynamic Admin Configurable)
+  async getSubjects(): Promise<any[]> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .select('*')
+          .order('name', { ascending: true });
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Subjects table might not exist in Supabase yet. Using static fallback:', err);
+      }
+    }
+    return getLocalData<any[]>('prepai_subjects', [
+      { id: 'all', name: 'All', emoji: '📚' },
+      { id: 'polity', name: 'Polity', emoji: '📜' },
+      { id: 'history', name: 'History', emoji: '🏛️' },
+      { id: 'geography', name: 'Geography', emoji: '🌍' },
+      { id: 'economy', name: 'Economy', emoji: '💰' },
+    ]);
+  },
+
+  // 24. Create Subject
+  async createSubject(subject: { name: string; emoji: string }): Promise<any> {
+    const id = generateUUID();
+    const newSub = { id, created_at: new Date().toISOString(), ...subject };
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .insert(newSub)
+          .select()
+          .single();
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Subjects table insert failed. Storing locally:', err);
+      }
+    }
+    const list = await this.getSubjects();
+    // Don't add duplicate
+    if (!list.some(s => s.name.toLowerCase() === subject.name.toLowerCase())) {
+      list.push(newSub);
+      setLocalData('prepai_subjects', list);
+    }
+    return newSub;
+  },
+
+  // 25. Delete Subject
+  async deleteSubject(id: string): Promise<boolean> {
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('subjects')
+          .delete()
+          .eq('id', id);
+        if (!error) return true;
+      } catch (err) {
+        console.warn('Subjects table delete failed:', err);
+      }
+    }
+    const list = await this.getSubjects();
+    const filtered = list.filter(s => s.id !== id);
+    setLocalData('prepai_subjects', filtered);
+    return true;
   }
 };

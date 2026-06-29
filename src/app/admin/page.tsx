@@ -12,7 +12,7 @@ import {
 import confetti from 'canvas-confetti';
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'books' | 'chapters' | 'notifications'>('books');
+  const [activeTab, setActiveTab] = useState<'books' | 'chapters' | 'notifications' | 'subjects'>('books');
   const [books, setBooks] = useState<Book[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +45,11 @@ export default function AdminDashboardPage() {
   const [popupActionLabel, setPopupActionLabel] = useState('View Details');
   const [popupIsActive, setPopupIsActive] = useState(true);
   const [currentActivePopup, setCurrentActivePopup] = useState<any>(null);
+
+  // Subject Form States
+  const [subjectName, setSubjectName] = useState('');
+  const [subjectEmoji, setSubjectEmoji] = useState('📚');
+  const [subjects, setSubjects] = useState<any[]>([]);
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -118,6 +123,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadBooks();
+    loadSubjects();
   }, []);
 
   useEffect(() => {
@@ -131,8 +137,66 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (activeTab === 'notifications') {
       loadActivePopup();
+    } else if (activeTab === 'subjects') {
+      loadSubjects();
     }
   }, [activeTab]);
+
+  const loadSubjects = async () => {
+    try {
+      const data = await db.getSubjects();
+      setSubjects(data);
+    } catch (err) {
+      console.error('Error loading subjects:', err);
+    }
+  };
+
+  const handleCreateSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subjectName.trim()) {
+      setError('Please enter a subject name.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const result = await db.createSubject({
+        name: subjectName.trim(),
+        emoji: subjectEmoji
+      });
+      setSubjects(prev => {
+        if (prev.some(s => s.name.toLowerCase() === result.name.toLowerCase())) return prev;
+        return [...prev, result];
+      });
+      setSuccess(`Subject "${subjectName}" created successfully!`);
+      setSubjectName('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create subject.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+    if (id === 'all' || id === 'polity' || id === 'history' || id === 'geography' || id === 'economy') {
+      alert("System default subjects cannot be deleted.");
+      return;
+    }
+    if (!confirm('Are you sure you want to delete this subject? This might affect existing books associated with it.')) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await db.deleteSubject(id);
+      setSubjects(prev => prev.filter(s => s.id !== id));
+      setSuccess('Subject deleted successfully.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete subject.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadActivePopup = async () => {
     try {
@@ -391,6 +455,12 @@ export default function AdminDashboardPage() {
           >
             <Megaphone className="w-4 h-4" /> In-App Popups
           </button>
+          <button
+            onClick={() => { setActiveTab('subjects'); setError(''); setSuccess(''); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'subjects' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/60 hover:text-foreground hover:bg-white/5'}`}
+          >
+            <BookOpen className="w-4 h-4" /> Manage Subjects
+          </button>
         </div>
 
         {/* ========================================================
@@ -435,13 +505,22 @@ export default function AdminDashboardPage() {
                   <select 
                     value={bookSubject}
                     onChange={e => setBookSubject(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-medium"
                   >
-                    <option value="History" className="bg-slate-900">History</option>
-                    <option value="Geography" className="bg-slate-900">Geography</option>
-                    <option value="Polity" className="bg-slate-900">Polity</option>
-                    <option value="Economics" className="bg-slate-900">Economics</option>
-                    <option value="Science" className="bg-slate-900">Science & Tech</option>
+                    {subjects.length > 0 ? (
+                      subjects.map(s => (
+                        <option key={s.id} value={s.name} className="bg-slate-900 text-white">
+                          {s.emoji} {s.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="History" className="bg-slate-900 text-white">History</option>
+                        <option value="Geography" className="bg-slate-900 text-white">Geography</option>
+                        <option value="Polity" className="bg-slate-900 text-white">Polity</option>
+                        <option value="Economy" className="bg-slate-900 text-white">Economy</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
@@ -877,6 +956,118 @@ export default function AdminDashboardPage() {
 alter table popups enable row level security;
 create policy "Allow public read access to popups" on popups for select using (true);
 create policy "Allow insert update for everyone" on popups for all using (true);`}
+                  </pre>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            DYNAMIC SUBJECTS TAB
+           ======================================================== */}
+        {activeTab === 'subjects' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {/* Create Subject Form */}
+              <form onSubmit={handleCreateSubject} className="premium-card p-6 bg-slate-950/40 border border-white/5 space-y-4">
+                <h2 className="text-sm font-bold text-accent uppercase tracking-wider flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" /> Add Dynamic Subject Category
+                </h2>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2 space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground/50 uppercase">Subject Name *</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Science & Tech"
+                      value={subjectName}
+                      onChange={e => setSubjectName(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground/50 uppercase">Emoji Icon *</label>
+                    <select
+                      value={subjectEmoji}
+                      onChange={e => setSubjectEmoji(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                    >
+                      <option value="📚">📚 Books</option>
+                      <option value="📜">📜 Scroll</option>
+                      <option value="🏛️">🏛️ Temple</option>
+                      <option value="🌍">🌍 Earth</option>
+                      <option value="💰">💰 Money</option>
+                      <option value="🧪">🧪 Science</option>
+                      <option value="⚖️">⚖️ Scale</option>
+                      <option value="💻">💻 Tech</option>
+                      <option value="🧬">🧬 DNA</option>
+                      <option value="📊">📊 Chart</option>
+                      <option value="🧠">🧠 Brain</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" /> Save Subject
+                </button>
+              </form>
+
+              {/* Subjects List & SQL Box */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-foreground/45 uppercase tracking-wider flex items-center justify-between">
+                  <span>Current Subjects ({subjects.length})</span>
+                </h3>
+
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {subjects.map(sub => {
+                    const isSystem = sub.id === 'all' || sub.id === 'polity' || sub.id === 'history' || sub.id === 'geography' || sub.id === 'economy';
+                    return (
+                      <div key={sub.id} className="premium-card p-3 bg-white/5 border border-white/5 flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base shrink-0">{sub.emoji}</span>
+                          <span className="font-bold text-white">{sub.name}</span>
+                          {isSystem && <span className="text-[8px] bg-white/5 text-foreground/45 px-1.5 py-0.5 rounded font-mono">System</span>}
+                        </div>
+                        {!isSystem && (
+                          <button 
+                            onClick={() => handleDeleteSubject(sub.id)}
+                            className="p-1.5 text-error-red/60 hover:text-error-red hover:bg-error-red/10 rounded-lg transition"
+                            title="Delete Subject"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Database Table SQL Helper */}
+                <div className="premium-card p-4 bg-slate-950/60 border border-white/5 space-y-3">
+                  <h4 className="text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5" /> Supabase Subjects Table
+                  </h4>
+                  <p className="text-[9px] text-foreground/50 leading-relaxed">
+                    Make sure to run this SQL in your Supabase SQL Editor if you want to store subjects dynamically:
+                  </p>
+                  <pre className="bg-[#070B16] border border-white/5 rounded-lg p-2.5 text-[8px] text-[#10B981] font-mono overflow-x-auto select-all max-h-[120px]">
+{`create table subjects (
+  id uuid primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  name text not null,
+  emoji text not null
+);
+alter table subjects enable row level security;
+create policy "Allow public read access to subjects" on subjects for select using (true);
+create policy "Allow insert update delete for everyone" on subjects for all using (true);`}
                   </pre>
                 </div>
               </div>
