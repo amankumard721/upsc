@@ -45,6 +45,8 @@ dependencies:
   http: ^1.2.1
   google_fonts: ^6.2.1
   just_audio: ^0.9.38
+  google_sign_in: ^6.2.1
+  truecaller_sdk: ^1.2.0
 
 dev_dependencies:
   flutter_test:

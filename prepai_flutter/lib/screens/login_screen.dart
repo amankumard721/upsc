@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:truecaller_sdk/truecaller_sdk.dart';
+import 'dart:async';
 import '../providers/app_state.dart';
 import 'main_navigation.dart';
 
@@ -31,8 +33,90 @@ class _LoginScreenState extends State<LoginScreen> {
     'SSC CGL & Allied Exams',
   ];
 
+  StreamSubscription? _truecallerSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTruecaller();
+  }
+
+  void _initTruecaller() {
+    try {
+      TcSdk.initializeSDK(sdkOption: TcSdkOptions.OPTION_VERIFY_ONLY_TC_USERS);
+      _truecallerSubscription = TcSdk.streamCallbackData.listen((event) {
+        final sdkCallback = event as TcSdkCallback;
+        if (sdkCallback.result == TcSdkCallbackResult.success) {
+          _handleTruecallerSuccess(sdkCallback);
+        } else if (sdkCallback.result == TcSdkCallbackResult.failure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Truecaller verification failed: ${sdkCallback.error?.message ?? "User cancelled"}')),
+          );
+        }
+      });
+    } catch (e) {
+      print('Truecaller SDK init error: $e');
+    }
+  }
+
+  Future<void> _verifyWithTruecaller() async {
+    try {
+      bool isUsable = await TcSdk.isOAuthFlowUsable;
+      if (isUsable) {
+        TcSdk.setOAuthState("jtet-sathi-oauth-state-token");
+        TcSdk.setOAuthScopes(['profile', 'phone', 'openid']);
+        
+        final codeVerifier = await TcSdk.generateRandomCodeVerifier;
+        final codeChallenge = await TcSdk.generateCodeChallenge(codeVerifier);
+        if (codeChallenge != null) {
+          TcSdk.setCodeChallenge(codeChallenge);
+          await TcSdk.getAuthorizationCode;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not generate Truecaller security challenge.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Truecaller app is not installed or active on this device.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Truecaller error: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleTruecallerSuccess(TcSdkCallback event) async {
+    setState(() => _loading = true);
+    final state = Provider.of<AppState>(context, listen: false);
+
+    // OAuth authorization code
+    final authCode = event.tcOAuthData?.authorizationCode ?? 'truecaller-auth-code';
+    final name = "Truecaller Verified";
+
+    try {
+      await state.initialize();
+      if (state.profile != null) {
+        await state.updateProfileName(name);
+      }
+    } catch (e) {
+      print('Truecaller login profile setup error: $e');
+    }
+    
+    setState(() => _loading = false);
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigation()),
+      );
+    }
+  }
+
   @override
   void dispose() {
+    _truecallerSubscription?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -442,6 +526,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
+
+                  // Truecaller Instant Verification Button
+                  ElevatedButton.icon(
+                    onPressed: _loading ? null : _verifyWithTruecaller,
+                    icon: const Icon(Icons.verified_user_rounded, size: 18),
+                    label: const Text(
+                      'Verify Instantly via Truecaller',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0087FF), // Truecaller Blue
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
                   // Social Google Login Mock
                   OutlinedButton(
