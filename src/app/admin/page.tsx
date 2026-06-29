@@ -7,12 +7,12 @@ import { Book, Chapter } from '@/types';
 import { 
   Plus, Save, Trash, BookOpen, AlertCircle, 
   ArrowLeft, FileText, CheckCircle, UploadCloud, Link2, 
-  FolderPlus, Layers, Calendar, User, Sparkles
+  FolderPlus, Layers, Calendar, User, Sparkles, Megaphone, Bell
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'books' | 'chapters'>('books');
+  const [activeTab, setActiveTab] = useState<'books' | 'chapters' | 'notifications'>('books');
   const [books, setBooks] = useState<Book[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +36,15 @@ export default function AdminDashboardPage() {
   const [chapterDuration, setChapterDuration] = useState(300);
   const [chapterText, setChapterText] = useState('');
   const [uploadingAudio, setUploadingAudio] = useState(false);
+
+  // Popup Notification Form States
+  const [popupTitle, setPopupTitle] = useState('');
+  const [popupDesc, setPopupDesc] = useState('');
+  const [popupImgUrl, setPopupImgUrl] = useState('');
+  const [popupActionUrl, setPopupActionUrl] = useState('');
+  const [popupActionLabel, setPopupActionLabel] = useState('View Details');
+  const [popupIsActive, setPopupIsActive] = useState(true);
+  const [currentActivePopup, setCurrentActivePopup] = useState<any>(null);
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,6 +91,75 @@ export default function AdminDashboardPage() {
       setChapters([]);
     }
   }, [targetBookId]);
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      loadActivePopup();
+    }
+  }, [activeTab]);
+
+  const loadActivePopup = async () => {
+    try {
+      const active = await db.getActivePopup();
+      setCurrentActivePopup(active);
+      if (active) {
+        setPopupTitle(active.title || '');
+        setPopupDesc(active.description || '');
+        setPopupImgUrl(active.image_url || '');
+        setPopupActionUrl(active.action_url || '');
+        setPopupActionLabel(active.action_label || 'View Details');
+        setPopupIsActive(active.is_active ?? true);
+      }
+    } catch (err) {
+      console.error('Error loading active popup:', err);
+    }
+  };
+
+  const handlePushPopup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!popupImgUrl || !popupActionUrl) {
+      setError('Image URL and Action URL are required.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const result = await db.pushPopup({
+        title: popupTitle || undefined,
+        description: popupDesc || undefined,
+        image_url: popupImgUrl,
+        action_url: popupActionUrl,
+        action_label: popupActionLabel,
+        is_active: popupIsActive
+      });
+      setSuccess('Full image popup notification pushed successfully!');
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      setCurrentActivePopup(result);
+    } catch (err: any) {
+      setError(err.message || 'Failed to push notification popup.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeactivatePopup = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await db.deactivatePopup();
+      setSuccess('Active popup notification deactivated.');
+      setCurrentActivePopup(null);
+      setPopupIsActive(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to deactivate.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadBooks = async () => {
     setLoading(true);
@@ -267,9 +345,15 @@ export default function AdminDashboardPage() {
           </button>
           <button
             onClick={() => { setActiveTab('chapters'); setError(''); setSuccess(''); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'chapters' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/60 hover:text-foreground hover:bg-white/5'}`}
+            className={`flex-1 flex-max items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'chapters' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/60 hover:text-foreground hover:bg-white/5'}`}
           >
             <Layers className="w-4 h-4" /> Manage Chapters & Audio
+          </button>
+          <button
+            onClick={() => { setActiveTab('notifications'); setError(''); setSuccess(''); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition ${activeTab === 'notifications' ? 'bg-accent text-slate-950 shadow-md' : 'text-foreground/60 hover:text-foreground hover:bg-white/5'}`}
+          >
+            <Megaphone className="w-4 h-4" /> In-App Popups
           </button>
         </div>
 
@@ -574,6 +658,181 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            POPUP NOTIFICATIONS TAB
+           ======================================================== */}
+        {activeTab === 'notifications' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {/* Push Popup Form */}
+              <form onSubmit={handlePushPopup} className="premium-card p-6 bg-slate-950/40 border border-white/5 space-y-4">
+                <h2 className="text-sm font-bold text-accent uppercase tracking-wider flex items-center gap-2">
+                  <Megaphone className="w-4 h-4" /> Push Image Notification Popup
+                </h2>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground/50 uppercase">Popup Title (Optional)</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Special Offer or New Mock Series!"
+                    value={popupTitle}
+                    onChange={e => setPopupTitle(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground/50 uppercase">Popup Description (Optional)</label>
+                  <textarea 
+                    placeholder="e.g. Get 7 days premium gold access code today."
+                    value={popupDesc}
+                    onChange={e => setPopupDesc(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none min-h-[70px]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground/50 uppercase">Image URL * (Required)</label>
+                  <input 
+                    type="url" 
+                    placeholder="e.g. https://images.unsplash.com/photo-... or your banner link"
+                    value={popupImgUrl}
+                    onChange={e => setPopupImgUrl(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground/50 uppercase">Action Link / URL *</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. /profile or external https://"
+                      value={popupActionUrl}
+                      onChange={e => setPopupActionUrl(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none font-mono"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold text-foreground/50 uppercase">Action Button Label</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Claim Now"
+                      value={popupActionLabel}
+                      onChange={e => setPopupActionLabel(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-foreground focus:border-accent transition outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <input 
+                    type="checkbox" 
+                    id="popup-active-checkbox"
+                    checked={popupIsActive}
+                    onChange={e => setPopupIsActive(e.target.checked)}
+                    className="w-4 h-4 rounded accent-accent"
+                  />
+                  <label htmlFor="popup-active-checkbox" className="text-xs font-semibold text-foreground/80 cursor-pointer">
+                    Enable and Show this Popup immediately
+                  </label>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="flex-1 bg-accent hover:bg-amber-500 text-slate-950 font-bold py-3 rounded-xl transition text-xs shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" /> Push Live Popup
+                  </button>
+                  {currentActivePopup && (
+                    <button 
+                      type="button"
+                      onClick={handleDeactivatePopup}
+                      disabled={loading}
+                      className="bg-error-red/10 border border-error-red/25 hover:bg-error-red/20 text-error-red font-bold px-4 py-3 rounded-xl transition text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <Trash className="w-4 h-4" /> Deactivate
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              {/* Preview and Live Status Card */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-foreground/40 uppercase tracking-wider">Live Preview Card</h3>
+                
+                {popupImgUrl ? (
+                  <div className="premium-card bg-slate-950/40 border border-[#10B981]/25 overflow-hidden shadow-2xl relative">
+                    <div className="absolute top-3 right-3 bg-[#10B981]/25 text-[#10B981] border border-[#10B981]/40 text-[9px] font-bold px-2 py-0.5 rounded-full z-10">
+                      {popupIsActive ? '🟢 Live Active' : '🔴 Inactive'}
+                    </div>
+
+                    {/* Popup image */}
+                    <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+                      <img 
+                        src={popupImgUrl} 
+                        alt="Popup Banner Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as any).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="p-4 space-y-3">
+                      {popupTitle && <h4 className="text-xs font-bold text-foreground font-display">{popupTitle}</h4>}
+                      {popupDesc && <p className="text-[10px] text-foreground/60 leading-normal">{popupDesc}</p>}
+                      
+                      <div className="pt-2">
+                        <span className="w-full bg-[#10B981] text-slate-950 font-bold py-2 px-4 rounded-xl text-[10px] text-center block tracking-wide uppercase">
+                          {popupActionLabel} (Target: {popupActionUrl})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 bg-white/5 border border-dashed border-white/10 rounded-2xl">
+                    <Megaphone className="w-8 h-8 text-foreground/20 mb-2" />
+                    <p className="text-[11px] text-foreground/45">Enter an Image URL to see live preview.</p>
+                  </div>
+                )}
+
+                {/* Database Table SQL Helper */}
+                <div className="premium-card p-4 bg-slate-950/60 border border-white/5 space-y-3">
+                  <h4 className="text-[10px] font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5" /> Supabase Table Required
+                  </h4>
+                  <p className="text-[9px] text-foreground/50 leading-relaxed">
+                    Make sure to run this SQL in your Supabase SQL Editor if you want to store popups in your database:
+                  </p>
+                  <pre className="bg-[#070B16] border border-white/5 rounded-lg p-2.5 text-[8px] text-[#10B981] font-mono overflow-x-auto select-all max-h-[140px]">
+{`create table popups (
+  id uuid primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  title text,
+  description text,
+  image_url text not null,
+  action_url text not null,
+  action_label text not null default 'View Details',
+  is_active boolean default true not null
+);
+alter table popups enable row level security;
+create policy "Allow public read access to popups" on popups for select using (true);
+create policy "Allow insert update for everyone" on popups for all using (true);`}
+                  </pre>
+                </div>
+              </div>
+
             </div>
           </div>
         )}

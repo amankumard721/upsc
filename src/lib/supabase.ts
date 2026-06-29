@@ -421,5 +421,71 @@ export const db = {
       if (data) return data as Flashcard;
     }
     return newFC;
+  },
+
+  // 20. Get Active In-App Popup
+  async getActivePopup(): Promise<any | null> {
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('popups')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Popups table might not exist in Supabase yet. Using local fallback:', err);
+      }
+    }
+    return getLocalData<any | null>('prepai_active_popup', null);
+  },
+
+  // 21. Push / Save In-App Popup
+  async pushPopup(popup: { image_url: string; action_url: string; action_label: string; title?: string; description?: string; is_active: boolean }): Promise<any> {
+    const id = generateUUID();
+    const newPopup = {
+      id,
+      created_at: new Date().toISOString(),
+      ...popup
+    };
+
+    if (supabase) {
+      try {
+        // Set all other popups to inactive first
+        await supabase.from('popups').update({ is_active: false }).eq('is_active', true);
+        
+        const { data, error } = await supabase
+          .from('popups')
+          .insert(newPopup)
+          .select()
+          .single();
+        
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn('Popups table write failed. Using local storage:', err);
+      }
+    }
+
+    setLocalData('prepai_active_popup', newPopup);
+    return newPopup;
+  },
+
+  // 22. Deactivate All Popups
+  async deactivatePopup(): Promise<void> {
+    if (supabase) {
+      try {
+        await supabase.from('popups').update({ is_active: false }).eq('is_active', true);
+      } catch (err) {
+        console.warn('Popups table deactivate failed. Using local storage:', err);
+      }
+    }
+    const current = getLocalData<any | null>('prepai_active_popup', null);
+    if (current) {
+      current.is_active = false;
+      setLocalData('prepai_active_popup', current);
+    }
   }
 };

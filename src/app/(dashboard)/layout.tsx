@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import MiniPlayer from '@/components/MiniPlayer';
+import InAppPopup from '@/components/InAppPopup';
 import { AudioProvider } from '@/contexts/AudioContext';
 
 export default function DashboardLayout({
@@ -35,6 +36,7 @@ export default function DashboardLayout({
       )}
       {/* Mini player shows on all pages except when lesson is fully open */}
       {!pathname.startsWith('/lesson') && <MiniPlayer />}
+      <InAppPopup />
     </AudioProvider>
   );
 }
