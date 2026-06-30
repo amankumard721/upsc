@@ -57,34 +57,59 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
     super.dispose();
   }
 
-  // Upload file helper to Cloudflare R2 via Next.js Vercel API
+  // Upload file helper to Cloudflare R2 directly from Flutter using AWS SigV4
   Future<String> _uploadToR2(File file, String folderName, String filename) async {
-    final uri = Uri.parse('https://upsc-roan-pi.vercel.app/api/admin/upload');
-    final request = http.MultipartRequest('POST', uri);
+    final accessKey = "f1f229805186d8a98e05beff34164638";
+    final secretKey = "e8d24cb0a633a2ffd2c20f86a9db212999419dbc6cd637038bfe328aeec86f90";
+    final endpoint = "6743ea22b860660512156b0dbe7638d7.r2.cloudflarestorage.com";
+    final bucketName = "audiopodcast";
     
-    // Add folder parameter
-    request.fields['folder'] = folderName;
-    
-    // Add file
-    final multipartFile = await http.MultipartFile.fromPath(
-      'file',
-      file.path,
-      filename: filename,
+    final path = "/$bucketName/$folderName/$filename";
+    final requestUri = Uri.parse("https://$endpoint$path");
+
+    final bytes = await file.readAsBytes();
+    final payloadHash = sha256.convert(bytes).toString();
+
+    final now = DateTime.now().toUtc();
+    final amzDate = now.toIso8601String().replaceAll('-', '').replaceAll(':', '').split('.').first + 'Z';
+    final dateStamp = amzDate.substring(0, 8);
+
+    final headers = {
+      'host': endpoint,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+    };
+
+    final signer = R2Signer(accessKey: accessKey, secretKey: secretKey, endpoint: endpoint);
+    final signature = signer.getSignature(
+      method: 'PUT',
+      path: path,
+      amzDate: amzDate,
+      dateStamp: dateStamp,
+      payloadHash: payloadHash,
+      headers: headers,
     );
-    request.files.add(multipartFile);
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    final credentialScope = '$dateStamp/auto/s3/aws4_request';
+    final authHeader = 'AWS4-HMAC-SHA256 Credential=$accessKey/$credentialScope, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=$signature';
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['success'] == true && data['url'] != null) {
-        return data['url'] as String;
-      } else {
-        throw Exception(data['error'] ?? 'R2 upload failed.');
-      }
+    final response = await http.put(
+      requestUri,
+      headers: {
+        'host': endpoint,
+        'x-amz-content-sha256': payloadHash,
+        'x-amz-date': amzDate,
+        'Authorization': authHeader,
+        'Content-Type': filename.endsWith('.m4a') ? 'audio/x-m4a' : 'audio/mpeg',
+      },
+      body: bytes,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final publicBaseUrl = 'https://pub-00ab21363ea74b46a5d0555ad4f47b47.r2.dev';
+      return '$publicBaseUrl/$folderName/$filename';
     } else {
-      throw Exception('R2 upload API failed with status ${response.statusCode}');
+      throw Exception('R2 upload failed with status code ${response.statusCode}: ${response.body}');
     }
   }
 
@@ -977,5 +1002,69 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
         ],
       ),
     );
+  }
+}
+
+class R2Signer {
+  final String accessKey;
+  final String secretKey;
+  final String endpoint;
+  final String region = "auto";
+  final String service = "s3";
+
+  R2Signer({
+    required this.accessKey,
+    required this.secretKey,
+    required this.endpoint,
+  });
+
+  List<int> hmacSHA256(List<int> key, List<int> data) {
+    final hmac = Hmac(sha256, key);
+    return hmac.convert(data).bytes;
+  }
+
+  String getSignature({
+    required String method,
+    required String path,
+    required String amzDate,
+    required String dateStamp,
+    required String payloadHash,
+    required Map<String, String> headers,
+  }) {
+    final signedHeaders = headers.keys.map((k) => k.toLowerCase()).toList()..sort();
+    final signedHeadersStr = signedHeaders.join(';');
+    
+    final canonicalHeaders = signedHeaders.map((k) {
+      return '$k:${headers[k]!.trim()}';
+    }).join('\n') + '\n';
+
+    final canonicalRequest = [
+      method,
+      Uri.encodeFull(path),
+      '', // query string
+      canonicalHeaders,
+      signedHeadersStr,
+      payloadHash,
+    ].join('\n');
+
+    final canonicalRequestHash = sha256.convert(utf8.encode(canonicalRequest)).toString();
+
+    final credentialScope = '$dateStamp/$region/$service/aws4_request';
+    final stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      canonicalRequestHash,
+    ].join('\n');
+
+    final kDate = hmacSHA256(utf8.encode('AWS4$secretKey'), utf8.encode(dateStamp));
+    final kRegion = hmacSHA256(kDate, utf8.encode(region));
+    final kService = hmacSHA256(kRegion, utf8.encode(service));
+    final kSigning = hmacSHA256(kService, utf8.encode('aws4_request'));
+    
+    final signatureBytes = hmacSHA256(kSigning, utf8.encode(stringToSign));
+    final signature = signatureBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+    return signature;
   }
 }
