@@ -266,7 +266,7 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
             // File Uploader (Real file pick and Supabase upload with dynamic bucket)
             void pickAndUploadFile() async {
               try {
-                FilePickerResult? result = await FilePicker.pickFiles(type: FileType.audio);
+                FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
                 if (result == null || result.files.single.path == null) return;
 
                 final pickedFile = File(result.files.single.path!);
