@@ -108,6 +108,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [playbackSpeed, setPlaybackSpeedState] = useState(1);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
+  const [clips, setClips] = useState<string[]>([]);
+  const [clipIndex, setClipIndex] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -141,6 +143,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setAudioCurrentTime(0);
     setAudioDuration(0);
     setPlaybackSpeedState(1);
+
+    // Playlist parsing
+    let playlistClips: string[] = [];
+    if (newTrack.audioUrl && newTrack.audioUrl.startsWith('[')) {
+      try {
+        playlistClips = JSON.parse(newTrack.audioUrl);
+      } catch (err) {
+        console.error("Error parsing audioUrl playlist:", err);
+      }
+    }
+    setClips(playlistClips);
+    setClipIndex(0);
     // Don't auto-play here — let the lesson page handle it
   }, [track]);
 
@@ -333,7 +347,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, cursor, playbackSpeed, ended, flatLines, track]);
+  }, [isPlaying, cursor, playbackSpeed, ended, flatLines, track, clips, clipIndex]);
+
+  // Play next clip immediately when clipIndex changes
+  useEffect(() => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.play().catch(console.error);
+    }
+  }, [clipIndex, isPlaying]);
 
   const value: AudioState = {
     track, scenes, flatLines,
@@ -352,8 +373,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       {track?.audioUrl && (
         <audio
           ref={audioRef}
-          src={track.audioUrl}
-          onEnded={() => { setEnded(true); setIsPlaying(false); }}
+          src={clips.length > 0 ? clips[clipIndex] : track.audioUrl}
+          onEnded={() => {
+            if (clips.length > 0 && clipIndex + 1 < clips.length) {
+              setClipIndex(prev => prev + 1);
+            } else {
+              setEnded(true);
+              setIsPlaying(false);
+            }
+          }}
           onTimeUpdate={() => {
             if (!audioRef.current) return;
             const currentTime = audioRef.current.currentTime;

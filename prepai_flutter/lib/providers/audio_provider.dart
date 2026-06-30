@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:async';
+import 'dart:convert';
 import '../models/models.dart';
 
 /// Global audio provider that persists playback across screen navigation.
@@ -83,7 +84,16 @@ class AudioProvider extends ChangeNotifier {
       // ── Real Audio via just_audio ──
       _audioPlayer = AudioPlayer();
       try {
-        await _audioPlayer!.setUrl(chapter.audioUrl);
+        if (chapter.audioUrl.startsWith('[')) {
+          final List<dynamic> parsed = json.decode(chapter.audioUrl);
+          final urls = parsed.map((e) => e.toString()).toList();
+          final playlist = ConcatenatingAudioSource(
+            children: urls.map((url) => AudioSource.uri(Uri.parse(url))).toList(),
+          );
+          await _audioPlayer!.setAudioSource(playlist);
+        } else {
+          await _audioPlayer!.setUrl(chapter.audioUrl);
+        }
 
         _playerStateSub = _audioPlayer!.playerStateStream.listen((state) {
           _isPlaying = state.playing;
