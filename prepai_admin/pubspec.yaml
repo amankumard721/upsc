@@ -43,8 +43,9 @@ dependencies:
 
   # Audio Utilities
   file_picker: ^8.1.7
-  record: ^5.1.2
+  record: ^7.1.1
   path_provider: ^2.1.3
+  just_audio: ^0.9.38
 
   # UI Fonts
   google_fonts: ^6.2.1

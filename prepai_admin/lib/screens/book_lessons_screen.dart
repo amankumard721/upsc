@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:just_audio/just_audio.dart';
 import '../models/models.dart';
 import '../providers/admin_state.dart';
 import 'data_manager.dart';
@@ -21,12 +22,85 @@ class BookLessonsScreen extends StatefulWidget {
 }
 
 class _BookLessonsScreenState extends State<BookLessonsScreen> {
+  // Global AudioPlayer instance for playing uploaded audios in the admin app
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  String? _playingChapterId;
+  bool _isPlaying = false;
+  StreamSubscription? _playerStateSub;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       Provider.of<AdminState>(context, listen: false).loadChapters(widget.book.id);
     });
+
+    // Listen to player state streams
+    _playerStateSub = _audioPlayer.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state.playing;
+          if (state.processingState == ProcessingState.completed) {
+            _playingChapterId = null;
+            _isPlaying = false;
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _playerStateSub?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _toggleChapterAudio(Chapter ch) async {
+    if (_playingChapterId == ch.id) {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        await _audioPlayer.play();
+      }
+    } else {
+      await _audioPlayer.stop();
+      
+      if (ch.audioUrl.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No audio URL found for this lesson.')),
+        );
+        return;
+      }
+
+      setState(() {
+        _playingChapterId = ch.id;
+        _isPlaying = true;
+      });
+
+      try {
+        if (ch.audioUrl.startsWith('[')) {
+          final List<dynamic> parsed = json.decode(ch.audioUrl);
+          final urls = parsed.map((e) => e.toString()).toList();
+          final playlist = ConcatenatingAudioSource(
+            children: urls.map((url) => AudioSource.uri(Uri.parse(url))).toList(),
+          );
+          await _audioPlayer.setAudioSource(playlist);
+        } else {
+          await _audioPlayer.setUrl(ch.audioUrl);
+        }
+        await _audioPlayer.play();
+      } catch (e) {
+        print('Admin audio play error: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error playing audio: $e')),
+        );
+        setState(() {
+          _playingChapterId = null;
+          _isPlaying = false;
+        });
+      }
+    }
   }
 
   void _showChapterForm(BuildContext context, {Chapter? chapter}) {
@@ -833,13 +907,27 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
                                 );
                               },
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              leading: CircleAvatar(
-                                backgroundColor: accentColor.withOpacity(0.1),
-                                child: Text(
-                                  '${ch.chapterNumber}',
-                                  style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                              
+                              // Play/Pause button on lesson card leading
+                              leading: GestureDetector(
+                                onTap: ch.audioUrl.isEmpty ? null : () => _toggleChapterAudio(ch),
+                                child: CircleAvatar(
+                                  backgroundColor: accentColor.withOpacity(0.1),
+                                  child: _playingChapterId == ch.id
+                                      ? Icon(
+                                          _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                          color: accentColor,
+                                          size: 20,
+                                        )
+                                      : ch.audioUrl.isNotEmpty
+                                          ? Icon(Icons.play_arrow_rounded, color: accentColor, size: 20)
+                                          : Text(
+                                              '${ch.chapterNumber}',
+                                              style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
                                 ),
                               ),
+                              
                               title: Text(
                                 ch.title,
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
