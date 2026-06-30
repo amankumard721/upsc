@@ -98,9 +98,8 @@ class SupabaseService {
       await _syncLocalChapter(created);
       return created;
     } catch (e) {
-      print('Supabase createChapter error: $e. Saving locally.');
-      await _syncLocalChapter(chapter);
-      return chapter;
+      print('Supabase createChapter error: $e');
+      rethrow;
     }
   }
 
@@ -116,9 +115,8 @@ class SupabaseService {
       await _syncLocalChapter(updated);
       return updated;
     } catch (e) {
-      print('Supabase updateChapter error: $e. Updating locally.');
-      await _syncLocalChapter(chapter);
-      return chapter;
+      print('Supabase updateChapter error: $e');
+      rethrow;
     }
   }
 
@@ -127,8 +125,8 @@ class SupabaseService {
       await _client.from('chapters').delete().eq('id', id);
       await _deleteLocalChapter(id);
     } catch (e) {
-      print('Supabase deleteChapter error: $e. Deleting locally.');
-      await _deleteLocalChapter(id);
+      print('Supabase deleteChapter error: $e');
+      rethrow;
     }
   }
 

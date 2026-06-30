@@ -149,9 +149,11 @@ class AdminState extends ChangeNotifier {
       }
     } catch (e) {
       print('AdminState createChapter error: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> updateChapter(Chapter chapter) async {
@@ -168,9 +170,11 @@ class AdminState extends ChangeNotifier {
       }
     } catch (e) {
       print('AdminState updateChapter error: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> deleteChapter(String id) async {
@@ -190,9 +194,11 @@ class AdminState extends ChangeNotifier {
       }
     } catch (e) {
       print('AdminState deleteChapter error: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   // ── MCQS METHODS ──

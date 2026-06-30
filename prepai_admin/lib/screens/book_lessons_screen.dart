@@ -701,7 +701,7 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (titleController.text.trim().isEmpty || descController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Please fill out all required fields.')),
@@ -718,36 +718,56 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
                           final playlistUrls = audioClips.map((c) => c['url']).toList();
                           final playlistJson = json.encode(playlistUrls);
 
-                          if (isEdit) {
-                            final updated = chapter.copyWith(
-                              chapterNumber: chNum,
-                              title: titleController.text.trim(),
-                              description: descController.text.trim(),
-                              audioUrl: playlistUrls.isEmpty ? '' : playlistJson,
-                              durationSeconds: totalSecs == 0 ? 300 : totalSecs,
-                              isFree: isFree,
-                              contentText: contentController.text.trim(),
-                            );
-                            state.updateChapter(updated);
-                          } else {
-                            final newChapter = Chapter(
-                              id: const Uuid().v4(),
-                              bookId: widget.book.id,
-                              chapterNumber: chNum,
-                              title: titleController.text.trim(),
-                              description: descController.text.trim(),
-                              audioUrl: playlistUrls.isEmpty ? '' : playlistJson,
-                              durationSeconds: totalSecs == 0 ? 300 : totalSecs,
-                              isFree: isFree,
-                              contentText: contentController.text.trim(),
-                            );
-                            state.createChapter(newChapter);
-                          }
+                          // Set loading state in sheet
+                          setModalState(() {
+                            isUploading = true;
+                            selectedFileName = 'Saving database changes...';
+                          });
 
-                          recordingTimer?.cancel();
-                          waveformTimer?.cancel();
-                          audioRecorder.dispose();
-                          Navigator.pop(context);
+                          try {
+                            if (isEdit) {
+                              final updated = chapter.copyWith(
+                                chapterNumber: chNum,
+                                title: titleController.text.trim(),
+                                description: descController.text.trim(),
+                                audioUrl: playlistUrls.isEmpty ? '' : playlistJson,
+                                durationSeconds: totalSecs == 0 ? 300 : totalSecs,
+                                isFree: isFree,
+                                contentText: contentController.text.trim(),
+                              );
+                              await state.updateChapter(updated);
+                            } else {
+                              final newChapter = Chapter(
+                                id: const Uuid().v4(),
+                                bookId: widget.book.id,
+                                chapterNumber: chNum,
+                                title: titleController.text.trim(),
+                                description: descController.text.trim(),
+                                audioUrl: playlistUrls.isEmpty ? '' : playlistJson,
+                                durationSeconds: totalSecs == 0 ? 300 : totalSecs,
+                                isFree: isFree,
+                                contentText: contentController.text.trim(),
+                              );
+                              await state.createChapter(newChapter);
+                            }
+
+                            recordingTimer?.cancel();
+                            waveformTimer?.cancel();
+                            audioRecorder.dispose();
+                            Navigator.pop(context);
+                          } catch (dbErr) {
+                            print('Database save error: $dbErr');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Database Save Error: $dbErr'),
+                                backgroundColor: Colors.redAccent,
+                                duration: const Duration(seconds: 10),
+                              ),
+                            );
+                            setModalState(() {
+                              isUploading = false;
+                            });
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).primaryColor,
