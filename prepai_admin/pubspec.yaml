@@ -46,6 +46,7 @@ dependencies:
   record: ^7.1.1
   path_provider: ^2.1.3
   just_audio: ^0.9.38
+  http: ^1.2.1
 
   # UI Fonts
   google_fonts: ^6.2.1

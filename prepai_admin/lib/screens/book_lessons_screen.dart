@@ -9,6 +9,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:http/http.dart' as http;
 import '../models/models.dart';
 import '../providers/admin_state.dart';
 import 'data_manager.dart';
@@ -54,6 +55,37 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
     _playerStateSub?.cancel();
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  // Upload file helper to Cloudflare R2 via Next.js Vercel API
+  Future<String> _uploadToR2(File file, String folderName, String filename) async {
+    final uri = Uri.parse('https://upsc-roan-pi.vercel.app/api/admin/upload');
+    final request = http.MultipartRequest('POST', uri);
+    
+    // Add folder parameter
+    request.fields['folder'] = folderName;
+    
+    // Add file
+    final multipartFile = await http.MultipartFile.fromPath(
+      'file',
+      file.path,
+      filename: filename,
+    );
+    request.files.add(multipartFile);
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success'] == true && data['url'] != null) {
+        return data['url'] as String;
+      } else {
+        throw Exception(data['error'] ?? 'R2 upload failed.');
+      }
+    } else {
+      throw Exception('R2 upload API failed with status ${response.statusCode}');
+    }
   }
 
   void _toggleChapterAudio(Chapter ch) async {
@@ -154,7 +186,7 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
       }
     }
 
-    // Recorder Simulator State
+    // Recorder State
     String recordingState = 'idle'; // idle, recording, paused, finished
     int recordingSeconds = 0;
     Timer? recordingTimer;
@@ -163,7 +195,6 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
 
     // File Uploader State
     bool isUploading = false;
-    double uploadProgress = 0.0;
     String? selectedFileName;
 
     showModalBottomSheet(
@@ -183,7 +214,7 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
               return '$m:$s';
             }
 
-            // Recorder controls (Real Microphone)
+            // Recorder controls (Real Microphone upload to Cloudflare R2)
             void startRecording() async {
               try {
                 if (await audioRecorder.hasPermission()) {
@@ -267,67 +298,34 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
               final cleanBookTitle = widget.book.title.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '-').toLowerCase();
               final chNum = numController.text.trim();
               
-              // Book Bucket structure config
-              final bucketId = 'book-$cleanBookTitle';
-              final storagePath = 'chapter_$chNum/rec_$timestamp.m4a';
+              final folderName = 'books/$cleanBookTitle/chapter_$chNum';
+              final filename = 'rec_$timestamp.m4a';
 
               // Show uploading state
               setModalState(() {
                 isUploading = true;
-                selectedFileName = 'rec_$timestamp.m4a';
-                uploadProgress = 0.5; // indeterminate/start progress
+                selectedFileName = filename;
               });
 
               try {
-                String publicUrl = '';
-                try {
-                  // 1. Try creating a separate bucket for this book dynamically
-                  try {
-                    await Supabase.instance.client.storage.createBucket(
-                      bucketId,
-                      const BucketOptions(public: true),
-                    );
-                  } catch (bucketErr) {
-                    print('Bucket exists or creation restricted: $bucketErr');
-                  }
-
-                  // 2. Upload to the book-specific bucket
-                  final storage = Supabase.instance.client.storage.from(bucketId);
-                  await storage.upload(
-                    storagePath,
-                    recordedFile,
-                    fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-                  );
-                  publicUrl = storage.getPublicUrl(storagePath);
-                } catch (bucketUploadErr) {
-                  print('Book bucket upload failed: $bucketUploadErr. Falling back to default audio bucket.');
-                  
-                  // 3. Fallback to default 'audio' bucket
-                  final fallbackPath = 'books/$cleanBookTitle/chapter_$chNum/rec_$timestamp.m4a';
-                  final storage = Supabase.instance.client.storage.from('audio');
-                  await storage.upload(
-                    fallbackPath,
-                    recordedFile,
-                    fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-                  );
-                  publicUrl = storage.getPublicUrl(fallbackPath);
-                }
+                // Upload directly to Cloudflare R2 via Next.js API
+                final publicUrl = await _uploadToR2(recordedFile, folderName, filename);
 
                 setModalState(() {
                   audioClips.add({
                     'type': 'record',
                     'url': publicUrl,
                     'duration': recordingSeconds == 0 ? 5 : recordingSeconds,
-                    'name': 'rec_$timestamp.m4a',
+                    'name': filename,
                   });
                   isUploading = false;
                   recordingState = 'idle';
                   recordingSeconds = 0;
                 });
               } catch (e) {
-                print('Supabase upload record error: $e');
+                print('R2 upload record error: $e');
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Supabase Storage Error: $e. (Please make sure policies allow writes)')),
+                  SnackBar(content: Text('Cloudflare R2 Upload Error: $e')),
                 );
                 setModalState(() {
                   isUploading = false;
@@ -337,7 +335,7 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
               }
             }
 
-            // File Uploader (Real file pick and Supabase upload with dynamic bucket)
+            // File Uploader (Real file pick and Cloudflare R2 upload)
             void pickAndUploadFile() async {
               try {
                 FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio);
@@ -349,62 +347,28 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
                 setModalState(() {
                   isUploading = true;
                   selectedFileName = filename;
-                  uploadProgress = 0.3; // start uploading
                 });
 
                 final cleanBookTitle = widget.book.title.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '-').toLowerCase();
                 final chNum = numController.text.trim();
-                
-                final bucketId = 'book-$cleanBookTitle';
-                final storagePath = 'chapter_$chNum/upload_$filename';
-                String publicUrl = '';
+                final folderName = 'books/$cleanBookTitle/chapter_$chNum';
 
-                try {
-                  // 1. Try creating a separate bucket for this book dynamically
-                  try {
-                    await Supabase.instance.client.storage.createBucket(
-                      bucketId,
-                      const BucketOptions(public: true),
-                    );
-                  } catch (bucketErr) {
-                    print('Bucket exists or creation restricted: $bucketErr');
-                  }
-
-                  // 2. Upload to the book-specific bucket
-                  final storage = Supabase.instance.client.storage.from(bucketId);
-                  await storage.upload(
-                    storagePath,
-                    pickedFile,
-                    fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-                  );
-                  publicUrl = storage.getPublicUrl(storagePath);
-                } catch (bucketUploadErr) {
-                  print('Book bucket upload failed: $bucketUploadErr. Falling back to default audio bucket.');
-                  
-                  // 3. Fallback to default 'audio' bucket
-                  final fallbackPath = 'books/$cleanBookTitle/chapter_$chNum/upload_$filename';
-                  final storage = Supabase.instance.client.storage.from('audio');
-                  await storage.upload(
-                    fallbackPath,
-                    pickedFile,
-                    fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-                  );
-                  publicUrl = storage.getPublicUrl(fallbackPath);
-                }
+                // Upload directly to Cloudflare R2 via Next.js API
+                final publicUrl = await _uploadToR2(pickedFile, folderName, filename);
 
                 setModalState(() {
                   audioClips.add({
                     'type': 'upload',
                     'url': publicUrl,
-                    'duration': 180, // Default 3 minutes for uploaded audio
+                    'duration': 180, // Default 3 minutes
                     'name': filename,
                   });
                   isUploading = false;
                 });
               } catch (e) {
-                print('Supabase upload file error: $e');
+                print('R2 upload file error: $e');
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Upload Error: $e. (Ensure storage bucket exists)')),
+                  SnackBar(content: Text('Cloudflare R2 Upload Error: $e')),
                 );
                 setModalState(() {
                   isUploading = false;
@@ -656,7 +620,7 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
                                     children: [
                                       const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
                                       const SizedBox(width: 14),
-                                      Expanded(child: Text('Uploading $selectedFileName to Cloud...', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold))),
+                                      Expanded(child: Text('Uploading $selectedFileName to Cloudflare R2...', style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold))),
                                     ],
                                   ),
                                 ],
