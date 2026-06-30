@@ -721,52 +721,91 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
                           // Set loading state in sheet
                           setModalState(() {
                             isUploading = true;
-                            selectedFileName = 'Saving database changes...';
+                            selectedFileName = 'Saving to Supabase...';
                           });
+
+                          // DIRECT Supabase call (bypass AdminState to debug exact error)
+                          final supabase = Supabase.instance.client;
+                          final chapterId = isEdit ? chapter.id : const Uuid().v4();
+
+                          final dataMap = {
+                            'id': chapterId,
+                            'book_id': widget.book.id,
+                            'title': titleController.text.trim(),
+                            'description': descController.text.trim(),
+                            'content_text': contentController.text.trim(),
+                            'audio_url': playlistUrls.isEmpty ? '' : playlistJson,
+                            'chapter_number': chNum,
+                            'is_free': isFree,
+                            'duration_seconds': totalSecs == 0 ? 300 : totalSecs,
+                          };
 
                           try {
                             if (isEdit) {
-                              final updated = chapter.copyWith(
-                                chapterNumber: chNum,
-                                title: titleController.text.trim(),
-                                description: descController.text.trim(),
-                                audioUrl: playlistUrls.isEmpty ? '' : playlistJson,
-                                durationSeconds: totalSecs == 0 ? 300 : totalSecs,
-                                isFree: isFree,
-                                contentText: contentController.text.trim(),
-                              );
-                              await state.updateChapter(updated);
+                              await supabase
+                                  .from('chapters')
+                                  .update(dataMap)
+                                  .eq('id', chapterId);
                             } else {
-                              final newChapter = Chapter(
-                                id: const Uuid().v4(),
-                                bookId: widget.book.id,
-                                chapterNumber: chNum,
-                                title: titleController.text.trim(),
-                                description: descController.text.trim(),
-                                audioUrl: playlistUrls.isEmpty ? '' : playlistJson,
-                                durationSeconds: totalSecs == 0 ? 300 : totalSecs,
-                                isFree: isFree,
-                                contentText: contentController.text.trim(),
-                              );
-                              await state.createChapter(newChapter);
+                              await supabase
+                                  .from('chapters')
+                                  .insert(dataMap);
                             }
+
+                            // Reload chapters in state
+                            await state.loadChapters(widget.book.id);
 
                             recordingTimer?.cancel();
                             waveformTimer?.cancel();
                             audioRecorder.dispose();
                             Navigator.pop(context);
-                          } catch (dbErr) {
-                            print('Database save error: $dbErr');
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Database Save Error: $dbErr'),
-                                backgroundColor: Colors.redAccent,
-                                duration: const Duration(seconds: 10),
+                                content: Text(isEdit ? 'Chapter updated!' : 'Chapter published!'),
+                                backgroundColor: const Color(0xFF10B981),
                               ),
                             );
+                          } catch (dbErr) {
+                            print('DIRECT Supabase error: $dbErr');
                             setModalState(() {
                               isUploading = false;
                             });
+                            // Show FULL error in AlertDialog so user can read and report it
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: const Color(0xFF070B16),
+                                title: const Text('❌ Database Error', style: TextStyle(color: Colors.redAccent, fontSize: 16)),
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('Error Details:', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 8),
+                                      SelectableText(
+                                        '$dbErr',
+                                        style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text('Data Sent:', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 8),
+                                      SelectableText(
+                                        json.encode(dataMap),
+                                        style: const TextStyle(color: Colors.white38, fontSize: 9),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
                           }
                         },
                         style: ElevatedButton.styleFrom(

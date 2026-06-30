@@ -36,7 +36,6 @@ class Book {
       'author': author,
       'cover_image': coverImage,
       'subject': subject,
-      'is_active': isActive,
       'total_chapters': totalChapters,
     };
   }

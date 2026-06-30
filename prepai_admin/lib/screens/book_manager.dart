@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../providers/admin_state.dart';
 import 'book_lessons_screen.dart';
@@ -131,7 +132,7 @@ class BookManager extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (titleController.text.trim().isEmpty || authorController.text.trim().isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Please fill out required fields.')),
@@ -140,34 +141,47 @@ class BookManager extends StatelessWidget {
                         }
 
                         final numChapters = int.tryParse(chaptersController.text.trim()) ?? 1;
+                        final bookId = isEdit ? book.id : const Uuid().v4();
 
-                        if (isEdit) {
-                          final updated = book.copyWith(
-                            title: titleController.text.trim(),
-                            author: authorController.text.trim(),
-                            subject: selectedSubject,
-                            coverImage: coverController.text.trim().isNotEmpty
-                                ? coverController.text.trim()
-                                : book.coverImage,
-                            totalChapters: numChapters,
+                        final dataMap = {
+                          'id': bookId,
+                          'title': titleController.text.trim(),
+                          'author': authorController.text.trim(),
+                          'subject': selectedSubject,
+                          'cover_image': coverController.text.trim().isNotEmpty 
+                              ? coverController.text.trim() 
+                              : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400',
+                          'total_chapters': numChapters,
+                        };
+
+                        try {
+                          final supabase = Supabase.instance.client;
+                          if (isEdit) {
+                            await supabase.from('books').update(dataMap).eq('id', bookId);
+                          } else {
+                            await supabase.from('books').insert(dataMap);
+                          }
+                          await state.loadBooks();
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isEdit ? 'Book updated!' : 'Book added!'),
+                              backgroundColor: const Color(0xFF10B981),
+                            ),
                           );
-                          state.updateBook(updated);
-                        } else {
-                          final newBook = Book(
-                            id: const Uuid().v4(),
-                            title: titleController.text.trim(),
-                            author: authorController.text.trim(),
-                            subject: selectedSubject,
-                            coverImage: coverController.text.trim().isNotEmpty 
-                                ? coverController.text.trim() 
-                                : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400',
-                            isActive: true,
-                            totalChapters: numChapters,
+                        } catch (e) {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF070B16),
+                              title: const Text('❌ Database Error', style: TextStyle(color: Colors.redAccent, fontSize: 16)),
+                              content: SingleChildScrollView(
+                                child: SelectableText('$e', style: const TextStyle(color: Colors.redAccent, fontSize: 11)),
+                              ),
+                              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+                            ),
                           );
-                          state.createBook(newBook);
                         }
-
-                        Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
