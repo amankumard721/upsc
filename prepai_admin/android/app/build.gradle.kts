@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.prepai.admin.prepai_admin"
-    compileSdk = 36
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

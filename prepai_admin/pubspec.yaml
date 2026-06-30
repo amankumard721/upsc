@@ -43,11 +43,11 @@ dependencies:
 
   # Audio Utilities
   file_picker: ^8.1.7
-  record: ^7.1.1
+  record: ^5.1.2
   path_provider: ^2.1.3
 
   # UI Fonts
-  google_fonts: ^8.1.0
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -59,6 +59,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
+dependency_overrides:
+  record_linux: ^2.1.0
+  record_platform_interface: ^2.1.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
