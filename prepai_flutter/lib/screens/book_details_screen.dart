@@ -4,6 +4,7 @@ import '../providers/app_state.dart';
 import '../models/models.dart';
 import 'lesson_screen.dart';
 import 'profile_screen.dart';
+import 'quiz_screen.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final String bookId;
@@ -366,51 +367,80 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Action button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (hasAccess)
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LessonScreen(chapterId: chapter.id),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.play_circle_fill, size: 14, color: const Color(0xFF0B1325)),
-                  label: const Text('Start Lesson'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: goldColor,
-                    foregroundColor: const Color(0xFF0B1325),
-                    elevation: 0,
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ProfileScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.lock, size: 12, color: Colors.indigoAccent),
-                  label: const Text('Unlock Gold'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white.withOpacity(0.8),
-                    side: BorderSide(color: Colors.indigo.withOpacity(0.4)),
-                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          // Action buttons
+          if (hasAccess)
+            Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: 38,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LessonScreen(chapterId: chapter.id),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.play_circle_fill, size: 15, color: Color(0xFF0B1325)),
+                    label: const Text('Play Lesson & Audio'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: goldColor,
+                      foregroundColor: const Color(0xFF0B1325),
+                      elevation: 0,
+                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'Outfit'),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                   ),
                 ),
-            ],
-          )
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 38,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QuizScreen(chapterId: chapter.id),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.assignment_turned_in_rounded, size: 14, color: goldColor),
+                    label: Text('Practice MCQs', style: TextStyle(color: goldColor)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: goldColor.withOpacity(0.3)),
+                      textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'Outfit'),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.lock, size: 14, color: Colors.indigoAccent),
+                label: const Text('Unlock Premium Content'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white.withOpacity(0.8),
+                  side: BorderSide(color: Colors.indigo.withOpacity(0.4)),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, fontFamily: 'Outfit'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            )
         ],
       ),
     );
