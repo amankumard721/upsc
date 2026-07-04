@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/audio_provider.dart';
 import '../widgets/mini_player.dart';
 import 'home_screen.dart';
-import 'leaderboard_screen.dart';
+import 'samples_screen.dart';
 import 'flashcard_screen.dart';
 import 'profile_screen.dart';
 
@@ -19,7 +19,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const LeaderboardScreen(),
+    const SamplesScreen(),
     const FlashcardScreen(chapterId: '00000000-0000-0000-0000-000000000011'), // Default review deck
     const ProfileScreen(),
   ];
@@ -39,7 +39,7 @@ class _MainNavigationState extends State<MainNavigation> {
           // ── Mini Player (YouTube-style) ──
           // Shows only when there's an active audio track
           if (audio.hasTrack) const MiniPlayer(),
-
+          
           // ── Bottom Navigation Bar ──
           Container(
             decoration: BoxDecoration(
@@ -65,7 +65,7 @@ class _MainNavigationState extends State<MainNavigation> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildNavItem(0, Icons.home_rounded, 'Home'),
-                    _buildNavItem(1, Icons.emoji_events_rounded, 'Ranks'),
+                    _buildNavItem(1, Icons.slow_motion_video_rounded, 'Samples'),
                     _buildNavItem(2, Icons.auto_awesome_rounded, 'Cards'),
                     _buildNavItem(3, Icons.person_rounded, 'Profile'),
                   ],
