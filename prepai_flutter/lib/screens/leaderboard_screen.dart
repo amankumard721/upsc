@@ -13,7 +13,6 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   String _activeTab = 'Weekly';
-  String _subTab = 'Ranks'; // 'Ranks' or 'Samples'
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   List<UserProfile> _leaderboard = [];
@@ -37,88 +36,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     });
   }
 
-  Widget _buildSubTabSelector() {
-    return Container(
-      height: 38,
-      width: 220,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Row(
-        children: [
-          _buildSubTabItem('Ranks', Icons.emoji_events_rounded),
-          _buildSubTabItem('Samples', Icons.slow_motion_video_rounded),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubTabItem(String tabName, IconData icon) {
-    final isSelected = _subTab == tabName;
-    final accentColor = const Color(0xFF10B981);
-    
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _subTab = tabName;
-          });
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: isSelected ? accentColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon, 
-                size: 14, 
-                color: isSelected ? const Color(0xFF0B1325) : Colors.white60
-              ),
-              const SizedBox(width: 6),
-              Text(
-                tabName,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF0B1325) : Colors.white60,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
-  Widget build(BuildContext StateContext) {
-    final state = Provider.of<AppState>(StateContext);
+  Widget build(BuildContext context) {
+    final state = Provider.of<AppState>(context);
     
-    if (_subTab == 'Samples') {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Stack(
-          children: [
-            const SamplesScreen(),
-            // Floating sub-tab selector
-            Positioned(
-              top: MediaQuery.of(StateContext).padding.top + 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _buildSubTabSelector(),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     // Filter leaderboard list
     final filteredList = _leaderboard.where((user) {
       return user.fullName.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -130,62 +51,44 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1325),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            _buildSubTabSelector(), // Sub-tab switcher
-            const SizedBox(height: 12),
-            // 1. Header Info & Search
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.emoji_events_rounded, color: Color(0xFF10B981), size: 24),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Academy Rankings',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Outfit',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Search Bar
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF070B16),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.08)),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
-                      onChanged: (val) {
-                        setState(() {
-                          _searchQuery = val;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search aspirants...',
-                        hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
-                        prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.3), size: 18),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Academy Rankings', style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
+      ),
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF070B16),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search aspirants...',
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13),
+                  prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.3), size: 18),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
             ),
-
+          ),
             // 2. Tabs
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -288,12 +191,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         ),
                       ),
                     ),
-            )
+                  ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
   Widget _buildPodium(List<UserProfile> podium, AppState state) {
     final goldColor = const Color(0xFF10B981);

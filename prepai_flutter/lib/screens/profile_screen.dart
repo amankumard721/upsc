@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_state.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
+import 'leaderboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -424,6 +425,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildMetricTile('Academy XP', '${profile?.totalPoints ?? 0}', goldColor),
                   _buildMetricTile('Study Streak', '${profile?.streak ?? 0} days', Colors.orangeAccent),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              // Leaderboard Navigation Card
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LeaderboardScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: goldColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: goldColor.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.emoji_events_rounded, color: goldColor, size: 24),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Academy Rankings & Leaderboard',
+                              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'See where you stand among other JTET aspirants.',
+                              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, color: Colors.white.withOpacity(0.4), size: 14),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
 

@@ -15,13 +15,14 @@ import {
   Moon,
   Zap,
   Home,
-  ArrowLeft
+  ArrowLeft,
+  Film
 } from 'lucide-react';
 import { t, getLanguage } from '@/lib/translations';
 
 const navLinks = [
   { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/leaderboard', label: 'Ranks', icon: Trophy },
+  { href: '/samples', label: 'Samples', icon: Film },
   { href: '/flashcards/00000000-0000-0000-0000-000000000002', label: 'Cards', icon: Sparkles },
   { href: '/profile', label: 'Profile', icon: User }
 ];
@@ -82,13 +83,14 @@ export default function Navbar() {
 
   const getActiveLink = () => {
     if (pathname === '/dashboard') return '/dashboard';
-    if (pathname.startsWith('/leaderboard')) return '/leaderboard';
+    if (pathname.startsWith('/samples')) return '/samples';
     if (pathname.startsWith('/flashcards')) return '/flashcards/00000000-0000-0000-0000-000000000002';
     if (pathname.startsWith('/profile')) return '/profile';
     return '/dashboard';
   };
 
   const getPageTitle = () => {
+    if (pathname.startsWith('/samples')) return 'Samples';
     if (pathname.startsWith('/leaderboard')) return t('leaderboard');
     if (pathname.startsWith('/flashcards')) return t('dailyChallenge'); // Or cards
     if (pathname.startsWith('/profile')) return t('profile');

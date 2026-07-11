@@ -21,7 +21,8 @@ import {
   ChevronRight,
   TrendingUp,
   XCircle,
-  Copy
+  Copy,
+  Trophy
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -237,6 +238,20 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Leaderboard Navigation Card */}
+          <Link href="/leaderboard" className="premium-card p-6 bg-gradient-to-br from-accent/10 to-amber-500/5 border-accent/20 hover:border-accent/40 block transition-all group">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Trophy className="w-5 h-5 text-accent" />
+                <div className="text-left">
+                  <h4 className="text-sm font-bold text-foreground group-hover:text-accent transition-colors leading-none">Rankings & Leaderboard</h4>
+                  <p className="text-[10px] text-foreground/50 font-light mt-1">See your academy standing against peers.</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-foreground/35 group-hover:text-accent transition-all group-hover:translate-x-0.5" />
+            </div>
+          </Link>
 
         </div>
 
