@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/models.dart';
+import 'samples_screen.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -12,6 +13,7 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   String _activeTab = 'Weekly';
+  String _subTab = 'Ranks'; // 'Ranks' or 'Samples'
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   List<UserProfile> _leaderboard = [];
@@ -35,10 +37,88 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     });
   }
 
+  Widget _buildSubTabSelector() {
+    return Container(
+      height: 38,
+      width: 220,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          _buildSubTabItem('Ranks', Icons.emoji_events_rounded),
+          _buildSubTabItem('Samples', Icons.slow_motion_video_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubTabItem(String tabName, IconData icon) {
+    final isSelected = _subTab == tabName;
+    final accentColor = const Color(0xFF10B981);
+    
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _subTab = tabName;
+          });
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? accentColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon, 
+                size: 14, 
+                color: isSelected ? const Color(0xFF0B1325) : Colors.white60
+              ),
+              const SizedBox(width: 6),
+              Text(
+                tabName,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF0B1325) : Colors.white60,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext StateContext) {
     final state = Provider.of<AppState>(StateContext);
     
+    if (_subTab == 'Samples') {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            const SamplesScreen(),
+            // Floating sub-tab selector
+            Positioned(
+              top: MediaQuery.of(StateContext).padding.top + 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _buildSubTabSelector(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Filter leaderboard list
     final filteredList = _leaderboard.where((user) {
       return user.fullName.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -53,9 +133,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            const SizedBox(height: 12),
+            _buildSubTabSelector(), // Sub-tab switcher
+            const SizedBox(height: 12),
             // 1. Header Info & Search
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -74,7 +157,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
