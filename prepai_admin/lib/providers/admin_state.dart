@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/supabase_service.dart';
+import '../services/r2_service.dart';
 
 class AdminState extends ChangeNotifier {
   final SupabaseService _db = SupabaseService();
@@ -181,6 +182,27 @@ class AdminState extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      // Find the chapter to obtain its audioUrl before deleting from DB
+      final ch = _chapters.firstWhere(
+        (c) => c.id == id,
+        orElse: () => Chapter(
+          id: '',
+          bookId: '',
+          title: '',
+          description: '',
+          contentText: '',
+          audioUrl: '',
+          chapterNumber: 0,
+          isFree: true,
+          durationSeconds: 0,
+        ),
+      );
+
+      if (ch.id.isNotEmpty && ch.audioUrl.isNotEmpty) {
+        // Delete audio file(s) from Cloudflare R2
+        await R2Service.deleteAudio(ch.audioUrl);
+      }
+
       await _db.deleteChapter(id);
       _chapters.removeWhere((c) => c.id == id);
       if (_selectedChapterId == id) {

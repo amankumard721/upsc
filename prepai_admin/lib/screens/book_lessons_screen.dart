@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import '../models/models.dart';
 import '../providers/admin_state.dart';
+import '../services/r2_service.dart';
 import 'data_manager.dart';
 
 class BookLessonsScreen extends StatefulWidget {
@@ -742,6 +743,25 @@ class _BookLessonsScreenState extends State<BookLessonsScreen> {
 
                           try {
                             if (isEdit) {
+                              // Identify and delete any old audio clips that were removed in edit mode
+                              final oldPlaylistUrls = <String>[];
+                              if (chapter.audioUrl.isNotEmpty) {
+                                if (chapter.audioUrl.startsWith('[')) {
+                                  try {
+                                    final parsed = json.decode(chapter.audioUrl) as List;
+                                    oldPlaylistUrls.addAll(parsed.map((e) => e.toString()));
+                                  } catch (_) {}
+                                } else {
+                                  oldPlaylistUrls.add(chapter.audioUrl);
+                                }
+                              }
+                              for (final oldUrl in oldPlaylistUrls) {
+                                if (!playlistUrls.contains(oldUrl)) {
+                                  // This file was deleted/removed from the playlist during editing
+                                  await R2Service.deleteAudio(oldUrl);
+                                }
+                              }
+
                               await supabase
                                   .from('chapters')
                                   .update(dataMap)
