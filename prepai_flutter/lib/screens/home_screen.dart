@@ -4,6 +4,7 @@ import '../providers/app_state.dart';
 import '../models/models.dart';
 import 'book_details_screen.dart';
 import 'quiz_screen.dart';
+import 'lesson_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -138,6 +139,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                           ),
+                const SizedBox(height: 28),
+
+                // Quick picks section (YT Music track columns)
+                state.loading 
+                    ? const SizedBox.shrink()
+                    : _buildQuickPicks(StateContext, state),
                 const SizedBox(height: 28),
 
                 // 6. JTET Test Series Section
@@ -697,6 +704,200 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
+    );
+  }
+
+  List<List<Chapter>> _chunkChapters(List<Chapter> items, int size) {
+    List<List<Chapter>> chunks = [];
+    for (var i = 0; i < items.length; i += size) {
+      int end = i + size;
+      if (end > items.length) end = items.length;
+      chunks.add(items.sublist(i, end));
+    }
+    return chunks;
+  }
+
+  Widget _buildQuickPicks(BuildContext context, AppState state) {
+    final filteredChapters = state.allChapters.where((ch) {
+      if (_selectedSubject == 'All') return true;
+      final parentBook = state.books.firstWhere(
+        (b) => b.id == ch.bookId,
+        orElse: () => Book(id: '', title: '', author: '', subject: '', coverImage: '', isPublished: false),
+      );
+      return parentBook.subject.toLowerCase() == _selectedSubject.toLowerCase();
+    }).toList();
+
+    if (filteredChapters.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final chunks = _chunkChapters(filteredChapters, 3);
+    final primaryColor = const Color(0xFF10B981);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.between,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SWIPE TO LISTEN',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Quick picks',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Outfit',
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (filteredChapters.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LessonScreen(chapterId: filteredChapters[0].id),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.04),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: const Text('Play all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Horizontal Carousel of vertical stacks (YT Music style)
+        SizedBox(
+          height: 185,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: chunks.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            itemBuilder: (context, chunkIdx) {
+              final chunk = chunks[chunkIdx];
+              return SizedBox(
+                width: 320,
+                child: Column(
+                  children: chunk.map((ch) {
+                    final parentBook = state.books.firstWhere(
+                      (b) => b.id == ch.bookId,
+                      orElse: () => Book(id: '', title: '', author: '', subject: '', coverImage: '', isPublished: false),
+                    );
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => LessonScreen(chapterId: ch.id),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        color: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Row(
+                          children: [
+                            // Thumbnail Image
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                color: Colors.white.withOpacity(0.04),
+                                child: parentBook.coverImage.isNotEmpty
+                                    ? Image.network(
+                                        parentBook.coverImage,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.menu_book, color: Colors.white30, size: 18),
+                                      )
+                                    : const Icon(Icons.menu_book, color: Colors.white30, size: 18),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Chapter Title & Meta
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    ch.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${parentBook.title} • By ${parentBook.author} • ${ch.durationSeconds ~/ 60} Mins',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.4),
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Access level label
+                            Text(
+                              ch.isFree ? 'FREE' : 'GOLD',
+                              style: TextStyle(
+                                color: ch.isFree ? Colors.greenAccent : primaryColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            
+                            Icon(
+                              Icons.more_vert_rounded,
+                              color: Colors.white.withOpacity(0.3),
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

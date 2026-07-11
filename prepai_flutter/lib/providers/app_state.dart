@@ -12,6 +12,7 @@ class AppState extends ChangeNotifier {
   UserProfile? _profile;
   List<Book> _books = [];
   List<Chapter> _chapters = [];
+  List<Chapter> _allChapters = [];
   List<UserProgress> _progressList = [];
   List<QuizAttempt> _attempts = [];
   
@@ -24,6 +25,7 @@ class AppState extends ChangeNotifier {
   UserProfile? get profile => _profile;
   List<Book> get books => _books;
   List<Chapter> get chapters => _chapters;
+  List<Chapter> get allChapters => _allChapters;
   List<UserProgress> get progressList => _progressList;
   List<QuizAttempt> get attempts => _attempts;
   String get userId => _userId;
@@ -51,6 +53,7 @@ class AppState extends ChangeNotifier {
     
     // Load lists
     _books = await _db.getBooks();
+    _allChapters = await _db.getAllChapters();
     _progressList = await _db.getUserProgressList(_userId);
     _attempts = await _db.getQuizAttempts(_userId);
 
@@ -70,6 +73,7 @@ class AppState extends ChangeNotifier {
         
         // Reload all data for the new user
         _books = await _db.getBooks();
+        _allChapters = await _db.getAllChapters();
         _progressList = await _db.getUserProgressList(_userId);
         _attempts = await _db.getQuizAttempts(_userId);
         
@@ -116,6 +120,7 @@ class AppState extends ChangeNotifier {
         
         // Reload data
         _books = await _db.getBooks();
+        _allChapters = await _db.getAllChapters();
         _progressList = await _db.getUserProgressList(_userId);
         _attempts = await _db.getQuizAttempts(_userId);
         

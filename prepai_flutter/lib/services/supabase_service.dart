@@ -100,6 +100,22 @@ class SupabaseService {
     }
   }
 
+  // 2.5 Fetch All Chapters (for dashboard Quick picks)
+  Future<List<Chapter>> getAllChapters() async {
+    try {
+      final response = await _client
+          .from('chapters')
+          .select()
+          .order('chapter_number', ascending: true);
+      
+      final list = response as List<dynamic>;
+      return list.map((json) => Chapter.fromJson(json)).toList();
+    } catch (e) {
+      print('Supabase getAllChapters error: $e. Using local/mock fallback.');
+      return _getMockChapters();
+    }
+  }
+
   // 3. Fetch Chapter by ID
   Future<Chapter?> getChapter(String chapterId) async {
     try {
