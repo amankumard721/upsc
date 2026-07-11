@@ -722,7 +722,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_selectedSubject == 'All') return true;
       final parentBook = state.books.firstWhere(
         (b) => b.id == ch.bookId,
-        orElse: () => Book(id: '', title: '', author: '', subject: '', coverImage: '', isPublished: false),
+        orElse: () => Book(id: '', title: '', author: '', subject: '', coverImage: '', isActive: false),
       );
       return parentBook.subject.toLowerCase() == _selectedSubject.toLowerCase();
     }).toList();
@@ -739,7 +739,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // Header
         Row(
-          mainAxisAlignment: MainAxisAlignment.between,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,7 +807,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: chunk.map((ch) {
                     final parentBook = state.books.firstWhere(
                       (b) => b.id == ch.bookId,
-                      orElse: () => Book(id: '', title: '', author: '', subject: '', coverImage: '', isPublished: false),
+                      orElse: () => Book(id: '', title: '', author: '', subject: '', coverImage: '', isActive: false),
                     );
                     return GestureDetector(
                       onTap: () {
